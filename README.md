@@ -3,7 +3,7 @@
 Clone the project
 
 ```bash
-  git 
+git clone https://github.com/raceczn/cognify.git
 ```
 
 Install dependencies
@@ -17,4 +17,3 @@ Start the server
 ```bash
   npm run dev
 ```
-
