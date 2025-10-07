@@ -3,8 +3,12 @@ import { cn } from '@/lib/utils'
 import dashboardDark from './assets/dashboard-dark.png'
 import dashboardLight from './assets/dashboard-light.png'
 import { UserAuthForm } from './components/user-auth-form'
+import { useNavigate } from '@tanstack/react-router'
+
 
 export function SignIn2() {
+  const navigate = useNavigate()
+
   return (
     <div className='relative container grid h-svh flex-col items-center justify-center lg:max-w-none lg:grid-cols-2 lg:px-0'>
       <div className='lg:p-8'>
@@ -22,7 +26,10 @@ export function SignIn2() {
               to log into your account
             </p>
           </div>
-          <UserAuthForm />
+
+          {/* ✅ Pass navigate */}
+          <UserAuthForm navigate={navigate} />
+
           <p className='text-muted-foreground px-8 text-center text-sm'>
             By clicking sign in, you agree to our{' '}
             <a
