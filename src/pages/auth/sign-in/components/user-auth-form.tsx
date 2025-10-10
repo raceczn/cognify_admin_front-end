@@ -7,6 +7,7 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { Loader2, LogIn } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
+import { login } from '@/lib/auth-hooks'
 import { sleep, cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -48,33 +49,50 @@ export function UserAuthForm({
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: staticUser.email, // 👈 prefilled email
-      password: staticUser.password, // 👈 prefilled password
+      email: '', // 👈 prefilled email
+      password: '', // 👈 prefilled password
     },
   })
 
   async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true)
-    await sleep(1000)
+    // await sleep(1000)
 
-    if (
-      data.email === staticUser.email &&
-      data.password === staticUser.password
-    ) {
-      const mockUser = {
-        accountNo: 'ACC001',
-        email: data.email,
-        role: ['admin'],
-        exp: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
+    // if (
+    //   data.email === staticUser.email &&
+    //   data.password === staticUser.password
+    // ) {
+    //   const mockUser = {
+    //     accountNo: 'ACC001',
+    //     email: data.email,
+    //     role: ['admin'],
+    //     exp: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
+    //   }
+
+    //   auth.setUser(mockUser)
+    //   auth.setAccessToken('mock-access-token')
+
+    //   toast.success(`Welcome back, ${data.email}!`)
+    //   navigate({ to: '/', replace: true }) // ✅ Redirect to home
+    // } else {
+    //   toast.error('Invalid email or password')
+    // }
+    try {
+      const result = await login({ email: data.email, password: data.password })
+      console.log('Login success:', result)
+
+      if (result.token) {
+        auth.setUser(result)
+        auth.setAccessToken(result.token)
+        
+        toast.success(`Welcome back, ${result.profile.nickname || result.profile.first_name || data.email}!`)
+        navigate({ to: '/', replace: true }) // ✅ Redirect to home
+      } else {
+        toast.error('Invalid email or password')
       }
-
-      auth.setUser(mockUser)
-      auth.setAccessToken('mock-access-token')
-
-      toast.success(`Welcome back, ${data.email}!`)
-      navigate({ to: '/', replace: true }) // ✅ Redirect to home
-    } else {
-      toast.error('Invalid email or password')
+    } catch (error) {
+      console.error('Login error:', error)
+      toast.error('Login failed. Please try again.')
     }
 
     setIsLoading(false)

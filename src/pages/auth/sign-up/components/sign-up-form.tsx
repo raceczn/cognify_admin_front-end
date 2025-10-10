@@ -2,7 +2,10 @@ import { useState } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useNavigate } from '@tanstack/react-router'
+import { toast } from 'sonner'
 import { IconFacebook, IconGithub } from '@/assets/brand-icons'
+import { signup } from '@/lib/auth-hooks'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,6 +18,7 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { PasswordInput } from '@/components/password-input'
+import { fi } from '@faker-js/faker'
 
 const formSchema = z
   .object({
@@ -27,6 +31,9 @@ const formSchema = z
       .min(1, 'Please enter your password')
       .min(7, 'Password must be at least 7 characters long'),
     confirmPassword: z.string().min(1, 'Please confirm your password'),
+    first_name: z.string().optional(),
+    last_name: z.string().optional(),
+    nickname: z.string().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match.",
@@ -38,6 +45,7 @@ export function SignUpForm({
   ...props
 }: React.HTMLAttributes<HTMLFormElement>) {
   const [isLoading, setIsLoading] = useState(false)
+  const navigate = useNavigate()
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -48,10 +56,34 @@ export function SignUpForm({
     },
   })
 
-  function onSubmit(data: z.infer<typeof formSchema>) {
+  function verifyPasswordMatch(password: string, confirmPassword: string) {
+    if (password === confirmPassword) {
+      return password
+    }
+
+    return null
+  }
+
+  async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true)
-    // eslint-disable-next-line no-console
-    console.log(data)
+    // // eslint-disable-next-line no-console
+    // console.log(data)
+    const password = verifyPasswordMatch(data.password, data.confirmPassword)
+    if (typeof password === 'string') {
+      const result = await signup({
+        email: data.email,
+        password: password,
+        first_name: data.first_name || 'User',
+        last_name: data.last_name || '',
+        nickname: data.nickname || 'User',
+      })
+      console.log('Signup success:', result)
+
+      toast.success('Signup successful! Please sign in.')
+      navigate({ to: '/sign-in', replace: true })
+    } else {
+      toast.error("Passwords don't match.")
+    }
 
     setTimeout(() => {
       setIsLoading(false)
@@ -113,14 +145,14 @@ export function SignUpForm({
             <span className='w-full border-t' />
           </div>
           <div className='relative flex justify-center text-xs uppercase'>
-            <span className='bg-background text-muted-foreground px-2'>
+            {/* <span className='bg-background text-muted-foreground px-2'>
               Or continue with
-            </span>
+            </span> */}
           </div>
         </div>
 
-        <div className='grid grid-cols-2 gap-2'>
-          <Button
+        {/* <div className='grid grid-cols-2 gap-2'> */}
+          {/* <Button
             variant='outline'
             className='w-full'
             type='button'
@@ -135,8 +167,8 @@ export function SignUpForm({
             disabled={isLoading}
           >
             <IconFacebook className='h-4 w-4' /> Facebook
-          </Button>
-        </div>
+          </Button> */}
+        {/* </div> */}
       </form>
     </Form>
   )

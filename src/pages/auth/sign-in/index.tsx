@@ -29,6 +29,15 @@ export function SignIn() {
         </CardContent>
         <CardFooter>
           <p className='text-muted-foreground px-8 text-center text-sm'>
+            Don't have an account?{' '}
+            <a
+              href='/sign-up'
+              className='hover:text-primary underline underline-offset-4'
+            >
+              Sign Up
+            </a>
+            . <br />
+            <br />
             By clicking sign in, you agree to our{' '}
             <a
               href='/terms'

@@ -23,13 +23,23 @@ export const roles = [
     icon: UserCheck,
   },
   {
-    label: 'Manager',
-    value: 'manager',
+    label: 'Student',
+    value: 'student',
     icon: Users,
   },
   {
-    label: 'Cashier',
-    value: 'cashier',
-    icon: CreditCard,
+    label: 'Instructor',
+    value: 'instructor',
+    icon: Users,
   },
+  // {
+  //   label: 'Manager',
+  //   value: 'manager',
+  //   icon: Users,
+  // },
+  // {
+  //   label: 'Cashier',
+  //   value: 'cashier',
+  //   icon: CreditCard,
+  // },
 ] as const
