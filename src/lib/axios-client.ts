@@ -1,9 +1,7 @@
 import axios, { AxiosError } from "axios";
 
 // --- API base URL (adjust if needed) ---
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL ||
-  (import.meta.env.DEV ? "http://localhost:8000" : "https://cognify-backend.vercel.app");
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 // --- Axios instance ---
 const api = axios.create({
