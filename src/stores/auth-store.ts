@@ -5,11 +5,17 @@ const ACCESS_TOKEN = 'access_token'
 const USER_INFO = 'user_info'
 
 interface AuthUser {
-  accountNo: string
   email: string
-  role: string[]
-  exp: number
+  first_name?: string
+  middle_name?: string
+  last_name?: string
+  nickname?: string
+  role_id?: string
+  role?: string[]
+  accountNo?: string
+  exp?: number
 }
+
 
 interface AuthState {
   auth: {
