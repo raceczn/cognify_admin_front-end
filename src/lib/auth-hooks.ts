@@ -20,6 +20,7 @@ export async function signup(data: {
 export async function login(data: { email: string; password: string }) {
   const res = await api.post("/login", data, { withCredentials: true });
   const token = res.data.token;
+  
   setAccessToken(token); // store access token in memory
   return res.data;
 }

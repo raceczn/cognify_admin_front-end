@@ -33,6 +33,9 @@ import { Route as AuthenticatedSettingsDisplayRouteImport } from './routes/_auth
 import { Route as AuthenticatedSettingsAppearanceRouteImport } from './routes/_authenticated/settings/appearance'
 import { Route as AuthenticatedSettingsAccountRouteImport } from './routes/_authenticated/settings/account'
 import { Route as AuthenticatedErrorsErrorRouteImport } from './routes/_authenticated/errors/$error'
+import { Route as AuthenticatedUsersStudentsIndexRouteImport } from './routes/_authenticated/users/students/index'
+import { Route as AuthenticatedUsersFacultyIndexRouteImport } from './routes/_authenticated/users/faculty/index'
+import { Route as AuthenticatedUsersAdminsIndexRouteImport } from './routes/_authenticated/users/admins/index'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -161,6 +164,24 @@ const AuthenticatedErrorsErrorRoute =
     path: '/errors/$error',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedUsersStudentsIndexRoute =
+  AuthenticatedUsersStudentsIndexRouteImport.update({
+    id: '/users/students/',
+    path: '/users/students/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedUsersFacultyIndexRoute =
+  AuthenticatedUsersFacultyIndexRouteImport.update({
+    id: '/users/faculty/',
+    path: '/users/faculty/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedUsersAdminsIndexRoute =
+  AuthenticatedUsersAdminsIndexRouteImport.update({
+    id: '/users/admins/',
+    path: '/users/admins/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRouteRouteWithChildren
@@ -186,6 +207,9 @@ export interface FileRoutesByFullPath {
   '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/tasks': typeof AuthenticatedTasksIndexRoute
   '/users': typeof AuthenticatedUsersIndexRoute
+  '/users/admins': typeof AuthenticatedUsersAdminsIndexRoute
+  '/users/faculty': typeof AuthenticatedUsersFacultyIndexRoute
+  '/users/students': typeof AuthenticatedUsersStudentsIndexRoute
 }
 export interface FileRoutesByTo {
   '/forgot-password': typeof authForgotPasswordRoute
@@ -210,6 +234,9 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsIndexRoute
   '/tasks': typeof AuthenticatedTasksIndexRoute
   '/users': typeof AuthenticatedUsersIndexRoute
+  '/users/admins': typeof AuthenticatedUsersAdminsIndexRoute
+  '/users/faculty': typeof AuthenticatedUsersFacultyIndexRoute
+  '/users/students': typeof AuthenticatedUsersStudentsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -237,6 +264,9 @@ export interface FileRoutesById {
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/_authenticated/tasks/': typeof AuthenticatedTasksIndexRoute
   '/_authenticated/users/': typeof AuthenticatedUsersIndexRoute
+  '/_authenticated/users/admins/': typeof AuthenticatedUsersAdminsIndexRoute
+  '/_authenticated/users/faculty/': typeof AuthenticatedUsersFacultyIndexRoute
+  '/_authenticated/users/students/': typeof AuthenticatedUsersStudentsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -264,6 +294,9 @@ export interface FileRouteTypes {
     | '/settings/'
     | '/tasks'
     | '/users'
+    | '/users/admins'
+    | '/users/faculty'
+    | '/users/students'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/forgot-password'
@@ -288,6 +321,9 @@ export interface FileRouteTypes {
     | '/settings'
     | '/tasks'
     | '/users'
+    | '/users/admins'
+    | '/users/faculty'
+    | '/users/students'
   id:
     | '__root__'
     | '/_authenticated'
@@ -314,6 +350,9 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/'
     | '/_authenticated/tasks/'
     | '/_authenticated/users/'
+    | '/_authenticated/users/admins/'
+    | '/_authenticated/users/faculty/'
+    | '/_authenticated/users/students/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -500,6 +539,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedErrorsErrorRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/users/students/': {
+      id: '/_authenticated/users/students/'
+      path: '/users/students'
+      fullPath: '/users/students'
+      preLoaderRoute: typeof AuthenticatedUsersStudentsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/users/faculty/': {
+      id: '/_authenticated/users/faculty/'
+      path: '/users/faculty'
+      fullPath: '/users/faculty'
+      preLoaderRoute: typeof AuthenticatedUsersFacultyIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/users/admins/': {
+      id: '/_authenticated/users/admins/'
+      path: '/users/admins'
+      fullPath: '/users/admins'
+      preLoaderRoute: typeof AuthenticatedUsersAdminsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -535,6 +595,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedHelpCenterIndexRoute: typeof AuthenticatedHelpCenterIndexRoute
   AuthenticatedTasksIndexRoute: typeof AuthenticatedTasksIndexRoute
   AuthenticatedUsersIndexRoute: typeof AuthenticatedUsersIndexRoute
+  AuthenticatedUsersAdminsIndexRoute: typeof AuthenticatedUsersAdminsIndexRoute
+  AuthenticatedUsersFacultyIndexRoute: typeof AuthenticatedUsersFacultyIndexRoute
+  AuthenticatedUsersStudentsIndexRoute: typeof AuthenticatedUsersStudentsIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -546,6 +609,9 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedHelpCenterIndexRoute: AuthenticatedHelpCenterIndexRoute,
   AuthenticatedTasksIndexRoute: AuthenticatedTasksIndexRoute,
   AuthenticatedUsersIndexRoute: AuthenticatedUsersIndexRoute,
+  AuthenticatedUsersAdminsIndexRoute: AuthenticatedUsersAdminsIndexRoute,
+  AuthenticatedUsersFacultyIndexRoute: AuthenticatedUsersFacultyIndexRoute,
+  AuthenticatedUsersStudentsIndexRoute: AuthenticatedUsersStudentsIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

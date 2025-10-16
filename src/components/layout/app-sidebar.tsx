@@ -1,3 +1,6 @@
+'use client'
+
+import { useEffect, useState } from 'react'
 import { useLayout } from '@/context/layout-provider'
 import {
   Sidebar,
@@ -6,31 +9,58 @@ import {
   SidebarHeader,
   SidebarRail,
 } from '@/components/ui/sidebar'
-// import { AppTitle } from './app-title'
-import { sidebarData } from './data/sidebar-data'
+import { staticSidebarData } from './data/sidebar-data'
 import { NavGroup } from './nav-group'
 import { NavUser } from './nav-user'
 import { TeamSwitcher } from './team-switcher'
+import { getProfile } from '@/lib/profile-hooks'
 
 export function AppSidebar() {
   const { collapsible, variant } = useLayout()
+
+  // You can still fetch user data here if needed for other purposes,
+  // but it’s no longer passed to NavUser.
+  const [user, setUser] = useState({
+    name: 'Loading...',
+    email: '',
+    avatar: '/avatars/shadcn.jpg',
+  })
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const uid = localStorage.getItem('uid')
+        if (!uid) return
+        const data = await getProfile(uid)
+        setUser({
+          name: data.nickname || data.first_name || 'Administrator',
+          email: data.email || 'n/a',
+          avatar: data.avatar || '/avatars/shadcn.jpg',
+        })
+      } catch (error) {
+        console.error('Failed to fetch profile:', error)
+      }
+    }
+    fetchProfile()
+  }, [])
+
   return (
     <Sidebar collapsible={collapsible} variant={variant}>
       <SidebarHeader>
-        <TeamSwitcher teams={sidebarData.teams} />
-
-        {/* Replace <TeamSwitch /> with the following <AppTitle />
-         /* if you want to use the normal app title instead of TeamSwitch dropdown */}
-        {/* <AppTitle /> */}
+        <TeamSwitcher teams={staticSidebarData.teams} />
       </SidebarHeader>
+
       <SidebarContent>
-        {sidebarData.navGroups.map((props) => (
+        {staticSidebarData.navGroups.map((props) => (
           <NavGroup key={props.title} {...props} />
         ))}
       </SidebarContent>
+
       <SidebarFooter>
-        <NavUser user={sidebarData.user} />
+        {/* ❌ remove user prop, NavUser handles it internally */}
+        <NavUser />
       </SidebarFooter>
+
       <SidebarRail />
     </Sidebar>
   )

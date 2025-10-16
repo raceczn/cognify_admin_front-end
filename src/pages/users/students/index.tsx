@@ -11,9 +11,9 @@ import { UsersProvider } from './components/users-provider'
 import { UsersTable } from './components/users-table'
 import { users } from './data/users'
 
-const route = getRouteApi('/_authenticated/users/')
+const route = getRouteApi('/_authenticated/users/students/')
 
-export function Users() {
+export function Students() {
   const search = route.useSearch()
   const navigate = route.useNavigate()
 
@@ -31,9 +31,9 @@ export function Users() {
       <Main>
         <div className='mb-2 flex flex-wrap items-center justify-between space-y-2'>
           <div>
-            <h2 className='text-2xl font-bold tracking-tight'>List of All Users</h2>
+            <h2 className='text-2xl font-bold tracking-tight'>Students List</h2>
             <p className='text-muted-foreground'>
-              Manage your users and their roles here.
+              Manage your students here.
             </p>
           </div>
           <UsersPrimaryButtons />

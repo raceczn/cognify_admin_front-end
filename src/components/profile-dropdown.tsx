@@ -20,7 +20,22 @@ export function ProfileDropdown() {
   const { auth } = useAuthStore()
   const user = auth.user
 
-  console.log('User in ProfileDropdown:', user)
+  // 🧠 Derive initials safely
+  const first = user?.first_name?.trim() || ''
+  const last = user?.last_name?.trim() || ''
+  let initials = ''
+
+  if (first && last) {
+    initials = `${first[0].toUpperCase()}${last[0].toUpperCase()}`
+  } else if (first) {
+    initials = first[0].toUpperCase()
+  } else if (last) {
+    initials = last[0].toUpperCase()
+  } else if (user?.nickname) {
+    initials = user.nickname[0].toUpperCase()
+  } else {
+    initials = 'A' // fallback if no name available
+  }
 
   return (
     <>
@@ -28,22 +43,29 @@ export function ProfileDropdown() {
         <DropdownMenuTrigger asChild>
           <Button variant='ghost' className='relative h-8 w-8 rounded-full'>
             <Avatar className='h-8 w-8'>
-              <AvatarImage src='/avatars/01.png' alt='@shadcn' />
-              <AvatarFallback>SN</AvatarFallback>
+              {/* If your API provides avatar URL, use it here */}
+              <AvatarImage
+                src='/avatars/01.png'
+                alt={user?.nickname || user?.first_name || 'User avatar'}
+              />
+
+              <AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
           </Button>
         </DropdownMenuTrigger>
+
         <DropdownMenuContent className='w-56' align='end' forceMount>
           <DropdownMenuLabel className='font-normal'>
             <div className='flex flex-col gap-1.5'>
               <p className='text-sm leading-none font-medium'>
-                {user?.nickname || user?.first_name || 'Administrator'}
+                {user?.nickname || user?.first_name || 'Admin'}
               </p>
               <p className='text-muted-foreground text-xs leading-none'>
-                {user?.email}
+                {user?.email || 'admin@example.com'}
               </p>
             </div>
           </DropdownMenuLabel>
+
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
             <DropdownMenuItem asChild>
@@ -66,6 +88,7 @@ export function ProfileDropdown() {
             </DropdownMenuItem>
             <DropdownMenuItem>New Team</DropdownMenuItem>
           </DropdownMenuGroup>
+
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => setOpen(true)}>
             Sign out
