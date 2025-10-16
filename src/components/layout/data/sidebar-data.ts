@@ -1,23 +1,16 @@
 import {
-  Construction,
   LayoutDashboard,
   Monitor,
-  Bug,
   ListTodo,
-  FileX,
   HelpCircle,
-  Lock,
   Bell,
   Package,
   Palette,
-  ServerOff,
   Settings,
   Wrench,
   UserCog,
-  UserX,
   Users,
   MessagesSquare,
-  ShieldCheck,
   AudioWaveform,
   Command,
   GalleryVerticalEnd,
@@ -57,7 +50,30 @@ export const sidebarData: SidebarData = {
           icon: LayoutDashboard,
         },
         {
-          title: 'Tasks',
+          title: 'Users',
+          icon: Users,
+          items: [
+            {
+              title: 'All users',
+              url: '/users',
+            },
+            {
+              title: 'Student',
+              url: '/users',
+            },
+            {
+              title: 'Faculty Member',
+              url: '/users',
+            },
+            {
+              title: 'Admin',
+              url: '/users',
+            },
+          ],
+        },
+
+        {
+          title: 'Analytics',
           url: '/tasks',
           icon: ListTodo,
         },
@@ -67,81 +83,76 @@ export const sidebarData: SidebarData = {
           icon: Package,
         },
         {
-          title: 'Chats',
+          title: 'Feedback',
           url: '/chats',
           badge: '3',
           icon: MessagesSquare,
         },
-        {
-          title: 'Users',
-          url: '/users',
-          icon: Users,
-        },
-       
+      
       ],
     },
-    {
-      title: 'Pages',
-      items: [
-        {
-          title: 'Auth',
-          icon: ShieldCheck,
-          items: [
-            {
-              title: 'Sign In',
-              url: '/sign-in',
-            },
-            {
-              title: 'Sign In (2 Col)',
-              url: '/sign-in-2',
-            },
-            {
-              title: 'Sign Up',
-              url: '/sign-up',
-            },
-            {
-              title: 'Forgot Password',
-              url: '/forgot-password',
-            },
-            {
-              title: 'OTP',
-              url: '/otp',
-            },
-          ],
-        },
-        {
-          title: 'Errors',
-          icon: Bug,
-          items: [
-            {
-              title: 'Unauthorized',
-              url: '/errors/unauthorized',
-              icon: Lock,
-            },
-            {
-              title: 'Forbidden',
-              url: '/errors/forbidden',
-              icon: UserX,
-            },
-            {
-              title: 'Not Found',
-              url: '/errors/not-found',
-              icon: FileX,
-            },
-            {
-              title: 'Internal Server Error',
-              url: '/errors/internal-server-error',
-              icon: ServerOff,
-            },
-            {
-              title: 'Maintenance Error',
-              url: '/errors/maintenance-error',
-              icon: Construction,
-            },
-          ],
-        },
-      ],
-    },
+    // {
+    //   title: 'Pages',
+    //   items: [
+    //     {
+    //       title: 'Auth',
+    //       icon: ShieldCheck,
+    //       items: [
+    //         {
+    //           title: 'Sign In',
+    //           url: '/sign-in',
+    //         },
+    //         {
+    //           title: 'Sign In (2 Col)',
+    //           url: '/sign-in-2',
+    //         },
+    //         {
+    //           title: 'Sign Up',
+    //           url: '/sign-up',
+    //         },
+    //         {
+    //           title: 'Forgot Password',
+    //           url: '/forgot-password',
+    //         },
+    //         {
+    //           title: 'OTP',
+    //           url: '/otp',
+    //         },
+    //       ],
+    //     },
+    //     {
+    //       title: 'Errors',
+    //       icon: Bug,
+    //       items: [
+    //         {
+    //           title: 'Unauthorized',
+    //           url: '/errors/unauthorized',
+    //           icon: Lock,
+    //         },
+    //         {
+    //           title: 'Forbidden',
+    //           url: '/errors/forbidden',
+    //           icon: UserX,
+    //         },
+    //         {
+    //           title: 'Not Found',
+    //           url: '/errors/not-found',
+    //           icon: FileX,
+    //         },
+    //         {
+    //           title: 'Internal Server Error',
+    //           url: '/errors/internal-server-error',
+    //           icon: ServerOff,
+    //         },
+    //         {
+    //           title: 'Maintenance Error',
+    //           url: '/errors/maintenance-error',
+    //           icon: Construction,
+    //         },
+    //       ],
+    //     },
+    //   ],
+    // },
     {
       title: 'Other',
       items: [
