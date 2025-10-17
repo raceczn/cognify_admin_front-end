@@ -73,7 +73,6 @@ export function UserAuthForm({
     // }
     try {
       const result = await login({ email: data.email, password: data.password })
-      console.log('Login success:', result)
 
       if (result.token) {
         auth.setUser(result)

@@ -32,29 +32,50 @@ import { SignOutDialog } from '@/components/sign-out-dialog'
 export function NavUser() {
   const { auth } = useAuthStore()
   const user = auth.user
+  const profile = user?.profile
   const { isMobile } = useSidebar()
   const [open, setOpen] = useDialogState()
 
   // Display values
   const displayName =
-    user?.nickname ||
-    `${user?.first_name || 'Admin'} ${user?.last_name || ''}`.trim()
+    profile?.nickname ||
+    `${profile?.first_name || 'Admin'} ${profile?.last_name || ''}`.trim()
   const email = user?.email || 'admin@example.com'
 
   // Static avatar image
   const avatarSrc = '/avatars/01.png'
 
   // Initials for fallback (e.g. John Doe → JD)
-  let initials = 'A'
+  // let initials = 'A'
 
-  if (user?.first_name && user?.last_name) {
-    initials =
-      user.first_name[0].toUpperCase() + user.last_name[0].toUpperCase()
-  } else if (user?.first_name) {
-    initials = user.first_name[0].toUpperCase()
-  } else if (user?.last_name) {
-    initials = user.last_name[0].toUpperCase()
+  // if (user?.first_name && user?.last_name) {
+  //   initials =
+  //     user.first_name[0].toUpperCase() + user.last_name[0].toUpperCase()
+  // } else if (user?.first_name) {
+  //   initials = user.first_name[0].toUpperCase()
+  // } else if (user?.last_name) {
+  //   initials = user.last_name[0].toUpperCase()
+  // }
+
+  const first = profile?.first_name?.trim() || ''
+  const last = profile?.last_name?.trim() || ''
+  const nickname = profile?.nickname?.trim() || ''
+
+  let initials = ''
+
+  if (nickname) {
+    // use first letter of nickname
+    initials = nickname[0].toUpperCase()
+  } else if (first || last) {
+    // use first letters of first and last name (if available)
+    const f = first ? first[0].toUpperCase() : ''
+    const l = last ? last[0].toUpperCase() : ''
+    initials = `${f}${l}` || 'A' // fallback to 'A' if both missing
+  } else {
+    // fallback default if everything is missing
+    initials = 'A'
   }
+
 
   return (
     <>

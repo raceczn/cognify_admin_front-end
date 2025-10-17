@@ -19,23 +19,28 @@ export function ProfileDropdown() {
   const [open, setOpen] = useDialogState()
   const { auth } = useAuthStore()
   const user = auth.user
+  const profile = user?.profile
 
   // 🧠 Derive initials safely
-  const first = user?.first_name?.trim() || ''
-  const last = user?.last_name?.trim() || ''
+  const first = profile?.first_name?.trim() || ''
+  const last = profile?.last_name?.trim() || ''
+  const nickname = profile?.nickname?.trim() || ''
+
   let initials = ''
 
-  if (first && last) {
-    initials = `${first[0].toUpperCase()}${last[0].toUpperCase()}`
-  } else if (first) {
-    initials = first[0].toUpperCase()
-  } else if (last) {
-    initials = last[0].toUpperCase()
-  } else if (user?.nickname) {
-    initials = user.nickname[0].toUpperCase()
+  if (nickname) {
+    // use first letter of nickname
+    initials = nickname[0].toUpperCase()
+  } else if (first || last) {
+    // use first letters of first and last name (if available)
+    const f = first ? first[0].toUpperCase() : ''
+    const l = last ? last[0].toUpperCase() : ''
+    initials = `${f}${l}` || 'A' // fallback to 'A' if both missing
   } else {
-    initials = 'A' // fallback if no name available
+    // fallback default if everything is missing
+    initials = 'A'
   }
+
 
   return (
     <>
@@ -46,7 +51,7 @@ export function ProfileDropdown() {
               {/* If your API provides avatar URL, use it here */}
               <AvatarImage
                 src='/avatars/01.png'
-                alt={user?.nickname || user?.first_name || 'User avatar'}
+                alt={profile?.nickname || profile?.first_name || 'User avatar'}
               />
 
               <AvatarFallback>{initials}</AvatarFallback>
@@ -58,7 +63,7 @@ export function ProfileDropdown() {
           <DropdownMenuLabel className='font-normal'>
             <div className='flex flex-col gap-1.5'>
               <p className='text-sm leading-none font-medium'>
-                {user?.nickname || user?.first_name || 'Admin'}
+                {profile?.nickname || profile?.first_name || 'Admin'}
               </p>
               <p className='text-muted-foreground text-xs leading-none'>
                 {user?.email || 'admin@example.com'}

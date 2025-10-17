@@ -1,10 +1,9 @@
+// profile-form.tsx
 import { z } from 'zod'
-import { useFieldArray, useForm } from 'react-hook-form'
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Link } from '@tanstack/react-router'
 import { showSubmittedData } from '@/lib/show-submitted-data'
-import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
 import {
   Form,
   FormControl,
@@ -15,162 +14,195 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
+import { useAuthStore } from '@/stores/auth-store'
+import { profile as profileApi } from '@/lib/auth-hooks' // renamed to avoid collision with local "profile" object
 
-const profileFormSchema = z.object({
-  username: z
-    .string('Please enter your username.')
-    .min(2, 'Username must be at least 2 characters.')
-    .max(30, 'Username must not be longer than 30 characters.'),
-  email: z.email({
-    error: (iss) =>
-      iss.input === undefined
-        ? 'Please select an email to display.'
-        : undefined,
-  }),
-  bio: z.string().max(160).min(4),
-  urls: z
-    .array(
-      z.object({
-        value: z.url('Please enter a valid URL.'),
-      })
-    )
-    .optional(),
+// Schema (no update_at)
+const accountFormSchema = z.object({
+  first_name: z.string().optional(),
+  middle_name: z.string().optional(),
+  last_name: z.string().optional(),
+  nickname: z.string().optional(),
 })
 
-type ProfileFormValues = z.infer<typeof profileFormSchema>
-
-// This can come from your database or API.
-const defaultValues: Partial<ProfileFormValues> = {
-  bio: 'I own a computer.',
-  urls: [
-    { value: 'https://shadcn.com' },
-    { value: 'http://twitter.com/shadcn' },
-  ],
-}
+type AccountFormValues = z.infer<typeof accountFormSchema>
 
 export function ProfileForm() {
-  const form = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileFormSchema),
-    defaultValues,
+  const auth = useAuthStore()
+  const user = auth?.auth?.user
+  const profile = user?.profile
+
+  const [isEditing, setIsEditing] = useState(false)
+
+  // initial values pulled from store
+  const initialValues: Partial<AccountFormValues> = {
+    first_name: profile?.first_name ?? undefined,
+    middle_name: profile?.middle_name ?? undefined,
+    last_name: profile?.last_name ?? undefined,
+    nickname: profile?.nickname ?? undefined,
+  }
+
+  const form = useForm<AccountFormValues>({
+    resolver: zodResolver(accountFormSchema),
+    defaultValues: initialValues,
     mode: 'onChange',
   })
 
-  const { fields, append } = useFieldArray({
-    name: 'urls',
-    control: form.control,
-  })
+  function resetToStoreValues() {
+    form.reset({
+      first_name: profile?.first_name ?? undefined,
+      middle_name: profile?.middle_name ?? undefined,
+      last_name: profile?.last_name ?? undefined,
+      nickname: profile?.nickname ?? undefined,
+    })
+  }
+
+  // Submit handler is async so react-hook-form sets isSubmitting automatically
+  async function onSubmit(data: AccountFormValues) {
+  const userId = user?.profile?.user_id
+  if (!userId) {
+    console.error("Missing user id; cannot update profile")
+    return
+  }
+
+  // add timestamp
+  const finalData = { ...data, update_at: new Date() }
+
+  try {
+    // call backend (waits for updated profile)
+    const updated = await profileApi(finalData, userId, "PUT")
+
+    // ✅ merge updated profile into Zustand immediately
+    const auth = useAuthStore.getState().auth
+    const currentUser = auth.user
+    if (currentUser && updated?.profile) {
+      auth.setUser({
+        ...currentUser,
+        profile: {
+          ...currentUser.profile,
+          ...updated.profile, // merge the latest values
+        },
+      })
+    }
+
+    // ✅ also update form state immediately
+    form.reset({
+      first_name: updated.profile.first_name ?? "",
+      middle_name: updated.profile.middle_name ?? "",
+      last_name: updated.profile.last_name ?? "",
+      nickname: updated.profile.nickname ?? "",
+    })
+
+    console.log("Profile updated immediately:", updated.profile)
+    setIsEditing(false)
+  } catch (error) {
+    console.error("Error updating profile:", error)
+  }
+}
+
+
+  function handleStartEditing(e?: React.MouseEvent) {
+    e?.preventDefault()
+    // Ensure form has the latest store values when entering edit mode
+    resetToStoreValues()
+    setIsEditing(true)
+  }
+
+  function handleCancelEdit(e?: React.MouseEvent) {
+    e?.preventDefault()
+    // Revert changes and leave edit mode
+    resetToStoreValues()
+    setIsEditing(false)
+  }
+
+  console.log(user)
 
   return (
     <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit((data) => showSubmittedData(data))}
-        className='space-y-8'
-      >
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
           control={form.control}
-          name='username'
+          name="first_name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Username</FormLabel>
+              <FormLabel>First name</FormLabel>
               <FormControl>
-                <Input placeholder='shadcn' {...field} />
+                <Input placeholder="First name" {...field} disabled={!isEditing} />
               </FormControl>
-              <FormDescription>
-                This is your public display name. It can be your real name or a
-                pseudonym. You can only change this once every 30 days.
-              </FormDescription>
+              <FormDescription>Given name shown on your profile.</FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
+
         <FormField
           control={form.control}
-          name='email'
+          name="middle_name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder='Select a verified email to display' />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value='m@example.com'>m@example.com</SelectItem>
-                  <SelectItem value='m@google.com'>m@google.com</SelectItem>
-                  <SelectItem value='m@support.com'>m@support.com</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormDescription>
-                You can manage verified email addresses in your{' '}
-                <Link to='/'>email settings</Link>.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name='bio'
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Bio</FormLabel>
+              <FormLabel>Middle name</FormLabel>
               <FormControl>
-                <Textarea
-                  placeholder='Tell us a little bit about yourself'
-                  className='resize-none'
-                  {...field}
-                />
+                <Input placeholder="Middle name" {...field} disabled={!isEditing} />
               </FormControl>
-              <FormDescription>
-                You can <span>@mention</span> other users and organizations to
-                link to them.
-              </FormDescription>
+              <FormDescription>Optional — middle name or initial.</FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
-        <div>
-          {fields.map((field, index) => (
-            <FormField
-              control={form.control}
-              key={field.id}
-              name={`urls.${index}.value`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className={cn(index !== 0 && 'sr-only')}>
-                    URLs
-                  </FormLabel>
-                  <FormDescription className={cn(index !== 0 && 'sr-only')}>
-                    Add links to your website, blog, or social media profiles.
-                  </FormDescription>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          ))}
-          <Button
-            type='button'
-            variant='outline'
-            size='sm'
-            className='mt-2'
-            onClick={() => append({ value: '' })}
-          >
-            Add URL
-          </Button>
+
+        <FormField
+          control={form.control}
+          name="last_name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Last name</FormLabel>
+              <FormControl>
+                <Input placeholder="Last name" {...field} disabled={!isEditing} />
+              </FormControl>
+              <FormDescription>Family name shown on your profile.</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="nickname"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Nickname</FormLabel>
+              <FormControl>
+                <Input placeholder="Nickname (optional)" {...field} disabled={!isEditing} />
+              </FormControl>
+              <FormDescription>This name can be used across the app.</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Buttons: only Save is type="submit" */}
+        <div className="flex items-center gap-2">
+          {isEditing ? (
+            <>
+              <Button
+                type="submit"
+                variant="default"
+                disabled={!form.formState.isValid || form.formState.isSubmitting}
+              >
+                {form.formState.isSubmitting ? 'Saving...' : 'Save changes'}
+              </Button>
+
+              <Button type="button" variant="ghost" onClick={handleCancelEdit}>
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <Button type="button" variant="secondary" onClick={handleStartEditing}>
+              Edit
+            </Button>
+          )}
         </div>
-        <Button type='submit'>Update profile</Button>
       </form>
     </Form>
   )
