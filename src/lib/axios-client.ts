@@ -2,7 +2,7 @@ import axios, { AxiosError } from "axios";
 import { syncAuthFromBackend } from "@/stores/auth-store"
 
 // --- API base URL (adjust if needed) ---
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000" || "http://127.0.0.1:8000";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 // --- Access & Refresh tokens in memory ---
 let accessToken: string | null = null;

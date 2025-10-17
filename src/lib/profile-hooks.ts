@@ -6,6 +6,12 @@ export async function getProfile(uid: string) {
   return res.data;
 }
 
+// Get all profiles
+export async function getAllProfiles() {
+  const res = await api.get(`/profiles/all`, { withCredentials: true });
+  return res.data;
+}
+
 // Create profile
 export async function createProfile(uid: string, data: any) {
   const res = await api.post(`/profiles/${uid}`, data);

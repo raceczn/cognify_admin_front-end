@@ -13,7 +13,7 @@ import {
   CommandSeparator,
 } from '@/components/ui/command'
 import { staticSidebarData as sidebarData } from './layout/data/sidebar-data'
-import { type NavGroup } from './layout/types'
+// import { type NavGroup } from './layout/types'
 import { ScrollArea } from './ui/scroll-area'
 
 export function CommandMenu() {

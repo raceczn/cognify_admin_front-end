@@ -35,13 +35,8 @@ export const staticSidebarData: Omit<SidebarData, 'user'> = {
         },
         {
           title: 'Users',
+          url: '/users',
           icon: Users,
-          items: [
-            { title: 'All users', url: '/users' },
-            { title: 'Students', url: '/users/students' },
-            { title: 'Faculty Members', url: '/users/faculty' },
-            { title: 'Admins', url: '/users/admins' },
-          ],
         },
         {
           title: 'Analytics',

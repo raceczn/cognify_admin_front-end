@@ -20,7 +20,7 @@ export function AppSidebar() {
 
   // You can still fetch user data here if needed for other purposes,
   // but it’s no longer passed to NavUser.
-  const [user, setUser] = useState({
+  const [, setUser] = useState({
     name: 'Loading...',
     email: '',
     avatar: '/avatars/shadcn.jpg',

@@ -53,16 +53,28 @@ export const usersColumns: ColumnDef<User>[] = [
     enableHiding: false,
   },
   {
-    id: 'fullName',
+    id: 'full_name',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Name' />
+      <DataTableColumnHeader column={column} title='Full Name' />
     ),
     cell: ({ row }) => {
-      const { firstName, lastName } = row.original
-      const fullName = `${firstName} ${lastName}`
-      return <LongText className='max-w-36'>{fullName}</LongText>
+      const { first_name, last_name } = row.original
+      const full_name = `${first_name} ${last_name}`
+      return (
+        <LongText className='max-w-[24rem] ps-3 sm:max-w-[36rem]'>
+          {full_name}
+        </LongText>
+      )
     },
-    meta: { className: 'w-36' },
+  },
+
+  {
+    accessorKey: 'nickname',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Nickname' />
+    ),
+    cell: ({ row }) => <div>{row.getValue('nickname')}</div>,
+    enableSorting: false,
   },
   {
     accessorKey: 'email',
@@ -72,14 +84,6 @@ export const usersColumns: ColumnDef<User>[] = [
     cell: ({ row }) => (
       <div className='w-fit text-nowrap'>{row.getValue('email')}</div>
     ),
-  },
-  {
-    accessorKey: 'phoneNumber',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Phone Number' />
-    ),
-    cell: ({ row }) => <div>{row.getValue('phoneNumber')}</div>,
-    enableSorting: false,
   },
   {
     accessorKey: 'status',

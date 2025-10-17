@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/auth-store'
 import { profile as profileApi } from '@/lib/auth-hooks'
-import { syncAuthFromBackend } from '@/stores/auth-store'
+// import { syncAuthFromBackend } from '@/stores/auth-store'
 
 const accountFormSchema = z.object({
   nickname: z.string().optional(),

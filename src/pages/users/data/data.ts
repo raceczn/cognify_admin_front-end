@@ -1,4 +1,4 @@
-import { Shield, UserCheck, Users } from 'lucide-react'
+import { UserCheck, Users } from 'lucide-react'
 import { type UserStatus } from './schema'
 
 export const callTypes = new Map<UserStatus, string>([
@@ -12,11 +12,6 @@ export const callTypes = new Map<UserStatus, string>([
 ])
 
 export const roles = [
-  {
-    label: 'Superadmin',
-    value: 'superadmin',
-    icon: Shield,
-  },
   {
     label: 'Admin',
     value: 'admin',

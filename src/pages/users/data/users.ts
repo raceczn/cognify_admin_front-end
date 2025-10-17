@@ -8,8 +8,8 @@ export const users = Array.from({ length: 500 }, () => {
   const lastName = faker.person.lastName()
   return {
     id: faker.string.uuid(),
-    firstName,
-    lastName,
+    first_name: firstName,
+    last_name: lastName,
     username: faker.internet
       .username({ firstName, lastName })
       .toLocaleLowerCase(),
@@ -31,3 +31,4 @@ export const users = Array.from({ length: 500 }, () => {
     updatedAt: faker.date.recent(),
   }
 })
+
