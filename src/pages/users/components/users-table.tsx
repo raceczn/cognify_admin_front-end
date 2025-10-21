@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react' // 👈 --- MODIFIED: Added useMemo
 import {
   type SortingState,
   type VisibilityState,
@@ -22,12 +22,13 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { DataTablePagination, DataTableToolbar } from '@/components/data-table'
-import { roles } from '../data/data'
+// ❗️ --- REMOVED: No longer need static roles
+// import { roles } from '../data/data' 
 import { type User } from '../data/schema'
 import { DataTableBulkActions } from './data-table-bulk-actions'
 import { usersColumns as columns } from './users-columns'
 
-declare module '@tanstack/react-table' {
+declare module '@tanstack/react-table' { //
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData, TValue> {
     className: string
@@ -41,16 +42,10 @@ type DataTableProps = {
 }
 
 export function UsersTable({ data, search, navigate }: DataTableProps) {
-  // Local UI-only states
-  const [rowSelection, setRowSelection] = useState({})
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
-  const [sorting, setSorting] = useState<SortingState>([])
+  const [rowSelection, setRowSelection] = useState({}) //
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({}) //
+  const [sorting, setSorting] = useState<SortingState>([]) //
 
-  // Local state management for table (uncomment to use local-only state, not synced with URL)
-  // const [columnFilters, onColumnFiltersChange] = useState<ColumnFiltersState>([])
-  // const [pagination, onPaginationChange] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 })
-
-  // Synced with URL states (keys/defaults mirror users route search schema)
   const {
     columnFilters,
     onColumnFiltersChange,
@@ -63,12 +58,38 @@ export function UsersTable({ data, search, navigate }: DataTableProps) {
     pagination: { defaultPage: 1, defaultPageSize: 10 },
     globalFilter: { enabled: false },
     columnFilters: [
-      // username per-column text filter
-      { columnId: 'username', searchKey: 'username', type: 'string' },
+      // ---------------------------------
+      // MODIFIED: Search key changed to 'email' (from your data)
+      // ---------------------------------
+      { columnId: 'email', searchKey: 'email', type: 'string' },
       { columnId: 'status', searchKey: 'status', type: 'array' },
       { columnId: 'role', searchKey: 'role', type: 'array' },
     ],
   })
+
+  // ---------------------------------
+  // MODIFIED: Dynamically create role options from data
+  // ---------------------------------
+  const roleOptions = useMemo(() => {
+    // 1. Get all unique role strings (e.g., "student", "faculty_member")
+    const roles = new Set(data.map(user => user.role).filter(Boolean))
+    
+    // 2. Format them for the filter component
+    return Array.from(roles).map(role => {
+      // This is the formatting logic you requested:
+      // "faculty_member" -> ["faculty", "member"] -> ["Faculty", "Member"] -> "Faculty Member"
+      const label = role
+        .split('_') // Split by underscore
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1)) // Capitalize first letter
+        .join(' ') // Join with a space
+        
+      return {
+        label: label, // "Faculty Member"
+        value: role,  // "faculty_member"
+      }
+    })
+  }, [data])
+  // ---------------------------------
 
   const table = useReactTable({
     data,
@@ -96,29 +117,35 @@ export function UsersTable({ data, search, navigate }: DataTableProps) {
 
   useEffect(() => {
     ensurePageInRange(table.getPageCount())
-  }, [table, ensurePageInRange])
+  }, [table, ensurePageInRange]) //
 
   return (
     <div className='space-y-4 max-sm:has-[div[role="toolbar"]]:mb-16'>
       <DataTableToolbar
         table={table}
-        searchPlaceholder='Filter users...'
-        searchKey='username'
+        // ---------------------------------
+        // MODIFIED: Updated placeholder and searchKey to email
+        // ---------------------------------
+        searchPlaceholder='Filter by email...'
+        searchKey='email' 
+        // ---------------------------------
         filters={[
           {
             columnId: 'status',
             title: 'Status',
             options: [
               { label: 'Active', value: 'active' },
-              { label: 'Inactive', value: 'inactive' },
-              { label: 'Invited', value: 'invited' },
-              { label: 'Suspended', value: 'suspended' },
+              { label: 'Deleted', value: 'deleted' }, // 'deleted' comes from your data
             ],
           },
           {
+            // ---------------------------------
+            // MODIFIED: Use new dynamic roleOptions
+            // ---------------------------------
             columnId: 'role',
             title: 'Role',
-            options: roles.map((role) => ({ ...role })),
+            options: roleOptions,
+            // ---------------------------------
           },
         ]}
       />

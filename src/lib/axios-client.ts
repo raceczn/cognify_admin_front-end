@@ -1,30 +1,49 @@
+// src/lib/axios-client.ts
 import axios, { AxiosError } from "axios";
-import { syncAuthFromBackend } from "@/stores/auth-store"
+// ---------------------------------
+// MODIFIED:
+// Import the store to get/set state, remove syncAuthFromBackend
+// ---------------------------------
+import { useAuthStore } from "@/stores/auth-store";
 
 // --- API base URL (adjust if needed) ---
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
-// --- Access & Refresh tokens in memory ---
+// --- Access token in memory (Refresh token is now in Zustand) ---
 let accessToken: string | null = null;
-let refreshToken: string | null = null;
+// ---------------------------------
+// MODIFIED: Removed local refreshToken variable
+// ---------------------------------
 
 // --- Token setters (export these) ---
 export const setAccessToken = (token: string | null) => {
   accessToken = token;
 };
 
+// ---------------------------------
+// MODIFIED:
+// setRefreshToken now updates the ZUSTAND STORE.
+// This is not used by the interceptor, but can be used by other hooks.
+// ---------------------------------
 export const setRefreshToken = (token: string | null) => {
-  refreshToken = token;
+  if (token) {
+    useAuthStore.getState().auth.setRefreshToken(token);
+  } else {
+    // Handle reset if needed, though store.reset() is better
+  }
 };
 
 // --- Token getters (optional, useful for debugging or external access) ---
 export const getAccessToken = () => accessToken;
-export const getRefreshToken = () => refreshToken;
+// ---------------------------------
+// MODIFIED: Get refresh token from the store
+// ---------------------------------
+export const getRefreshToken = () => useAuthStore.getState().auth.refreshToken;
 
 // --- Axios instance ---
 const api = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true, // crucial for cookie-based auth
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
     "Authorization": `Bearer ${getAccessToken()}`
@@ -34,8 +53,19 @@ const api = axios.create({
 // --- Request interceptor: attach access token ---
 api.interceptors.request.use(
   (config) => {
-    if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`;
+    // ---------------------------------
+    // MODIFIED:
+    // Get the access token from the store if the local one is missing.
+    // This makes it robust on reload.
+    // ---------------------------------
+    let token = accessToken;
+    if (!token) {
+      token = useAuthStore.getState().auth.accessToken;
+      if (token) setAccessToken(token); // Sync local variable
+    }
+    
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
@@ -51,15 +81,25 @@ api.interceptors.response.use(
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
-      !originalRequest.url.includes("/refresh")
+      !originalRequest.url.includes("/auth/refresh") && // 👈 Added /auth
+      !originalRequest.url.includes("/auth/login")   // 👈 Added /auth
     ) {
       originalRequest._retry = true;
 
       try {
-        // Request new token using refresh token from memory
+        // ---------------------------------
+        // MODIFIED:
+        // Get refresh token from the store
+        // ---------------------------------
+        const { refreshToken } = useAuthStore.getState().auth;
+        
         const refreshBody = refreshToken ? { refresh_token: refreshToken } : {};
+        
+        // ---------------------------------
+        // MODIFIED: Added /auth prefix
+        // ---------------------------------
         const refreshResponse = await axios.post(
-          `${API_BASE_URL}/refresh`,
+          `${API_BASE_URL}/auth/refresh`,
           refreshBody,
           { withCredentials: true }
         );
@@ -68,23 +108,26 @@ api.interceptors.response.use(
         const newRefreshToken = (refreshResponse.data as any)?.refresh_token;
 
         if (newAccessToken) {
-          setAccessToken(newAccessToken)
-          if (newRefreshToken) setRefreshToken(newRefreshToken)
-          
-          // Sync Zustand
-          syncAuthFromBackend({
-            token: newAccessToken,
-            refresh_token: newRefreshToken,
-          })
+          // ---------------------------------
+          // MODIFIED:
+          // 1. Set tokens in the store (which saves to cookies)
+          // 2. Remove the buggy syncAuthFromBackend call
+          // ---------------------------------
+          useAuthStore.getState().auth.setAccessToken(newAccessToken);
+          if (newRefreshToken) {
+            useAuthStore.getState().auth.setRefreshToken(newRefreshToken);
+          }
 
-          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`
-          return api(originalRequest)
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+          return api(originalRequest);
         }
       } catch (refreshError) {
-        console.warn("Refresh token expired or invalid. Redirect to login.");
-        // Clear tokens on refresh failure
-        setAccessToken(null);
-        setRefreshToken(null);
+        console.warn("Refresh token expired or invalid. Logging out.");
+        // ---------------------------------
+        // MODIFIED: Call the store's reset function
+        // ---------------------------------
+        useAuthStore.getState().auth.reset();
+        // This will trigger the global guard to redirect to login
       }
     }
 

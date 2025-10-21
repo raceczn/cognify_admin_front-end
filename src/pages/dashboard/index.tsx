@@ -1,3 +1,13 @@
+// --- 1. NEW IMPORTS ---
+import { useEffect, useState } from 'react'
+import { useNavigate } from '@tanstack/react-router'
+import { toast } from 'sonner'
+import { useAuthStore } from '@/stores/auth-store'
+import { getProfile } from '@/lib/profile-hooks' // Make sure this path is correct
+import { Loader2 } from 'lucide-react'
+// --- END NEW IMPORTS ---
+
+// --- Original Imports ---
 // import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription, CardAction, CardFooter, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -13,6 +23,72 @@ import { Overview } from './components/overview'
 import { RecentSales } from './components/recent-sales'
 
 export function Dashboard() {
+  // --- 2. AUTH GUARD LOGIC ---
+  const { auth } = useAuthStore()
+  const navigate = useNavigate()
+  const [isCheckingRole, setIsCheckingRole] = useState(true) // Start loading
+
+  useEffect(() => {
+    const checkRoleAndFetchProfile = async () => {
+      // 1. Check if logged in (token and user ID must exist)
+      if (!auth.accessToken || !auth.user?.uid) {
+        toast.error('You must be logged in to view this page.')
+        navigate({ to: '/sign-in', replace: true })
+        return // Stop execution
+      }
+
+      let userProfile = auth.user;
+
+      // 2. Check if profile is fully loaded (i.e., we don't have the role yet)
+      //    We check for `role_id` or `profile.role_id` for safety
+      if (!userProfile.role_id && !userProfile.profile?.role_id) {
+        try {
+          // Profile is not fully loaded, fetch it using the uid
+          const fullProfile = await getProfile(auth.user.uid)
+          
+          // `getProfile` returns the full user object from the backend
+          auth.setUser(fullProfile) // Update the store
+          userProfile = fullProfile // Use this new data for the check
+          
+        } catch (error) {
+          toast.error('Session expired. Please log in again.')
+          auth.reset()
+          navigate({ to: '/sign-in', replace: true })
+          return // Stop execution
+        }
+      }
+
+      // 3. Perform the role check
+      //    This checks the role from the top level OR the nested profile object
+      const userRole = userProfile.role_id || userProfile.profile?.role_id;
+      
+      if (userRole === 'student') {
+        toast.error('Access Denied: Student accounts cannot access the admin dashboard.')
+        auth.reset() // Log them out
+        navigate({ to: '/sign-in', replace: true })
+      } else {
+        // User is logged in, has a profile, and is NOT a student.
+        setIsCheckingRole(false) // Allow the page to render
+      }
+    }
+
+    checkRoleAndFetchProfile()
+  }, [auth.user, auth.accessToken, auth.setUser, navigate, auth])
+
+
+  // Show a loading spinner while we verify the user's role
+  if (isCheckingRole) {
+    return (
+      <div className='flex h-screen w-full items-center justify-center'>
+        <Loader2 className='h-12 w-12 animate-spin' />
+      </div>
+    )
+  }
+  // --- END AUTH GUARD LOGIC ---
+
+
+  // --- 3. YOUR ORIGINAL DASHBOARD JSX ---
+  // This will only render if the user is NOT a student
   return (
     <>
       {/* ===== Top Heading ===== */}
@@ -128,6 +204,7 @@ export function Dashboard() {
   )
 }
 
+// --- YOUR UPDATED topNav ---
 const topNav = [
   { title: 'Overview', href: 'dashboard/overview', isActive: true, disabled: false },
   { title: 'Users', href: 'dashboard/users', isActive: false, disabled: true },

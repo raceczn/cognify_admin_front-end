@@ -1,3 +1,4 @@
+// src/lib/profile-hooks.ts
 import api from "@/lib/axios-client";
 
 // Get profile
@@ -13,8 +14,14 @@ export async function getAllProfiles() {
 }
 
 // Create profile
-export async function createProfile(uid: string, data: any) {
-  const res = await api.post(`/profiles/${uid}`, data);
+// ---------------------------------
+// MODIFIED:
+// The backend route for creation is `POST /profiles/` (no uid in URL).
+//
+// The `user_id` is expected to be *inside* the `data` object.
+// ---------------------------------
+export async function createProfile(data: any) {
+  const res = await api.post(`/profiles/`, data);
   return res.data;
 }
 

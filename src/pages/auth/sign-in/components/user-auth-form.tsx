@@ -7,7 +7,7 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { Loader2, LogIn } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
-import { login } from '@/lib/auth-hooks'
+import { login } from '@/lib/auth-hooks' //
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -20,7 +20,9 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { PasswordInput } from '@/components/password-input'
+import { jwtDecode } from 'jwt-decode' // 👈 --- 1. IMPORT THIS
 
+// ... (formSchema and interface are unchanged)
 const formSchema = z.object({
   email: z.string().email('Please enter a valid email'),
   password: z.string().min(7, 'Password must be at least 7 characters long'),
@@ -43,55 +45,48 @@ export function UserAuthForm({
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: '', // 👈 prefilled email
-      password: '', // 👈 prefilled password
+      email: '', 
+      password: '',
     },
   })
 
   async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true)
-    // await sleep(1000)
-
-    // if (
-    //   data.email === staticUser.email &&
-    //   data.password === staticUser.password
-    // ) {
-    //   const mockUser = {
-    //     accountNo: 'ACC001',
-    //     email: data.email,
-    //     role: ['admin'],
-    //     exp: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
-    //   }
-
-    //   auth.setUser(mockUser)
-    //   auth.setAccessToken('mock-access-token')
-
-    //   toast.success(`Welcome back, ${data.email}!`)
-    //   navigate({ to: '/', replace: true }) // ✅ Redirect to home
-    // } else {
-    //   toast.error('Invalid email or password')
-    // }
+    
     try {
-      const result = await login({ email: data.email, password: data.password })
+      // ---------------------------------
+      // 👇 --- 2. REPLACE YOUR ONSUBMIT LOGIC --- 👇
+      // ---------------------------------
+      const result = await login({ email: data.email, password: data.password }) //
 
       if (result.token) {
-        auth.setUser(result)
-        auth.setAccessToken(result.token)
+        // Decode the token to get the User ID ('sub' = subject = uid)
+        const decodedToken: { sub: string } = jwtDecode(result.token);
+        const userId = decodedToken.sub;
+
+        // Use the new atomic function to set everything at once
+        // This fixes the race condition.
+        auth.setLoginData(
+          { email: data.email, uid: userId }, // The user object
+          result.token,                      // The access token
+          result.refresh_token               // The refresh token
+        )
         
-        toast.success(`Welcome back, ${result.profile.nickname || result.profile.first_name || data.email}!`)
-        navigate({ to: '/', replace: true }) // ✅ Redirect to home
+        toast.success(`Welcome back, ${data.email}!`) // Use email from form
+        navigate({ to: '/', replace: true })
       } else {
-        toast.error('Invalid email or password')
+        toast.error('Invalid email or password') //
       }
     } catch (error) {
-      console.error('Login error:', error)
-      toast.error('Login failed. Please try again.')
+      console.error('Login error:', error) //
+      toast.error('Login failed. Please try again.') //
     }
 
-    setIsLoading(false)
+    setIsLoading(false) //
   }
 
   return (
+    // ... (Your form JSX is unchanged)
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
@@ -115,7 +110,6 @@ export function UserAuthForm({
             </FormItem>
           )}
         />
-
         <FormField
           control={form.control}
           name='password'
@@ -139,7 +133,6 @@ export function UserAuthForm({
             </FormItem>
           )}
         />
-
         <Button className='mt-2' disabled={isLoading}>
           {isLoading ? <Loader2 className='animate-spin' /> : <LogIn />}
           Sign in

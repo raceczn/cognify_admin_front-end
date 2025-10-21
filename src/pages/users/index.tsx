@@ -10,7 +10,10 @@ import { UsersDialogs } from './components/users-dialogs'
 import { UsersPrimaryButtons } from './components/users-primary-buttons'
 import { UsersProvider } from './components/users-provider'
 import { UsersTable } from './components/users-table'
-import api from '@/lib/axios-client'
+// ---------------------------------
+// MODIFIED: Import the hook
+// ---------------------------------
+import { getAllProfiles } from '@/lib/profile-hooks' 
 import { type User } from './data/schema'
 
 const route = getRouteApi('/_authenticated/users/')
@@ -24,15 +27,19 @@ function capitalizeName(name: string | undefined) {
     .join(' ')
 }
 
-// Utility function to normalize field: capitalize or return italicized "Null"
+// ---------------------------------
+// MODIFIED: Returns '' instead of 'Null' for empty fields
+// ---------------------------------
 function normalizeField(name: string | undefined) {
-  if (!name || name.trim() === '') return 'Null' // Markdown-style italics
+  if (!name || name.trim() === '') return '' 
   return capitalizeName(name)
 }
 
-// Utility function to get middle initial
+// ---------------------------------
+// MODIFIED: Returns '' and handles trim
+// ---------------------------------
 function middleInitial(name: string | undefined) {
-  if (!name || name.trim() === '') return 'Null'
+  if (!name || name.trim() === '') return ''
   return name.trim().charAt(0).toUpperCase() + '.'
 }
 
@@ -50,29 +57,39 @@ export function Users() {
         setLoading(true)
         setError(null)
         
-        // Fetch users from API
-        const res = await api.get('/profiles/all', { withCredentials: true })
-        console.log('✅ Fetched users:', res.data)
+        // ---------------------------------
+        // MODIFIED: Use the hook from profile-hooks.ts
+        // ---------------------------------
+        const allProfiles = await getAllProfiles(); //
+        console.log('✅ Fetched users:', allProfiles)
        
-        const transformedUsers: User[] = (res.data || []).map((profile: any) => ({
-          id: profile.id ?? profile.user_id ?? 'Null',
+        const transformedUsers: User[] = (allProfiles || []).map((profile: any) => ({
+          id: profile.id ?? profile.user_id ?? 'N/A',
           first_name: normalizeField(profile.first_name),
           middle_name: middleInitial(profile.middle_name),
           last_name: normalizeField(profile.last_name),
           nickname: normalizeField(profile.nickname),
-          username: profile.username ?? 'Null',
-          email: profile.email ?? 'Null',
-          phoneNumber: profile.phone_number ?? profile.phoneNumber ?? 'Null',
-          status: profile.status ?? 'active',
-          role: profile.role ?? profile.role_id ?? 'Null',
-          createdAt: profile.created_at ?? profile.createdAt ?? 'Null',
-          updatedAt: profile.updated_at ?? profile.updatedAt ?? 'Null',
+          username: profile.username ?? 'N/A', // Schema has this, sample doesn't
+          email: profile.email ?? 'N/A',
+          phoneNumber: profile.phone_number ?? profile.phoneNumber ?? 'N/A',
+          status: profile.deleted ? 'deleted' : 'active',
+          // ---------------------------------
+          // MODIFIED:
+          // Use `profile.role` (which is "student", "admin", "faculty_member")
+          // We pass it raw so the filter works.
+          // ---------------------------------
+          role: profile.role ?? 'Not Assigned', 
+          createdAt: profile.created_at ?? profile.createdAt ?? 'N/A',
+          updatedAt: profile.updated_at ?? profile.updatedAt ?? 'N/A',
         }))
         
         setUsers(transformedUsers)
       } catch (err: any) {
         console.error('❌ Error fetching users:', err)
-        setError(err.response?.data?.message || 'Failed to load users')
+        // ---------------------------------
+        // MODIFIED: Use 'detail' for FastAPI errors
+        // ---------------------------------
+        setError(err.response?.data?.detail || 'Failed to load users')
       } finally {
         setLoading(false)
       }
@@ -81,6 +98,7 @@ export function Users() {
     fetchUsers()
   }, [])
 
+  // ... (rest of the component JSX is unchanged)
   return (
     <UsersProvider>
       <Header fixed>
@@ -116,7 +134,6 @@ export function Users() {
           )}
         </div>
       </Main>
-
       <UsersDialogs />
     </UsersProvider>
   )
