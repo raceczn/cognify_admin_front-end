@@ -1,24 +1,33 @@
 // --- 1. NEW IMPORTS ---
 import { useEffect, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
+import { IconTrendingUp } from '@tabler/icons-react'
+// Make sure this path is correct
+import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
-import { getProfile } from '@/lib/profile-hooks' // Make sure this path is correct
-import { Loader2 } from 'lucide-react'
+import { getProfile } from '@/lib/profile-hooks'
+import { Badge } from '@/components/ui/badge'
 // --- END NEW IMPORTS ---
 
 // --- Original Imports ---
 // import { Button } from '@/components/ui/button'
-import { Card, CardHeader, CardTitle, CardDescription, CardAction, CardFooter, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { IconTrendingUp } from '@tabler/icons-react'
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardAction,
+  CardFooter,
+  CardContent,
+} from '@/components/ui/card'
+import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { TopNav } from '@/components/layout/top-nav'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { ConfigDrawer } from '@/components/config-drawer'
 import { Overview } from './components/overview'
 import { RecentSales } from './components/recent-sales'
 
@@ -37,7 +46,7 @@ export function Dashboard() {
         return // Stop execution
       }
 
-      let userProfile = auth.user;
+      let userProfile = auth.user
 
       // 2. Check if profile is fully loaded (i.e., we don't have the role yet)
       //    We check for `role_id` or `profile.role_id` for safety
@@ -45,11 +54,10 @@ export function Dashboard() {
         try {
           // Profile is not fully loaded, fetch it using the uid
           const fullProfile = await getProfile(auth.user.uid)
-          
+
           // `getProfile` returns the full user object from the backend
           auth.setUser(fullProfile) // Update the store
           userProfile = fullProfile // Use this new data for the check
-          
         } catch (error) {
           toast.error('Session expired. Please log in again.')
           auth.reset()
@@ -60,10 +68,12 @@ export function Dashboard() {
 
       // 3. Perform the role check
       //    This checks the role from the top level OR the nested profile object
-      const userRole = userProfile.role_id || userProfile.profile?.role_id;
-      
+      const userRole = userProfile.role_id || userProfile.profile?.role_id
+
       if (userRole === 'student') {
-        toast.error('Access Denied: Student accounts cannot access the admin dashboard.')
+        toast.error(
+          'Access Denied: Student accounts cannot access the admin dashboard.'
+        )
         auth.reset() // Log them out
         navigate({ to: '/sign-in', replace: true })
       } else {
@@ -75,7 +85,6 @@ export function Dashboard() {
     checkRoleAndFetchProfile()
   }, [auth.user, auth.accessToken, auth.setUser, navigate, auth])
 
-
   // Show a loading spinner while we verify the user's role
   if (isCheckingRole) {
     return (
@@ -85,7 +94,6 @@ export function Dashboard() {
     )
   }
   // --- END AUTH GUARD LOGIC ---
-
 
   // --- 3. YOUR ORIGINAL DASHBOARD JSX ---
   // This will only render if the user is NOT a student
@@ -124,7 +132,7 @@ export function Dashboard() {
                 </Badge>
               </CardAction>
             </CardHeader>
-            <CardFooter className='text-sm text-muted-foreground'>
+            <CardFooter className='text-muted-foreground text-sm'>
               This month’s total users
             </CardFooter>
           </Card>
@@ -140,7 +148,7 @@ export function Dashboard() {
                 </Badge>
               </CardAction>
             </CardHeader>
-            <CardFooter className='text-sm text-muted-foreground'>
+            <CardFooter className='text-muted-foreground text-sm'>
               Students currently reviewing
             </CardFooter>
           </Card>
@@ -156,7 +164,7 @@ export function Dashboard() {
                 </Badge>
               </CardAction>
             </CardHeader>
-            <CardFooter className='text-sm text-muted-foreground'>
+            <CardFooter className='text-muted-foreground text-sm'>
               Mentors currently active
             </CardFooter>
           </Card>
@@ -172,19 +180,20 @@ export function Dashboard() {
                 </Badge>
               </CardAction>
             </CardHeader>
-            <CardFooter className='text-sm text-muted-foreground'>
+            <CardFooter className='text-muted-foreground text-sm'>
               Uploaded this month
             </CardFooter>
           </Card>
         </div>
 
         {/* ===== Charts ===== */}
-        <div className='grid grid-cols-1 gap-4 lg:grid-cols-7 mt-4'>
+        <div className='mt-4 grid grid-cols-1 gap-4 lg:grid-cols-7'>
           <Card className='col-span-1 lg:col-span-4'>
             <CardHeader>
               <CardTitle>Overview</CardTitle>
+              <CardDescription>Shows number of registered users over time</CardDescription>
             </CardHeader>
-            <CardContent className='ps-2'>
+            <CardContent>
               <Overview />
             </CardContent>
           </Card>
@@ -206,8 +215,12 @@ export function Dashboard() {
 
 // --- YOUR UPDATED topNav ---
 const topNav = [
-  { title: 'Overview', href: 'dashboard/overview', isActive: true, disabled: false },
-  { title: 'Users', href: 'dashboard/users', isActive: false, disabled: true },
-  { title: 'Materials', href: 'dashboard/materials', isActive: false, disabled: true },
-  { title: 'Settings', href: 'dashboard/settings', isActive: false, disabled: true },
+  {
+    title: 'Overview',
+    href: 'dashboard/overview',
+    isActive: true,
+    disabled: false,
+  },
+  { title: 'Users', href: '/users', isActive: false, disabled: false },
+  { title: 'Settings', href: '/settings', isActive: false, disabled: false },
 ]

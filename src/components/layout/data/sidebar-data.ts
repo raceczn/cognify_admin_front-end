@@ -39,17 +39,17 @@ export const staticSidebarData: Omit<SidebarData, 'user'> = {
           icon: Users,
         },
         {
-          title: 'Analytics',
+          title: 'Faculty Oversight',
           url: '/tasks',
           icon: ListTodo,
         },
         {
-          title: 'Apps',
+          title: 'Analytics',
           url: '/apps',
           icon: Package,
         },
         {
-          title: 'Feedback',
+          title: 'Reports & Feedback',
           url: '/chats',
           badge: '3',
           icon: MessagesSquare,

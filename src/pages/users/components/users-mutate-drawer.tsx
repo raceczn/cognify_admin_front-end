@@ -126,7 +126,7 @@ export function UsersMutateDrawer({
                 <FormItem>
                   <FormLabel>First Name</FormLabel>
                   <FormControl>
-                    <Input placeholder='John' {...field} />
+                    <Input placeholder='Your first name' {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -141,7 +141,7 @@ export function UsersMutateDrawer({
                 <FormItem>
                   <FormLabel>Last Name</FormLabel>
                   <FormControl>
-                    <Input placeholder='Doe' {...field} />
+                    <Input placeholder='Your last name' {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -156,7 +156,7 @@ export function UsersMutateDrawer({
                 <FormItem>
                   <FormLabel>Username</FormLabel>
                   <FormControl>
-                    <Input placeholder='john_doe' {...field} />
+                    <Input placeholder='Your username' {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -171,7 +171,7 @@ export function UsersMutateDrawer({
                 <FormItem>
                   <FormLabel>Nickname</FormLabel>
                   <FormControl>
-                    <Input placeholder='Johnny' {...field} />
+                    <Input placeholder='Your nickname' {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -186,7 +186,7 @@ export function UsersMutateDrawer({
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder='john.doe@gmail.com' {...field} />
+                    <Input placeholder='Your email address' {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -257,12 +257,14 @@ export function UsersMutateDrawer({
         </Form>
 
         <SheetFooter className='gap-2'>
-          <SheetClose asChild>
-            <Button variant='outline'>Close</Button>
-          </SheetClose>
           <Button form='user-form' type='submit'>
-            Save changes
+            Save
           </Button>
+          <SheetClose asChild>
+            <Button className='bg-red-400 text-white hover:bg-red-700'>
+              Close
+            </Button>
+          </SheetClose>
         </SheetFooter>
       </SheetContent>
     </Sheet>
