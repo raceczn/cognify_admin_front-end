@@ -41,7 +41,6 @@ export function ProfileDropdown() {
     initials = 'A'
   }
 
-
   return (
     <>
       <DropdownMenu modal={false}>
@@ -51,7 +50,12 @@ export function ProfileDropdown() {
               {/* If your API provides avatar URL, use it here */}
               <AvatarImage
                 src='/avatars/01.png'
-                alt={profile?.nickname || profile?.first_name || 'User avatar'}
+                alt={
+                  profile?.nickname ||
+                  (profile?.first_name && profile?.last_name
+                    ? `${profile.first_name} ${profile.last_name}`
+                    : profile?.first_name || 'Admin')
+                }
               />
 
               <AvatarFallback>{initials}</AvatarFallback>
@@ -66,7 +70,7 @@ export function ProfileDropdown() {
                 {profile?.nickname || profile?.first_name || 'Admin'}
               </p>
               <p className='text-muted-foreground text-xs leading-none'>
-                {user?.email || 'admin@example.com'}
+                {user?.email}
               </p>
             </div>
           </DropdownMenuLabel>

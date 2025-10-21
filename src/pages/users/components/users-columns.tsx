@@ -114,18 +114,16 @@ export const usersColumns: ColumnDef<User>[] = [
     ),
     cell: ({ row }) => {
       const { role } = row.original
-      const userType = roles.find(({ value }) => value === role)
+      const userType = roles.find(({ designation }) => designation === role)
 
-      if (!userType) {
-        return null
-      }
+      if (!userType) return null
 
       return (
         <div className='flex items-center gap-x-2'>
           {userType.icon && (
             <userType.icon size={16} className='text-muted-foreground' />
           )}
-          <span className='text-sm capitalize'>{row.getValue('role')}</span>
+          <span className='text-sm capitalize'>{userType.label}</span>
         </div>
       )
     },
