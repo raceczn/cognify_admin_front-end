@@ -3,7 +3,11 @@
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { createProfile, updateProfile } from '@/lib/profile-hooks'
+import {
+  createProfile,
+  updateProfile,
+  // getAllProfiles,
+} from '@/lib/profile-hooks'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -31,11 +35,10 @@ import { type User } from '../data/schema'
 type UserMutateDrawerProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  currentRow?: User | null
-  onSuccess?: () => void // optional callback to refresh list
+  currentRow?: User
+  onSuccess?: () => void // callback to refresh parent data
 }
 
-// ✅ Schema validation
 const formSchema = z
   .object({
     first_name: z.string().min(1, 'First Name is required.'),
@@ -65,26 +68,29 @@ export function UsersMutateDrawer({
   open,
   onOpenChange,
   currentRow,
-  onSuccess,
 }: UserMutateDrawerProps) {
   const isEdit = !!currentRow
-
   const form = useForm<UserForm>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      first_name: currentRow?.first_name ?? '',
-      last_name: currentRow?.last_name ?? '',
-      username: currentRow?.username ?? '',
-      nickname: currentRow?.nickname ?? '',
-      email: currentRow?.email ?? '',
-      password: '',
-      confirmPassword: '',
-      role: currentRow?.role_id ?? '',
-      isEdit,
-    },
+    defaultValues: isEdit
+      ? {
+          ...currentRow,
+          password: '',
+          confirmPassword: '',
+          isEdit,
+        }
+      : {
+          first_name: '',
+          last_name: '',
+          username: '',
+          nickname: '',
+          email: '',
+          password: '',
+          confirmPassword: '',
+          role: '',
+          isEdit,
+        },
   })
-
-  // ✅ Handle form submission
   const onSubmit = async (data: UserForm) => {
     try {
       const payload = {
@@ -93,19 +99,25 @@ export function UsersMutateDrawer({
         username: data.username,
         nickname: data.nickname,
         email: data.email,
-        role_id: data.role, // from dropdown
-        user_id: currentRow?.id,
+        role_id: data.role, // assuming role holds the role_id
+        user_id: currentRow?.id, // required by backend for PUT/POST
       }
 
       if (isEdit && currentRow?.id) {
+        // UPDATE
         await updateProfile(currentRow.id, payload)
+        alert('User updated successfully!')
       } else {
+        // CREATE
         await createProfile(payload)
+        alert('User created successfully!')
       }
+
+      // Optional: Refresh list if your table supports reloading
+      // await getAllProfiles()
 
       form.reset()
       onOpenChange(false)
-      onSuccess?.()
     } catch (err: any) {
       console.error('Error saving user:', err)
       alert(err.response?.data?.detail || 'Failed to save user')
@@ -117,7 +129,7 @@ export function UsersMutateDrawer({
       open={open}
       onOpenChange={(v) => {
         onOpenChange(v)
-        if (!v) form.reset()
+        form.reset()
       }}
     >
       <SheetContent className='flex flex-col'>
@@ -125,8 +137,9 @@ export function UsersMutateDrawer({
           <SheetTitle>{isEdit ? 'Edit User' : 'Add New User'}</SheetTitle>
           <SheetDescription>
             {isEdit
-              ? 'Update the user information below.'
-              : 'Add a new user by providing the required details. Click save when done.'}
+              ? 'Update the user by providing necessary info.'
+              : 'Add a new user by providing necessary info.'}{' '}
+            Click save when done.
           </SheetDescription>
         </SheetHeader>
 
@@ -209,35 +222,23 @@ export function UsersMutateDrawer({
             <FormField
               control={form.control}
               name='role'
-              render={({ field }) => {
-                // Find the matching role object by Firestore role_id (value)
-                const selectedRole =
-                  roles.find((r) => r.value === field.value) ||
-                  roles.find(
-                    (r) => r.label.toLowerCase() === field.value?.toLowerCase()
-                  ) ||
-                  null
-
-                return (
-                  <FormItem>
-                    <FormLabel>Role</FormLabel>
-                    <FormControl>
-                      <SelectDropdown
-                        defaultValue={selectedRole?.value} // ✅ set actual value behind the label
-                        onValueChange={field.onChange}
-                        placeholder={
-                          selectedRole ? selectedRole.label : 'Select a role'
-                        } // ✅ show label in placeholder
-                        items={roles.map(({ label, value }) => ({
-                          label, // ✅ display label text in dropdown
-                          value, // value sent on submit (role_id)
-                        }))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )
-              }}
+              render={({ field }) => (
+                <FormItem className='flex items-center space-x-2'>
+                  <FormLabel className='shrink-0'>Role</FormLabel>
+                  <FormControl className='flex-1'>
+                    <SelectDropdown
+                      defaultValue={field.value}
+                      onValueChange={field.onChange}
+                      placeholder='Select a role'
+                      items={roles.map(({ label, value }) => ({
+                        label,
+                        value,
+                      }))}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
 
             {!isEdit && (
