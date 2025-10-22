@@ -3,11 +3,8 @@
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import {
-  createProfile,
-  updateProfile,
-  // getAllProfiles,
-} from '@/lib/profile-hooks'
+import { createProfile, updateProfile } from '@/lib/profile-hooks'
+import { useToast } from '@/hooks/use-toast'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -31,12 +28,14 @@ import { PasswordInput } from '@/components/password-input'
 import { SelectDropdown } from '@/components/select-dropdown'
 import { roles } from '../data/data'
 import { type User } from '../data/schema'
+import { useUsers } from './users-provider'
+import { useEffect } from 'react'
 
 type UserMutateDrawerProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   currentRow?: User
-  onSuccess?: () => void // callback to refresh parent data
+  onSuccess?: () => void
 }
 
 const formSchema = z
@@ -64,22 +63,67 @@ const formSchema = z
 
 type UserForm = z.infer<typeof formSchema>
 
+// ✅ Helper function to capitalize names
+function capitalizeName(name: string | undefined) {
+  if (!name) return ''
+  return name
+    .split(' ')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ')
+}
+
+function normalizeField(name: string | undefined) {
+  if (!name || name.trim() === '') return ''
+  return capitalizeName(name)
+}
+
+function middleInitial(name: string | undefined) {
+  if (!name || name.trim() === '') return ''
+  return name.trim().charAt(0).toUpperCase() + '.'
+}
+
 export function UsersMutateDrawer({
   open,
   onOpenChange,
   currentRow,
+  onSuccess,
 }: UserMutateDrawerProps) {
   const isEdit = !!currentRow
+  const { toast } = useToast()
+  const { updateLocalUsers } = useUsers()
+
   const form = useForm<UserForm>({
     resolver: zodResolver(formSchema),
-    defaultValues: isEdit
-      ? {
-          ...currentRow,
+    defaultValues: {
+      first_name: '',
+      last_name: '',
+      username: '',
+      nickname: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      role: '',
+      isEdit: false,
+    },
+  })
+
+  // ✅ Reset form when currentRow changes or modal opens/closes
+  useEffect(() => {
+    if (open) {
+      if (isEdit && currentRow) {
+        form.reset({
+          first_name: currentRow.first_name,
+          last_name: currentRow.last_name,
+          username: currentRow.username,
+          nickname: currentRow.nickname,
+          email: currentRow.email,
           password: '',
           confirmPassword: '',
-          isEdit,
-        }
-      : {
+          role: currentRow.role_id, // ✅ Use role_id instead of role
+          isEdit: true,
+        })
+      } else {
+        form.reset({
           first_name: '',
           last_name: '',
           username: '',
@@ -88,9 +132,12 @@ export function UsersMutateDrawer({
           password: '',
           confirmPassword: '',
           role: '',
-          isEdit,
-        },
-  })
+          isEdit: false,
+        })
+      }
+    }
+  }, [open, currentRow, isEdit, form])
+
   const onSubmit = async (data: UserForm) => {
     try {
       const payload = {
@@ -99,28 +146,83 @@ export function UsersMutateDrawer({
         username: data.username,
         nickname: data.nickname,
         email: data.email,
-        role_id: data.role, // assuming role holds the role_id
-        user_id: currentRow?.id, // required by backend for PUT/POST
+        role_id: data.role,
+        user_id: currentRow?.id,
       }
 
       if (isEdit && currentRow?.id) {
-        // UPDATE
-        await updateProfile(currentRow.id, payload)
-        alert('User updated successfully!')
+        // ✅ UPDATE: Get response from API
+        const response = await updateProfile(currentRow.id, payload)
+
+        // ✅ Transform response to match User schema
+        const updatedUser: User = {
+          id: response.id ?? currentRow.id,
+          first_name: normalizeField(response.first_name),
+          middle_name: middleInitial(response.middle_name),
+          last_name: normalizeField(response.last_name),
+          nickname: normalizeField(response.nickname),
+          username: response.username ?? currentRow.username,
+          email: response.email ?? currentRow.email,
+          role: response.role ?? currentRow.role,
+          role_id: response.role_id ?? currentRow.role_id ?? '',
+          status: response.status ?? currentRow.status ?? 'active',
+          created_at: response.created_at
+            ? new Date(response.created_at)
+            : (currentRow.created_at ?? new Date()),
+        }
+
+        // ✅ Update local state immediately
+        updateLocalUsers(updatedUser, 'edit')
+
+        toast({
+          title: '✅ User Updated',
+          description: `${data.first_name} ${data.last_name} has been updated successfully.`,
+          variant: 'success',
+        })
       } else {
-        // CREATE
-        await createProfile(payload)
-        alert('User created successfully!')
+        // ✅ CREATE: Get response from API
+        const response = await createProfile(payload)
+
+        // ✅ Transform response to match User schema
+        const newUser: User = {
+          id: response.id ?? response.user_id ?? 'N/A',
+          first_name: normalizeField(response.first_name),
+          middle_name: middleInitial(response.middle_name),
+          last_name: normalizeField(response.last_name),
+          nickname: normalizeField(response.nickname),
+          username: response.username ?? data.username,
+          email: response.email ?? data.email,
+          role: response.role ?? data.role,
+          role_id: response.role_id ?? data.role ?? '',
+          status: response.status ?? 'active',
+          created_at: response.created_at
+            ? new Date(response.created_at)
+            : new Date(),
+        }
+
+        // ✅ Add to local state immediately
+        updateLocalUsers(newUser, 'add')
+
+        toast({
+          title: '🎉 User Created',
+          description: `${data.first_name} ${data.last_name} has been added successfully.`,
+          variant: 'success',
+        })
       }
 
-      // Optional: Refresh list if your table supports reloading
-      // await getAllProfiles()
-
+      // Reset form and close sheet
       form.reset()
       onOpenChange(false)
+
+      // ✅ Optional: Trigger parent refresh as backup
+      onSuccess?.()
     } catch (err: any) {
       console.error('Error saving user:', err)
-      alert(err.response?.data?.detail || 'Failed to save user')
+      toast({
+        title: '❌ Failed to Save',
+        description: err.response?.data?.detail || 'Something went wrong.',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -129,7 +231,9 @@ export function UsersMutateDrawer({
       open={open}
       onOpenChange={(v) => {
         onOpenChange(v)
-        form.reset()
+        if (!v) {
+          form.reset()
+        }
       }}
     >
       <SheetContent className='flex flex-col'>
@@ -223,9 +327,9 @@ export function UsersMutateDrawer({
               control={form.control}
               name='role'
               render={({ field }) => (
-                <FormItem className='flex items-center space-x-2'>
-                  <FormLabel className='shrink-0'>Role</FormLabel>
-                  <FormControl className='flex-1'>
+                <FormItem>
+                  <FormLabel>Role</FormLabel>
+                  <FormControl>
                     <SelectDropdown
                       defaultValue={field.value}
                       onValueChange={field.onChange}
@@ -234,6 +338,7 @@ export function UsersMutateDrawer({
                         label,
                         value,
                       }))}
+                      isControlled={true}
                     />
                   </FormControl>
                   <FormMessage />

@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import useDialogState from '@/hooks/use-dialog-state'
-import { getAllProfiles } from '@/lib/profile-hooks' // 👈 Make sure this exists
+import { getAllProfiles } from '@/lib/profile-hooks'
 import { type User } from '../data/schema'
 
 type UsersDialogType = 'invite' | 'add' | 'edit' | 'delete'
@@ -12,8 +12,11 @@ type UsersContextType = {
   setOpen: (str: UsersDialogType | null) => void
   currentRow: User | null
   setCurrentRow: React.Dispatch<React.SetStateAction<User | null>>
-  users: User[]                   // ✅ store the fetched user list
-  loadUsers: () => Promise<void>  // ✅ function to reload data
+  users: User[]
+  loadUsers: () => Promise<void>
+  refreshUsers: () => Promise<void>
+  updateLocalUsers: (updated: User | User[], action: 'add' | 'edit' | 'delete') => void
+  isLoading: boolean
 }
 
 const UsersContext = React.createContext<UsersContextType | null>(null)
@@ -22,19 +25,45 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useDialogState<UsersDialogType>(null)
   const [currentRow, setCurrentRow] = useState<User | null>(null)
   const [users, setUsers] = useState<User[]>([])
+  const [isLoading, setIsLoading] = useState(false)
 
-  // ✅ Fetch users from backend
   const loadUsers = useCallback(async () => {
     try {
+      setIsLoading(true)
       const res = await getAllProfiles()
-      setUsers(res)
+      if (Array.isArray(res)) setUsers(res)
     } catch (err) {
-      console.error('Failed to load users:', err)
+      console.error('❌ Failed to load users:', err)
+    } finally {
+      setIsLoading(false)
     }
   }, [])
 
-  // Optionally, load once on mount
-  React.useEffect(() => {
+  const refreshUsers = loadUsers
+
+  // ✅ NEW: Instantly update UI
+  const updateLocalUsers = useCallback(
+    (updated: User | User[], action: 'add' | 'edit' | 'delete') => {
+      setUsers((prev) => {
+        if (action === 'add') {
+          const added = Array.isArray(updated) ? updated : [updated]
+          return [...added, ...prev]
+        }
+        if (action === 'edit') {
+          const u = Array.isArray(updated) ? updated[0] : updated
+          return prev.map((usr) => (usr.id === u.id ? { ...usr, ...u } : usr))
+        }
+        if (action === 'delete') {
+          const u = Array.isArray(updated) ? updated[0] : updated
+          return prev.filter((usr) => usr.id !== u.id)
+        }
+        return prev
+      })
+    },
+    []
+  )
+
+  useEffect(() => {
     loadUsers()
   }, [loadUsers])
 
@@ -46,7 +75,10 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
         currentRow,
         setCurrentRow,
         users,
-        loadUsers, // 👈 expose reload
+        loadUsers,
+        refreshUsers,
+        updateLocalUsers,
+        isLoading,
       }}
     >
       {children}
@@ -54,11 +86,8 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
   )
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
 export const useUsers = () => {
-  const usersContext = React.useContext(UsersContext)
-  if (!usersContext) {
-    throw new Error('useUsers must be used within <UsersProvider>')
-  }
-  return usersContext
+  const context = React.useContext(UsersContext)
+  if (!context) throw new Error('useUsers must be used within <UsersProvider>')
+  return context
 }
