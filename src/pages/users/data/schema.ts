@@ -20,6 +20,7 @@ const userSchema = z.object({
   role_id: z.string(),
   role: z.string(),
   created_at: z.coerce.date(),
+  deleted: z.boolean(),
   // updatedAt: z.coerce.date(),
 })
 export type User = z.infer<typeof userSchema>

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react' // 👈 --- MODIFIED: Added useMemo
+import { useEffect, useMemo, useState } from 'react'
+// 👈 --- MODIFIED: Added useMemo
 import {
   type SortingState,
   type VisibilityState,
@@ -23,12 +24,13 @@ import {
 } from '@/components/ui/table'
 import { DataTablePagination, DataTableToolbar } from '@/components/data-table'
 // ❗️ --- REMOVED: No longer need static roles
-// import { roles } from '../data/data' 
+// import { roles } from '../data/data'
 import { type User } from '../data/schema'
 import { DataTableBulkActions } from './data-table-bulk-actions'
 import { usersColumns as columns } from './users-columns'
 
-declare module '@tanstack/react-table' { //
+declare module '@tanstack/react-table' {
+  //
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData, TValue> {
     className: string
@@ -39,12 +41,24 @@ type DataTableProps = {
   data: User[]
   search: Record<string, unknown>
   navigate: NavigateFn
+  showDeleted?: boolean
 }
 
-export function UsersTable({ data, search, navigate }: DataTableProps) {
+export function UsersTable({
+  data,
+  search,
+  navigate,
+  showDeleted = false,
+}: DataTableProps) {
   const [rowSelection, setRowSelection] = useState({}) //
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({}) //
-  const [sorting, setSorting] = useState<SortingState>([]) //
+  const [sorting, setSorting] = useState<SortingState>([])
+
+  // Filter out deleted users unless explicitly shown
+  const filteredData = useMemo(() => {
+    if (showDeleted) return data
+    return data.filter((user) => !user.deleted)
+  }, [data, showDeleted]) //
 
   const {
     columnFilters,
@@ -72,27 +86,27 @@ export function UsersTable({ data, search, navigate }: DataTableProps) {
   // ---------------------------------
   const roleOptions = useMemo(() => {
     // 1. Get all unique role strings (e.g., "student", "faculty_member")
-    const roles = new Set(data.map(user => user.role).filter(Boolean))
-    
+    const roles = new Set(data.map((user) => user.role).filter(Boolean))
+
     // 2. Format them for the filter component
-    return Array.from(roles).map(role => {
+    return Array.from(roles).map((role) => {
       // This is the formatting logic you requested:
       // "faculty_member" -> ["faculty", "member"] -> ["Faculty", "Member"] -> "Faculty Member"
       const label = role
         .split('_') // Split by underscore
-        .map(w => w.charAt(0).toUpperCase() + w.slice(1)) // Capitalize first letter
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1)) // Capitalize first letter
         .join(' ') // Join with a space
-        
+
       return {
         label: label, // "Faculty Member"
-        value: role,  // "faculty_member"
+        value: role, // "faculty_member"
       }
     })
   }, [data])
   // ---------------------------------
 
   const table = useReactTable({
-    data,
+    data: filteredData,
     columns,
     state: {
       sorting,
@@ -127,7 +141,7 @@ export function UsersTable({ data, search, navigate }: DataTableProps) {
         // MODIFIED: Updated placeholder and searchKey to email
         // ---------------------------------
         searchPlaceholder='Filter by email...'
-        searchKey='email' 
+        searchKey='email'
         // ---------------------------------
         filters={[
           {

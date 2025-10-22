@@ -40,10 +40,10 @@ type UserMutateDrawerProps = {
 
 const formSchema = z
   .object({
-    first_name: z.string().min(1, 'First Name is required.'),
-    last_name: z.string().min(1, 'Last Name is required.'),
-    username: z.string().min(1, 'Username is required.'),
-    nickname: z.string().min(1, 'Nickname is required.'),
+    first_name: z.string().optional(),
+    last_name: z.string().optional(),
+    username: z.string().optional(),
+    nickname: z.string().optional(),
     email: z.string().email('Invalid email'),
     password: z.string().transform((pwd) => pwd.trim()),
     confirmPassword: z.string().transform((pwd) => pwd.trim()),
@@ -170,6 +170,7 @@ export function UsersMutateDrawer({
           created_at: response.created_at
             ? new Date(response.created_at)
             : (currentRow.created_at ?? new Date()),
+          deleted: response.deleted ?? currentRow.deleted ?? false,
         }
 
         // ✅ Update local state immediately
@@ -199,6 +200,7 @@ export function UsersMutateDrawer({
           created_at: response.created_at
             ? new Date(response.created_at)
             : new Date(),
+          deleted: response.deleted ?? false,
         }
 
         // ✅ Add to local state immediately

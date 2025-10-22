@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { getRouteApi } from '@tanstack/react-router'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
@@ -17,12 +18,24 @@ function UsersContent() {
   const search = route.useSearch()
   const navigate = route.useNavigate()
   const { users, isLoading } = useUsers()
+  const [showDeleted, setShowDeleted] = useState(false)
 
   return (
     <>
       <Header fixed>
         <Search />
-        <div className='ms-auto flex items-center space-x-4'>
+        <div className='ms-auto flex items-center gap-4'>
+          <div className='flex items-center gap-2'>
+            <label className='text-muted-foreground text-sm'>
+              <input
+                type='checkbox'
+                checked={showDeleted}
+                onChange={(e) => setShowDeleted(e.target.checked)}
+                className='mr-2'
+              />
+              Show deleted users
+            </label>
+          </div>
           <ThemeSwitch />
           <ConfigDrawer />
           <ProfileDropdown />
@@ -32,7 +45,9 @@ function UsersContent() {
       <Main>
         <div className='mb-2 flex flex-wrap items-center justify-between space-y-2'>
           <div>
-            <h2 className='text-2xl font-bold tracking-tight'>List of All Users</h2>
+            <h2 className='text-2xl font-bold tracking-tight'>
+              List of All Users
+            </h2>
             <p className='text-muted-foreground'>
               Manage your users and their roles here.
             </p>
@@ -45,7 +60,12 @@ function UsersContent() {
               <p className='text-muted-foreground'>Loading users...</p>
             </div>
           ) : (
-            <UsersTable data={users} search={search} navigate={navigate} />
+            <UsersTable
+              data={users}
+              search={search}
+              navigate={navigate}
+              showDeleted={showDeleted}
+            />
           )}
         </div>
       </Main>

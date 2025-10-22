@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { type Table } from '@tanstack/react-table'
 import { Trash2, UserX, UserCheck, Mail } from 'lucide-react'
 import { toast } from 'sonner'
-import { sleep } from '@/lib/utils'
+import { updateProfile } from '@/lib/profile-hooks'
 import { Button } from '@/components/ui/button'
 import {
   Tooltip,
@@ -12,6 +12,7 @@ import {
 import { DataTableBulkActions as BulkActionsToolbar } from '@/components/data-table'
 import { type User } from '../data/schema'
 import { UsersMultiDeleteDialog } from './users-multi-delete-dialog'
+import { useUsers } from './users-provider'
 
 type DataTableBulkActionsProps<TData> = {
   table: Table<TData>
@@ -23,9 +24,32 @@ export function DataTableBulkActions<TData>({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const selectedRows = table.getFilteredSelectedRowModel().rows
 
-  const handleBulkStatusChange = (status: 'active' | 'inactive') => {
+  const { updateLocalUsers } = useUsers()
+
+  const handleBulkStatusChange = async (status: 'active' | 'inactive') => {
     const selectedUsers = selectedRows.map((row) => row.original as User)
-    toast.promise(sleep(2000), {
+    const promises = selectedUsers.map(async (user) => {
+      try {
+        const response = await updateProfile(user.id, {
+          status: status,
+          user_id: user.id,
+        })
+
+        // Transform and update local state
+        const updatedUser: User = {
+          ...user,
+          status: status,
+          ...(response || {}),
+        }
+        updateLocalUsers(updatedUser, 'edit')
+        return updatedUser
+      } catch (error) {
+        console.error(`Error updating user ${user.id}:`, error)
+        throw error
+      }
+    })
+
+    toast.promise(Promise.all(promises), {
       loading: `${status === 'active' ? 'Activating' : 'Deactivating'} users...`,
       success: () => {
         table.resetRowSelection()
@@ -33,12 +57,32 @@ export function DataTableBulkActions<TData>({
       },
       error: `Error ${status === 'active' ? 'activating' : 'deactivating'} users`,
     })
-    table.resetRowSelection()
   }
 
-  const handleBulkInvite = () => {
+  const handleBulkInvite = async () => {
     const selectedUsers = selectedRows.map((row) => row.original as User)
-    toast.promise(sleep(2000), {
+    const promises = selectedUsers.map(async (user) => {
+      try {
+        const response = await updateProfile(user.id, {
+          invite_sent: true,
+          user_id: user.id,
+        })
+
+        // Transform and update local state
+        const updatedUser: User = {
+          ...user,
+          invite_sent: true,
+          ...(response || {}),
+        }
+        updateLocalUsers(updatedUser, 'edit')
+        return updatedUser
+      } catch (error) {
+        console.error(`Error inviting user ${user.id}:`, error)
+        throw error
+      }
+    })
+
+    toast.promise(Promise.all(promises), {
       loading: 'Inviting users...',
       success: () => {
         table.resetRowSelection()
@@ -46,7 +90,6 @@ export function DataTableBulkActions<TData>({
       },
       error: 'Error inviting users',
     })
-    table.resetRowSelection()
   }
 
   return (

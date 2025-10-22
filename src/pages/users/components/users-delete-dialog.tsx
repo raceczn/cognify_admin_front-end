@@ -2,12 +2,15 @@
 
 import { useState } from 'react'
 import { AlertTriangle } from 'lucide-react'
+import { toast } from 'sonner'
+import { deleteProfile } from '@/lib/profile-hooks'
 import { showSubmittedData } from '@/lib/show-submitted-data'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { type User } from '../data/schema'
+import { useUsers } from './users-provider'
 
 type UserDeleteDialogProps = {
   open: boolean
@@ -22,11 +25,42 @@ export function UsersDeleteDialog({
 }: UserDeleteDialogProps) {
   const [value, setValue] = useState('')
 
-  const handleDelete = () => {
-    if (value.trim() !== currentRow.username) return
+  const { updateLocalUsers } = useUsers()
 
-    onOpenChange(false)
-    showSubmittedData(currentRow, 'The following user has been deleted:')
+  const handleDelete = async () => {
+    if (value.trim() !== currentRow.username) return
+    try {
+      // Call the API
+      const response = await deleteProfile(currentRow.id)
+      console.log('Deleting user:', currentRow)
+      console.log('Deletion response:', response)
+
+      // Transform the response to match User schema
+      const updatedUser: User = {
+        ...currentRow,
+        deleted: true,
+        // Update any other fields from response
+        ...(response.data || {}),
+      }
+
+      // Update local state immediately
+      updateLocalUsers(updatedUser, 'edit')
+
+      // Close dialog and show success message
+      onOpenChange(false)
+      toast.success(
+        `${currentRow.first_name} ${currentRow.last_name} has been deleted successfully`
+      )
+
+      // For debugging
+      showSubmittedData(updatedUser, 'The following user has been deleted:')
+    } catch (error: any) {
+      console.error('Error deleting user:', error)
+      toast.error(
+        error.response?.data?.detail ||
+          'Failed to delete user. Please try again.'
+      )
+    }
   }
 
   return (

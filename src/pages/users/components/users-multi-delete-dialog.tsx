@@ -4,11 +4,13 @@ import { useState } from 'react'
 import { type Table } from '@tanstack/react-table'
 import { AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
-import { sleep } from '@/lib/utils'
+import { deleteProfile } from '@/lib/profile-hooks'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { type User } from '../data/schema'
+import { useUsers } from './users-provider'
 
 type UserMultiDeleteDialogProps<TData> = {
   open: boolean
@@ -27,15 +29,39 @@ export function UsersMultiDeleteDialog<TData>({
 
   const selectedRows = table.getFilteredSelectedRowModel().rows
 
-  const handleDelete = () => {
+  const { updateLocalUsers } = useUsers()
+
+  const handleDelete = async () => {
     if (value.trim() !== CONFIRM_WORD) {
       toast.error(`Please type "${CONFIRM_WORD}" to confirm.`)
       return
     }
 
+    const selectedUsers = selectedRows.map((row) => row.original as User)
+    const promises = selectedUsers.map(async (user) => {
+      try {
+        // Call delete API
+        const response = await deleteProfile(user.id)
+
+        // Transform and update local state
+        const updatedUser: User = {
+          ...user,
+          deleted: true,
+          deleted_at: new Date().toISOString(),
+          status: 'deleted',
+          ...(response || {}),
+        }
+        updateLocalUsers(updatedUser, 'edit')
+        return updatedUser
+      } catch (error) {
+        console.error(`Error deleting user ${user.id}:`, error)
+        throw error
+      }
+    })
+
     onOpenChange(false)
 
-    toast.promise(sleep(2000), {
+    toast.promise(Promise.all(promises), {
       loading: 'Deleting users...',
       success: () => {
         table.resetRowSelection()
@@ -43,7 +69,10 @@ export function UsersMultiDeleteDialog<TData>({
           selectedRows.length > 1 ? 'users' : 'user'
         }`
       },
-      error: 'Error',
+      error: (err) => {
+        console.error('Bulk delete error:', err)
+        return 'Failed to delete some users. Please try again.'
+      },
     })
   }
 

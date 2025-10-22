@@ -1,8 +1,8 @@
 'use client'
 
 import React, { useState, useCallback, useEffect } from 'react'
-import useDialogState from '@/hooks/use-dialog-state'
 import { getAllProfiles } from '@/lib/profile-hooks'
+import useDialogState from '@/hooks/use-dialog-state'
 import { type User } from '../data/schema'
 
 type UsersDialogType = 'invite' | 'add' | 'edit' | 'delete'
@@ -15,7 +15,10 @@ type UsersContextType = {
   users: User[]
   loadUsers: () => Promise<void>
   refreshUsers: () => Promise<void>
-  updateLocalUsers: (updated: User | User[], action: 'add' | 'edit' | 'delete') => void
+  updateLocalUsers: (
+    updated: User | User[],
+    action: 'add' | 'edit' | 'delete'
+  ) => void
   isLoading: boolean
 }
 
@@ -43,7 +46,8 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
 
   // ✅ NEW: Instantly update UI
   const updateLocalUsers = useCallback(
-    (updated: User | User[], action: 'add' | 'edit' | 'delete') => {
+    async (updated: User | User[], action: 'add' | 'edit' | 'delete') => {
+      // First update local state for immediate UI feedback
       setUsers((prev) => {
         if (action === 'add') {
           const added = Array.isArray(updated) ? updated : [updated]
@@ -54,13 +58,17 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
           return prev.map((usr) => (usr.id === u.id ? { ...usr, ...u } : usr))
         }
         if (action === 'delete') {
-          const u = Array.isArray(updated) ? updated[0] : updated
-          return prev.filter((usr) => usr.id !== u.id)
+          const deletedUsers = Array.isArray(updated) ? updated : [updated]
+          const deletedIds = new Set(deletedUsers.map((u) => u.id))
+          return prev.filter((usr) => !deletedIds.has(usr.id))
         }
         return prev
       })
+
+      // Then refresh from server to ensure sync
+      await refreshUsers()
     },
-    []
+    [refreshUsers]
   )
 
   useEffect(() => {
