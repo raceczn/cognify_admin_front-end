@@ -1,10 +1,16 @@
 // src/routes/__root.tsx
-import { createRootRouteWithContext, Outlet, redirect } from '@tanstack/react-router'
 import { QueryClient } from '@tanstack/react-query'
+import {
+  createRootRouteWithContext,
+  Outlet,
+  redirect,
+} from '@tanstack/react-router'
+import { roles } from '@/pages/users/data/data'
+import { Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
 import { getProfile } from '@/lib/profile-hooks'
-import { toast } from 'sonner'
-import { Loader2 } from 'lucide-react'
+
 // import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 
 // Define the context for your router
@@ -27,7 +33,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       {/* <TanStackRouterDevtools /> */}
     </>
   ),
-  
+
   // This is the global loader that shows while `beforeLoad` is awaiting
   pendingComponent: FullScreenLoader,
 
@@ -41,11 +47,20 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 
     if (!auth.accessToken || !auth.user?.uid) {
       toast.error('You must be logged in.')
-      throw redirect({ to: '/sign-in', search: { redirect: currentPath }, replace: true })
+      throw redirect({
+        to: '/sign-in',
+        search: { redirect: currentPath },
+        replace: true,
+      })
     }
-    
-    // This is the hardcoded Student Role ID from your backend
-    const STUDENT_ROLE_ID = 'Tzc78QtZcaVbzFtpHoOL'
+
+    // Get role IDs from the roles configuration
+    const studentRoleId = roles.find((r) => r.designation === 'student')?.value
+    const facultyRoleId = roles.find(
+      (r) => r.designation === 'faculty_member'
+    )?.value
+    const adminRoleId = roles.find((r) => r.designation === 'admin')?.value
+
     let userRole = auth.user.role_id || auth.user.profile?.role_id
 
     if (!userRole) {
@@ -60,8 +75,15 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       }
     }
 
-    if (userRole === STUDENT_ROLE_ID) {
+    // Check if the user has a valid role (either admin or faculty)
+    if (userRole === studentRoleId) {
       toast.error('Access Denied: Student accounts cannot access this app.')
+      auth.reset()
+      throw redirect({ to: '/sign-in', replace: true })
+    } else if (userRole !== adminRoleId && userRole !== facultyRoleId) {
+      toast.error(
+        'Access Denied: You must be a faculty member or admin to access this app.'
+      )
       auth.reset()
       throw redirect({ to: '/sign-in', replace: true })
     }

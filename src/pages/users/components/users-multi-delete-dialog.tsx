@@ -48,7 +48,6 @@ export function UsersMultiDeleteDialog<TData>({
           ...user,
           deleted: true,
           deleted_at: new Date().toISOString(),
-          status: 'deleted',
           ...(response || {}),
         }
         updateLocalUsers(updatedUser, 'edit')

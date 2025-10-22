@@ -148,8 +148,8 @@ export function UsersTable({
             columnId: 'status',
             title: 'Status',
             options: [
-              { label: 'Active', value: 'active' },
-              { label: 'Deleted', value: 'deleted' }, // 'deleted' comes from your data
+              { label: 'Online', value: 'online' },
+              { label: 'Offline', value: 'offline' }, // 'offline' comes from your data
             ],
           },
           {

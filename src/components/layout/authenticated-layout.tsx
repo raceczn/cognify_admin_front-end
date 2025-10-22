@@ -3,10 +3,11 @@ import { getCookie } from '@/lib/cookies'
 import { cn } from '@/lib/utils'
 import { LayoutProvider } from '@/context/layout-provider'
 import { SearchProvider } from '@/context/search-provider'
+import { useUserStatus } from '@/hooks/use-user-status'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { Toaster } from '@/components/ui/toaster'
 import { AppSidebar } from '@/components/layout/app-sidebar'
 import { SkipToMain } from '@/components/skip-to-main'
-import { Toaster } from '@/components/ui/toaster'
 
 type AuthenticatedLayoutProps = {
   children?: React.ReactNode
@@ -14,6 +15,9 @@ type AuthenticatedLayoutProps = {
 
 export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
   const defaultOpen = getCookie('sidebar_state') !== 'false'
+
+  // Initialize user status tracking
+  useUserStatus()
   return (
     <SearchProvider>
       <LayoutProvider>
@@ -35,7 +39,7 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
             )}
           >
             {children ?? <Outlet />}
-             <Toaster />
+            <Toaster />
           </SidebarInset>
         </SidebarProvider>
       </LayoutProvider>

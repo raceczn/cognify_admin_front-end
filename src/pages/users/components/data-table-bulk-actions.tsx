@@ -26,7 +26,7 @@ export function DataTableBulkActions<TData>({
 
   const { updateLocalUsers } = useUsers()
 
-  const handleBulkStatusChange = async (status: 'active' | 'inactive') => {
+  const handleBulkStatusChange = async (status: 'online' | 'offline') => {
     const selectedUsers = selectedRows.map((row) => row.original as User)
     const promises = selectedUsers.map(async (user) => {
       try {
@@ -50,12 +50,12 @@ export function DataTableBulkActions<TData>({
     })
 
     toast.promise(Promise.all(promises), {
-      loading: `${status === 'active' ? 'Activating' : 'Deactivating'} users...`,
+      loading: `${status === 'online' ? 'Bringing online' : 'Taking offline'} users...`,
       success: () => {
         table.resetRowSelection()
-        return `${status === 'active' ? 'Activated' : 'Deactivated'} ${selectedUsers.length} user${selectedUsers.length > 1 ? 's' : ''}`
+        return `${status === 'online' ? 'Brought online' : 'Took offline'} ${selectedUsers.length} user${selectedUsers.length > 1 ? 's' : ''}`
       },
-      error: `Error ${status === 'active' ? 'activating' : 'deactivating'} users`,
+      error: `Error ${status === 'online' ? 'bringing online' : 'taking offline'} users`,
     })
   }
 
@@ -119,7 +119,7 @@ export function DataTableBulkActions<TData>({
             <Button
               variant='outline'
               size='icon'
-              onClick={() => handleBulkStatusChange('active')}
+              onClick={() => handleBulkStatusChange('online')}
               className='size-8'
               aria-label='Activate selected users'
               title='Activate selected users'
@@ -138,7 +138,7 @@ export function DataTableBulkActions<TData>({
             <Button
               variant='outline'
               size='icon'
-              onClick={() => handleBulkStatusChange('inactive')}
+              onClick={() => handleBulkStatusChange('offline')}
               className='size-8'
               aria-label='Deactivate selected users'
               title='Deactivate selected users'

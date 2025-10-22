@@ -166,7 +166,7 @@ export function UsersMutateDrawer({
           email: response.email ?? currentRow.email,
           role: response.role ?? currentRow.role,
           role_id: response.role_id ?? currentRow.role_id ?? '',
-          status: response.status ?? currentRow.status ?? 'active',
+          status: response.status ?? currentRow.status ?? 'unaccessed',
           created_at: response.created_at
             ? new Date(response.created_at)
             : (currentRow.created_at ?? new Date()),
@@ -196,7 +196,7 @@ export function UsersMutateDrawer({
           email: response.email ?? data.email,
           role: response.role ?? data.role,
           role_id: response.role_id ?? data.role ?? '',
-          status: response.status ?? 'active',
+          status: response.status ?? 'unaccessed',
           created_at: response.created_at
             ? new Date(response.created_at)
             : new Date(),

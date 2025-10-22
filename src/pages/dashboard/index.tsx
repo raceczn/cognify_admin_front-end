@@ -1,12 +1,13 @@
 // --- 1. NEW IMPORTS ---
 import { useEffect, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
+import { roles } from '@/pages/users/data/data'
 import { IconTrendingUp } from '@tabler/icons-react'
-// Make sure this path is correct
 import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
 import { getProfile } from '@/lib/profile-hooks'
+import { usePermissions } from '@/hooks/use-permissions'
 import { Badge } from '@/components/ui/badge'
 // --- END NEW IMPORTS ---
 
@@ -25,6 +26,7 @@ import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { TopNav } from '@/components/layout/top-nav'
+import { PermissionGuard } from '@/components/permission-guard'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
@@ -35,6 +37,7 @@ export function Dashboard() {
   // --- 2. AUTH GUARD LOGIC ---
   const { auth } = useAuthStore()
   const navigate = useNavigate()
+  const { isAdmin } = usePermissions()
   const [isCheckingRole, setIsCheckingRole] = useState(true) // Start loading
 
   useEffect(() => {
@@ -66,19 +69,31 @@ export function Dashboard() {
         }
       }
 
-      // 3. Perform the role check
-      //    This checks the role from the top level OR the nested profile object
+      // 3. Perform the role check using role IDs
       const userRole = userProfile.role_id || userProfile.profile?.role_id
 
-      if (userRole === 'student') {
+      // Get the student role ID
+      const studentRoleId = roles.find(
+        (r) => r.designation === 'student'
+      )?.value
+      const facultyRoleId = roles.find(
+        (r) => r.designation === 'faculty_member'
+      )?.value
+      const adminRoleId = roles.find((r) => r.designation === 'admin')?.value
+
+      if (userRole === studentRoleId) {
         toast.error(
-          'Access Denied: Student accounts cannot access the admin dashboard.'
+          'Access Denied: Only faculty and admin accounts can access the dashboard.'
         )
         auth.reset() // Log them out
         navigate({ to: '/sign-in', replace: true })
-      } else {
-        // User is logged in, has a profile, and is NOT a student.
+      } else if (userRole === facultyRoleId || userRole === adminRoleId) {
+        // User is logged in, has a profile, and is either faculty or admin
         setIsCheckingRole(false) // Allow the page to render
+      } else {
+        toast.error('Access Denied: Invalid role or insufficient permissions.')
+        auth.reset() // Log them out
+        navigate({ to: '/sign-in', replace: true })
       }
     }
 
@@ -101,7 +116,7 @@ export function Dashboard() {
     <>
       {/* ===== Top Heading ===== */}
       <Header>
-        <TopNav links={topNav} />
+        <TopNav links={getTopNav(isAdmin)} />
         <div className='ms-auto flex items-center space-x-4'>
           <Search />
           <ThemeSwitch />
@@ -113,7 +128,9 @@ export function Dashboard() {
       {/* ===== Main ===== */}
       <Main>
         <div className='mb-2 flex items-center justify-between space-y-2'>
-          <h1 className='text-2xl font-bold tracking-tight'>Admin Dashboard</h1>
+          <h1 className='text-2xl font-bold tracking-tight'>
+            {isAdmin ? 'Admin Dashboard' : 'Faculty Dashboard'}
+          </h1>
           <div className='flex items-center space-x-2'>
             {/* <Button>Generate Report</Button> */}
           </div>
@@ -191,7 +208,9 @@ export function Dashboard() {
           <Card className='col-span-1 lg:col-span-4'>
             <CardHeader>
               <CardTitle>Overview</CardTitle>
-              <CardDescription>Shows number of registered users over time</CardDescription>
+              <CardDescription>
+                Shows number of registered users over time
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <Overview />
@@ -214,13 +233,29 @@ export function Dashboard() {
 }
 
 // --- YOUR UPDATED topNav ---
-const topNav = [
+const getTopNav = (isAdmin: boolean) => [
   {
     title: 'Overview',
     href: 'dashboard/overview',
     isActive: true,
     disabled: false,
   },
-  { title: 'Users', href: '/users', isActive: false, disabled: false },
-  { title: 'Settings', href: '/settings', isActive: false, disabled: false },
+  {
+    title: 'Students',
+    href: '/users/students',
+    isActive: false,
+    disabled: false,
+  },
+  {
+    title: 'All Users',
+    href: '/users',
+    isActive: false,
+    disabled: !isAdmin, // Only enabled for admin
+  },
+  {
+    title: 'Settings',
+    href: '/settings',
+    isActive: false,
+    disabled: false,
+  },
 ]
