@@ -146,6 +146,7 @@ export function UsersMutateDrawer({
         username: data.username,
         nickname: data.nickname,
         email: data.email,
+        password: data.password,
         role_id: data.role,
         user_id: currentRow?.id,
       }
