@@ -34,7 +34,7 @@ export const staticSidebarData: Omit<SidebarData, 'user'> = {
           icon: LayoutDashboard,
         },
         {
-          title: 'Users',
+          title: 'User List',
           url: '/users',
           icon: Users,
         },
