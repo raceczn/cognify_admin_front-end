@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router'
+// Link removed: sign-up flow disabled; navigation to sign-up is not available
 import {
   Card,
   CardContent,
@@ -28,14 +28,7 @@ export function ForgotPassword() {
         </CardContent>
         <CardFooter>
           <p className='text-muted-foreground mx-auto px-8 text-center text-sm text-balance'>
-            Don't have an account?{' '}
-            <Link
-              to='/sign-up'
-              className='hover:text-primary underline underline-offset-4'
-            >
-              Sign up
-            </Link>
-            .
+            Don't have an account? Contact your administrator to create one.
           </p>
         </CardFooter>
       </Card>

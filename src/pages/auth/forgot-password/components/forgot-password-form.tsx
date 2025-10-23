@@ -16,6 +16,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { requestPasswordReset } from '@/lib/auth-hooks'
 
 const formSchema = z.object({
   email: z.email({
@@ -35,7 +36,13 @@ export function ForgotPasswordForm({
     defaultValues: { email: '' },
   })
 
-  function onSubmit(data: z.infer<typeof formSchema>) {
+  async function onSubmit(data: z.infer<typeof formSchema>) {
+    try {
+      await requestPasswordReset(data.email);
+      alert("Password reset email sent!");
+    } catch (error: any) {
+    console.error(error.message);
+  } 
     setIsLoading(true)
     // eslint-disable-next-line no-console
     console.log(data)

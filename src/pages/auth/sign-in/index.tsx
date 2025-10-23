@@ -29,13 +29,7 @@ export function SignIn() {
         </CardContent>
         <CardFooter className='flex justify-center'>
           <p className='text-muted-foreground text-center text-sm'>
-            Don’t have an account?{' '}
-            <a
-              href='/sign-up'
-              className='hover:text-primary underline underline-offset-4'
-            >
-              Sign Up
-            </a>
+            Don’t have an account? Contact your administrator to create one.
           </p>
         </CardFooter>
       </Card>
