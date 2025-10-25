@@ -172,7 +172,7 @@ export function Dashboard() {
           {/* Faculty Mentors */}
           <Card>
             <CardHeader>
-              <CardDescription>Faculty Mentors</CardDescription>
+              <CardDescription>Faculty Members</CardDescription>
               <CardTitle className='text-3xl font-semibold'>45</CardTitle>
               <CardAction>
                 <Badge variant='outline'>
@@ -208,7 +208,7 @@ export function Dashboard() {
             <CardHeader>
               <CardTitle>Overview</CardTitle>
               <CardDescription>
-                Shows number of registered users over time
+                Total registered users over time
               </CardDescription>
             </CardHeader>
             <CardContent>

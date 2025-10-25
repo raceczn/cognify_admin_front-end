@@ -1,7 +1,7 @@
 import z from 'zod'
 import { createFileRoute } from '@tanstack/react-router'
-import { Tasks } from '@/pages/tasks'
-import { priorities, statuses } from '@/pages/tasks/data/data'
+import { Tasks } from '@/pages/system-logs'
+import { priorities, statuses } from '@/pages/system-logs/data/data'
 
 const taskSearchSchema = z.object({
   page: z.number().optional().catch(1),
@@ -17,7 +17,7 @@ const taskSearchSchema = z.object({
   filter: z.string().optional().catch(''),
 })
 
-export const Route = createFileRoute('/_authenticated/tasks/')({
+export const Route = createFileRoute('/_authenticated/system-logs/')({
   validateSearch: taskSearchSchema,
   component: Tasks,
 })

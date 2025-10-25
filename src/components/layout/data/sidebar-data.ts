@@ -34,23 +34,24 @@ export const staticSidebarData: Omit<SidebarData, 'user'> = {
           icon: LayoutDashboard,
         },
         {
+          title: 'Analytics',
+          url: '/analytics',
+          icon: Package,
+        },
+        {
           title: 'User List',
           url: '/users',
           icon: Users,
         },
+
         {
-          title: 'Faculty Oversight',
-          url: '/tasks',
+          title: 'System Logs',
+          url: '/system-logs',
           icon: ListTodo,
         },
         {
-          title: 'Analytics',
-          url: '/apps',
-          icon: Package,
-        },
-        {
           title: 'Reports & Feedback',
-          url: '/chats',
+          url: '/reports',
           badge: '3',
           icon: MessagesSquare,
         },
