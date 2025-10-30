@@ -10,6 +10,7 @@ import { UsersDialogs } from './components/users-dialogs'
 import { UsersPrimaryButtons } from './components/users-primary-buttons'
 import { UsersProvider, useUsers } from './components/users-provider'
 import { UsersTable } from './components/users-table'
+import { Skeleton } from '@/components/ui/skeleton'
 
 const route = getRouteApi('/_authenticated/users/')
 
@@ -56,9 +57,9 @@ function UsersContent() {
         </div>
         <div className='-mx-4 flex-1 overflow-auto px-4 py-1 lg:flex-row lg:space-y-0 lg:space-x-12'>
           {isLoading ? (
-            <div className='flex items-center justify-center py-8'>
-              <p className='text-muted-foreground'>Loading users...</p>
-            </div>
+            <div className='grid grid-cols-1'>
+                <Skeleton className='h-32 flex items-center justify-center gap-2'>Loading users...</Skeleton>
+              </div>
           ) : (
             <UsersTable
               data={users}

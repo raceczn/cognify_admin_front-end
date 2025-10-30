@@ -1,10 +1,12 @@
+// src/pages/users/components/users-mutate-drawer.tsx
 'use client'
 
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+// --- FIX: Import the correct hook ---
 import { createProfile, updateProfile } from '@/lib/profile-hooks'
-import { useToast } from '@/hooks/use-toast'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -30,6 +32,7 @@ import { roles } from '../data/data'
 import { type User } from '../data/schema'
 import { useUsers } from './users-provider'
 import { useEffect } from 'react'
+import { Loader2 } from 'lucide-react'
 
 type UserMutateDrawerProps = {
   open: boolean
@@ -42,12 +45,11 @@ const formSchema = z
   .object({
     first_name: z.string().optional(),
     last_name: z.string().optional(),
-    username: z.string().optional(),
     nickname: z.string().optional(),
     email: z.string().email('Invalid email'),
     password: z.string().transform((pwd) => pwd.trim()),
     confirmPassword: z.string().transform((pwd) => pwd.trim()),
-    role: z.string().min(1, 'Role is required.'),
+    role_id: z.string().min(1, 'Role is required.'),
     isEdit: z.boolean(),
   })
   .refine(
@@ -63,25 +65,6 @@ const formSchema = z
 
 type UserForm = z.infer<typeof formSchema>
 
-// ✅ Helper function to capitalize names
-function capitalizeName(name: string | undefined) {
-  if (!name) return ''
-  return name
-    .split(' ')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ')
-}
-
-function normalizeField(name: string | undefined) {
-  if (!name || name.trim() === '') return ''
-  return capitalizeName(name)
-}
-
-function middleInitial(name: string | undefined) {
-  if (!name || name.trim() === '') return ''
-  return name.trim().charAt(0).toUpperCase() + '.'
-}
-
 export function UsersMutateDrawer({
   open,
   onOpenChange,
@@ -89,7 +72,6 @@ export function UsersMutateDrawer({
   onSuccess,
 }: UserMutateDrawerProps) {
   const isEdit = !!currentRow
-  const { toast } = useToast()
   const { updateLocalUsers } = useUsers()
 
   const form = useForm<UserForm>({
@@ -97,41 +79,38 @@ export function UsersMutateDrawer({
     defaultValues: {
       first_name: '',
       last_name: '',
-      username: '',
       nickname: '',
       email: '',
       password: '',
       confirmPassword: '',
-      role: '',
+      role_id: '',
       isEdit: false,
     },
   })
 
-  // ✅ Reset form when currentRow changes or modal opens/closes
+  // Reset form when currentRow changes or modal opens/closes
   useEffect(() => {
     if (open) {
       if (isEdit && currentRow) {
         form.reset({
-          first_name: currentRow.first_name,
-          last_name: currentRow.last_name,
-          username: currentRow.username,
-          nickname: currentRow.nickname,
+          first_name: currentRow.first_name || '',
+          last_name: currentRow.last_name || '',
+          nickname: currentRow.nickname || '',
           email: currentRow.email,
           password: '',
           confirmPassword: '',
-          role: currentRow.role_id, // ✅ Use role_id instead of role
+          role_id: currentRow.role_id,
           isEdit: true,
         })
       } else {
         form.reset({
           first_name: '',
           last_name: '',
-          username: '',
           nickname: '',
           email: '',
           password: '',
           confirmPassword: '',
-          role: '',
+          role_id: '',
           isEdit: false,
         })
       }
@@ -143,89 +122,62 @@ export function UsersMutateDrawer({
       const payload = {
         first_name: data.first_name,
         last_name: data.last_name,
-        username: data.username,
         nickname: data.nickname,
         email: data.email,
         password: data.password,
-        role_id: data.role,
-        user_id: currentRow?.id,
+        role_id: data.role_id,
+        // --- FIX: Removed the 'student_id' field ---
       }
 
       if (isEdit && currentRow?.id) {
-        // ✅ UPDATE: Get response from API
-        const response = await updateProfile(currentRow.id, payload)
+        // UPDATE
+        const updatePayload = { ...payload }
+        delete (updatePayload as any).password // Don't send password on edit
+        
+        const response = await updateProfile(currentRow.id, updatePayload)
 
-        // ✅ Transform response to match User schema
         const updatedUser: User = {
-          id: response.id ?? currentRow.id,
-          first_name: normalizeField(response.first_name),
-          middle_name: middleInitial(response.middle_name),
-          last_name: normalizeField(response.last_name),
-          nickname: normalizeField(response.nickname),
-          username: response.username ?? currentRow.username,
-          email: response.email ?? currentRow.email,
-          role: response.role ?? currentRow.role,
-          role_id: response.role_id ?? currentRow.role_id ?? '',
-          status: response.status ?? currentRow.status ?? 'unaccessed',
-          created_at: response.created_at
-            ? new Date(response.created_at)
-            : (currentRow.created_at ?? new Date()),
-          deleted: response.deleted ?? currentRow.deleted ?? false,
+          ...currentRow,
+          ...response,
+          role: roles.find(r => r.value === response.role_id)?.designation || 'unknown',
         }
 
-        // ✅ Update local state immediately
         updateLocalUsers(updatedUser, 'edit')
-
-        toast({
-          title: '✅ User Updated',
-          description: `${data.first_name} ${data.last_name} has been updated successfully.`,
-          variant: 'success',
-        })
+        toast.success(
+          `User ${updatedUser.first_name} ${updatedUser.last_name} has been updated.`
+        )
       } else {
-        // ✅ CREATE: Get response from API
+        // CREATE
         const response = await createProfile(payload)
 
-        // ✅ Transform response to match User schema
         const newUser: User = {
-          id: response.id ?? response.user_id ?? 'N/A',
-          first_name: normalizeField(response.first_name),
-          middle_name: middleInitial(response.middle_name),
-          last_name: normalizeField(response.last_name),
-          nickname: normalizeField(response.nickname),
-          username: response.username ?? data.username,
-          email: response.email ?? data.email,
-          role: response.role ?? data.role,
-          role_id: response.role_id ?? data.role ?? '',
-          status: response.status ?? 'unaccessed',
-          created_at: response.created_at
-            ? new Date(response.created_at)
-            : new Date(),
-          deleted: response.deleted ?? false,
+          id: response.id,
+          first_name: response.first_name || '',
+          middle_name: response.middle_name || null,
+          last_name: response.last_name || '',
+          nickname: response.nickname || '',
+          email: response.email,
+          role_id: response.role_id,
+          role: roles.find(r => r.value === response.role_id)?.designation || 'unknown',
+          status: 'offline', // Default status
+          created_at: new Date(response.created_at),
+          deleted: false,
+          username: response.email, // Use email as username
+          deleted_at: null, // Init as null
         }
 
-        // ✅ Add to local state immediately
         updateLocalUsers(newUser, 'add')
-
-        toast({
-          title: '🎉 User Created',
-          description: `${data.first_name} ${data.last_name} has been added successfully.`,
-          variant: 'success',
-        })
+        toast.success(
+          `User ${newUser.first_name} ${newUser.last_name} has been created.`
+        )
       }
 
-      // Reset form and close sheet
       form.reset()
       onOpenChange(false)
-
-      // ✅ Optional: Trigger parent refresh as backup
       onSuccess?.()
     } catch (err: any) {
       console.error('Error saving user:', err)
-      toast({
-        title: '❌ Failed to Save',
-        description: err.response?.data?.detail || 'Something went wrong.',
-        variant: 'destructive',
-      })
+      toast.error(err.response?.data?.detail || 'Something went wrong.')
     }
   }
 
@@ -263,7 +215,7 @@ export function UsersMutateDrawer({
                 <FormItem>
                   <FormLabel>First Name</FormLabel>
                   <FormControl>
-                    <Input placeholder='Your first name' {...field} />
+                    <Input placeholder='User first name' {...field} value={field.value || ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -277,21 +229,7 @@ export function UsersMutateDrawer({
                 <FormItem>
                   <FormLabel>Last Name</FormLabel>
                   <FormControl>
-                    <Input placeholder='Your last name' {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name='username'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Username</FormLabel>
-                  <FormControl>
-                    <Input placeholder='Your username' {...field} />
+                    <Input placeholder='User last name' {...field} value={field.value || ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -303,9 +241,9 @@ export function UsersMutateDrawer({
               name='nickname'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nickname</FormLabel>
+                  <FormLabel>Nickname (Optional)</FormLabel>
                   <FormControl>
-                    <Input placeholder='Your nickname' {...field} />
+                    <Input placeholder='User nickname' {...field} value={field.value || ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -319,7 +257,7 @@ export function UsersMutateDrawer({
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder='Your email address' {...field} />
+                    <Input placeholder='User email address' {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -328,7 +266,7 @@ export function UsersMutateDrawer({
 
             <FormField
               control={form.control}
-              name='role'
+              name='role_id'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Role</FormLabel>
@@ -359,7 +297,7 @@ export function UsersMutateDrawer({
                       <FormLabel>Password</FormLabel>
                       <FormControl>
                         <PasswordInput
-                          placeholder='Enter password'
+                          placeholder='Enter password (min 8 chars)'
                           {...field}
                         />
                       </FormControl>
@@ -389,8 +327,15 @@ export function UsersMutateDrawer({
         </Form>
 
         <SheetFooter className='gap-2'>
-          <Button form='user-form' type='submit'>
-            {isEdit ? 'Save Changes' : 'Create User'}
+          <Button 
+            form='user-form' 
+            type='submit' 
+            disabled={form.formState.isSubmitting}
+          >
+            {form.formState.isSubmitting 
+              ? <Loader2 className="animate-spin" /> 
+              : isEdit ? 'Save Changes' : 'Create User'
+            }
           </Button>
           <SheetClose asChild>
             <Button variant='outline'>Close</Button>
@@ -400,3 +345,4 @@ export function UsersMutateDrawer({
     </Sheet>
   )
 }
+

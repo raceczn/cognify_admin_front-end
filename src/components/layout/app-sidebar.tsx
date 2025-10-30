@@ -1,6 +1,3 @@
-'use client'
-
-import { useEffect, useState } from 'react'
 import { useLayout } from '@/context/layout-provider'
 import {
   Sidebar,
@@ -13,36 +10,14 @@ import { staticSidebarData } from './data/sidebar-data'
 import { NavGroup } from './nav-group'
 import { NavUser } from './nav-user'
 import { TeamSwitcher } from './team-switcher'
-import { getProfile } from '@/lib/profile-hooks'
+// --- FIX: Removed getProfile, it's not needed here ---
 
 export function AppSidebar() {
   const { collapsible, variant } = useLayout()
 
-  // You can still fetch user data here if needed for other purposes,
-  // but it’s no longer passed to NavUser.
-  const [, setUser] = useState({
-    name: 'Loading...',
-    email: '',
-    avatar: '/avatars/shadcn.jpg',
-  })
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const uid = localStorage.getItem('uid')
-        if (!uid) return
-        const data = await getProfile(uid)
-        setUser({
-          name: data.nickname || data.first_name || 'Administrator',
-          email: data.email || 'n/a',
-          avatar: data.avatar || '/avatars/shadcn.jpg',
-        })
-      } catch (error) {
-        console.error('Failed to fetch profile:', error)
-      }
-    }
-    fetchProfile()
-  }, [])
+  // --- FIX: Removed the entire useEffect and useState for profile ---
+  // NavUser now gets all its info directly from the auth store,
+  // which was populated correctly at login.
 
   return (
     <Sidebar collapsible={collapsible} variant={variant}>
@@ -57,7 +32,7 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
-        {/* ❌ remove user prop, NavUser handles it internally */}
+        {/* NavUser handles its own state internally from the auth store */}
         <NavUser />
       </SidebarFooter>
 

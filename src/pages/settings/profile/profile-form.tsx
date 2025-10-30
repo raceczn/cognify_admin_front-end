@@ -16,7 +16,10 @@ import {
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/auth-store'
-import { profile as profileApi } from '@/lib/auth-hooks' // renamed to avoid collision with local "profile" object
+// --- FIX: Import from profile-hooks, not auth-hooks ---
+import { updateProfile } from '@/lib/profile-hooks'
+import { toast } from 'sonner'
+
 
 // Schema (no update_at)
 const accountFormSchema = z.object({
@@ -50,57 +53,58 @@ export function ProfileForm() {
   })
 
   function resetToStoreValues() {
+    // Re-fetch from store in case it updated
+    const currentUser = useAuthStore.getState().auth.user
     form.reset({
-      first_name: profile?.first_name ?? undefined,
-      middle_name: profile?.middle_name ?? undefined,
-      last_name: profile?.last_name ?? undefined,
-      nickname: profile?.nickname ?? undefined,
+      first_name: currentUser?.profile?.first_name ?? undefined,
+      middle_name: currentUser?.profile?.middle_name ?? undefined,
+      last_name: currentUser?.profile?.last_name ?? undefined,
+      nickname: currentUser?.profile?.nickname ?? undefined,
     })
   }
 
   // Submit handler is async so react-hook-form sets isSubmitting automatically
   async function onSubmit(data: AccountFormValues) {
-  const userId = user?.profile?.user_id
-  if (!userId) {
-    console.error("Missing user id; cannot update profile")
-    return
-  }
-
-  // add timestamp
-  const finalData = { ...data, update_at: new Date() }
-
-  try {
-    // call backend (waits for updated profile)
-    const updated = await profileApi(finalData, userId, "PUT")
-
-    // ✅ merge updated profile into Zustand immediately
-    const auth = useAuthStore.getState().auth
-    const currentUser = auth.user
-    if (currentUser && updated?.profile) {
-      auth.setUser({
-        ...currentUser,
-        profile: {
-          ...currentUser.profile,
-          ...updated.profile, // merge the latest values
-        },
-      })
+    // --- FIX: Use the UID from the root of the auth user ---
+    const userId = user?.uid
+    if (!userId) {
+      toast.error("Missing user id; cannot update profile")
+      console.error('Missing user id; cannot update profile')
+      return
     }
 
-    // ✅ also update form state immediately
-    form.reset({
-      first_name: updated.profile.first_name ?? "",
-      middle_name: updated.profile.middle_name ?? "",
-      last_name: updated.profile.last_name ?? "",
-      nickname: updated.profile.nickname ?? "",
-    })
+    try {
+      // call backend (waits for updated profile)
+      const updatedProfile = await updateProfile(userId, data)
 
-    console.log("Profile updated immediately:", updated.profile)
-    setIsEditing(false)
-  } catch (error) {
-    console.error("Error updating profile:", error)
+      // ✅ merge updated profile into Zustand immediately
+      const auth = useAuthStore.getState().auth
+      const currentUser = auth.user
+      if (currentUser && updatedProfile) {
+        auth.setUser({
+          ...currentUser,
+          profile: {
+            ...currentUser.profile,
+            ...updatedProfile, // merge the latest values
+          },
+        })
+      }
+
+      // ✅ also update form state immediately
+      form.reset({
+        first_name: updatedProfile.first_name ?? '',
+        middle_name: updatedProfile.middle_name ?? '',
+        last_name: updatedProfile.last_name ?? '',
+        nickname: updatedProfile.nickname ?? '',
+      })
+
+      toast.success('Profile updated successfully!')
+      setIsEditing(false)
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || 'Failed to update profile')
+      console.error('Error updating profile:', error)
+    }
   }
-}
-
 
   function handleStartEditing(e?: React.MouseEvent) {
     e?.preventDefault()
@@ -116,8 +120,6 @@ export function ProfileForm() {
     setIsEditing(false)
   }
 
-  console.log(user)
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -128,7 +130,7 @@ export function ProfileForm() {
             <FormItem>
               <FormLabel>First name</FormLabel>
               <FormControl>
-                <Input placeholder="First name" {...field} disabled={!isEditing} />
+                <Input placeholder="First name" {...field} value={field.value || ''} disabled={!isEditing} />
               </FormControl>
               <FormDescription>Given name shown on your profile.</FormDescription>
               <FormMessage />
@@ -143,7 +145,7 @@ export function ProfileForm() {
             <FormItem>
               <FormLabel>Middle name</FormLabel>
               <FormControl>
-                <Input placeholder="Middle name" {...field} disabled={!isEditing} />
+                <Input placeholder="Middle name" {...field} value={field.value || ''} disabled={!isEditing} />
               </FormControl>
               <FormDescription>Optional — middle name or initial.</FormDescription>
               <FormMessage />
@@ -158,7 +160,7 @@ export function ProfileForm() {
             <FormItem>
               <FormLabel>Last name</FormLabel>
               <FormControl>
-                <Input placeholder="Last name" {...field} disabled={!isEditing} />
+                <Input placeholder="Last name" {...field} value={field.value || ''} disabled={!isEditing} />
               </FormControl>
               <FormDescription>Family name shown on your profile.</FormDescription>
               <FormMessage />
@@ -173,7 +175,7 @@ export function ProfileForm() {
             <FormItem>
               <FormLabel>Nickname</FormLabel>
               <FormControl>
-                <Input placeholder="Nickname (optional)" {...field} disabled={!isEditing} />
+                <Input placeholder="Nickname (optional)" {...field} value={field.value || ''} disabled={!isEditing} />
               </FormControl>
               <FormDescription>This name can be used across the app.</FormDescription>
               <FormMessage />
@@ -188,7 +190,7 @@ export function ProfileForm() {
               <Button
                 type="submit"
                 variant="default"
-                disabled={!form.formState.isValid || form.formState.isSubmitting}
+                disabled={!form.formState.isDirty || !form.formState.isValid || form.formState.isSubmitting}
               >
                 {form.formState.isSubmitting ? 'Saving...' : 'Save changes'}
               </Button>
@@ -207,3 +209,4 @@ export function ProfileForm() {
     </Form>
   )
 }
+

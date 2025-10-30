@@ -3,73 +3,70 @@ import { create } from 'zustand'
 import { getCookie, setCookie, removeCookie } from '@/lib/cookies'
 import { setAccessToken as setAxiosAccessToken } from '@/lib/axios-client'
 
-// This function is still problematic, recommend not using it.
-export const syncAuthFromBackend = (data: any) => {
-  const { auth } = useAuthStore.getState()
-  if (!data) return
-
-  if (data.token) auth.setAccessToken(data.token)
-  if (data.refresh_token) auth.setRefreshToken(data.refresh_token)
-
-  const newUser = {
-    uid: data.uid ?? auth.user?.uid ?? data.profile?.user_id,
-    email: data.email ?? auth.user?.email,
-    profile: data.profile ?? auth.user?.profile,
-  }
-
-  auth.setUser(newUser)
-}
-
-const ACCESS_TOKEN = 'access_token'
-const USER_INFO = 'user_info'
-const REFRESH_TOKEN = 'refresh_token' // 👈 --- ADD THIS
-
+// --- FIX: This interface now matches your backend's UserProfileModel ---
 interface Profile {
-  user_id?: string
-  last_name?: string
-  middle_name?: string
-  first_name?: string
-  nickname?: string
-  role_id?: string
-  updated_at?: string
-  deleted?: boolean
+  id: string; // Firebase UID
+  first_name?: string;
+  middle_name?: string;
+  last_name?: string;
+  nickname?: string;
+  role_id: string;
+  email: string;
+  pre_assessment_score?: number;
+  ai_confidence?: number;
+  current_module?: string;
+  created_at: string;
+  updated_at?: string;
+  deleted: boolean;
+  // Note: 'progress' is not included in the token,
+  // it would be fetched separately if needed.
 }
 
+// This is the full user object we'll store
 interface AuthUser {
-  uid?: string
-  email: string
-  profile?: Profile
-  role_id?: string
-  exp?: number
+  uid: string;
+  email: string;
+  role_id: string;
+  profile: Profile;
+  exp: number;
 }
+// --- END FIX ---
+
+// Renamed cookie constants for clarity
+const ACCESS_TOKEN_KEY = 'access_token'
+const REFRESH_TOKEN_KEY = 'refresh_token'
+const USER_INFO_KEY = 'user_info'
 
 export interface AuthState {
   auth: {
     user: AuthUser | null
-    setUser: (user: Partial<AuthUser> | null) => void // 👈 Allow partial updates
     accessToken: string
+    refreshToken: string
+    setLoginData: (user: AuthUser, accessToken: string, refreshToken: string) => void
+    setUser: (user: AuthUser | null) => void
     setAccessToken: (accessToken: string) => void
-    refreshToken: string // 👈 --- ADD THIS
-    setRefreshToken: (refreshToken: string) => void // 👈 --- ADD THIS
-    setLoginData: (user: Partial<AuthUser>, accessToken: string, refreshToken: string) => void // 👈 --- ADD THIS
     reset: () => void
-    resetAccessToken: () => void
   }
 }
 
+// Helper to get initial state from cookies
 const getInitialState = () => {
-  const tokenCookie = getCookie(ACCESS_TOKEN)
-  const userCookie = getCookie(USER_INFO)
-  const refreshCookie = getCookie(REFRESH_TOKEN) // 👈 --- ADD THIS
+  const tokenCookie = getCookie(ACCESS_TOKEN_KEY)
+  const userCookie = getCookie(USER_INFO_KEY)
+  const refreshCookie = getCookie(REFRESH_TOKEN_KEY)
 
   const initToken = tokenCookie ? JSON.parse(tokenCookie) : ''
   const initUser = userCookie ? JSON.parse(userCookie) : null
-  const initRefresh = refreshCookie ? JSON.parse(refreshCookie) : '' // 👈 --- ADD THIS
+  const initRefresh = refreshCookie ? JSON.parse(refreshCookie) : ''
+
+  if (initToken) {
+    setAxiosAccessToken(initToken) // Sync axios on load
+  }
 
   return {
     user: initUser,
     accessToken: initToken,
-    refreshToken: initRefresh, // 👈 --- ADD THIS
+    refreshToken: initRefresh,
   }
 }
 
@@ -80,99 +77,55 @@ export const useAuthStore = create<AuthState>()((set) => ({
     setUser: (user) =>
       set((state) => {
         if (user === null) {
-          removeCookie(USER_INFO)
+          removeCookie(USER_INFO_KEY)
           return { ...state, auth: { ...state.auth, user: null } }
         }
-
-        // This is the merge logic you were trying to do in your screenshot
-        const mergedUser = { ...state.auth.user, ...user } as AuthUser
-
-        // This correctly finds the UID from either the top level OR the profile
-        const cleanUser: AuthUser = {
-          email: mergedUser.email,
-          uid: mergedUser.uid ?? mergedUser.profile?.user_id, // 👈 --- CORRECTED
-          profile: mergedUser.profile || {},
-          role_id: mergedUser.role_id ?? mergedUser.profile?.role_id,
-          exp: mergedUser.exp,
-        }
         
-        // Remove undefined keys
-        Object.keys(cleanUser).forEach(key => {
-          if (cleanUser[key as keyof AuthUser] === undefined) {
-            delete cleanUser[key as keyof AuthUser];
-          }
-        });
-
-        setCookie(USER_INFO, JSON.stringify(cleanUser))
-        return { ...state, auth: { ...state.auth, user: cleanUser } }
+        // Merge with existing user data just in case
+        const mergedUser = { ...(state.auth.user || {}), ...user } as AuthUser
+        
+        setCookie(USER_INFO_KEY, JSON.stringify(mergedUser))
+        return { ...state, auth: { ...state.auth, user: mergedUser } }
       }),
 
     setAccessToken: (accessToken) =>
       set((state) => {
-        setCookie(ACCESS_TOKEN, JSON.stringify(accessToken))
+        setCookie(ACCESS_TOKEN_KEY, JSON.stringify(accessToken))
         setAxiosAccessToken(accessToken) // Sync with axios client
         return { ...state, auth: { ...state.auth, accessToken } }
       }),
       
-    // ---------------------------------
-    // 👇 --- ADD THESE NEW FUNCTIONS --- 👇
-    // ---------------------------------
-
-    setRefreshToken: (refreshToken) =>
-      set((state) => {
-        setCookie(REFRESH_TOKEN, JSON.stringify(refreshToken))
-        return { ...state, auth: { ...state.auth, refreshToken } }
-      }),
-
+    // --- NEW ATOMIC FUNCTION ---
+    // This sets everything in one go, fixing race conditions
     setLoginData: (user, accessToken, refreshToken) =>
       set((state) => {
         // 1. Set User
-        const mergedUser = { ...state.auth.user, ...user } as AuthUser
-        const cleanUser: AuthUser = {
-          email: mergedUser.email,
-          uid: mergedUser.uid ?? mergedUser.profile?.user_id,
-          profile: mergedUser.profile || {},
-          role_id: mergedUser.role_id ?? mergedUser.profile?.role_id,
-          exp: mergedUser.exp,
-        }
-        Object.keys(cleanUser).forEach(key => {
-          if (cleanUser[key as keyof AuthUser] === undefined) {
-            delete cleanUser[key as keyof AuthUser];
-          }
-        });
-        setCookie(USER_INFO, JSON.stringify(cleanUser))
+        setCookie(USER_INFO_KEY, JSON.stringify(user))
 
         // 2. Set Access Token
-        setCookie(ACCESS_TOKEN, JSON.stringify(accessToken))
+        setCookie(ACCESS_TOKEN_KEY, JSON.stringify(accessToken))
         setAxiosAccessToken(accessToken)
 
         // 3. Set Refresh Token
-        setCookie(REFRESH_TOKEN, JSON.stringify(refreshToken))
+        setCookie(REFRESH_TOKEN_KEY, JSON.stringify(refreshToken))
 
         // 4. Return all at once
         return {
           ...state,
           auth: {
             ...state.auth,
-            user: cleanUser,
+            user: user,
             accessToken: accessToken,
             refreshToken: refreshToken,
           },
         }
       }),
 
-    resetAccessToken: () =>
-      set((state) => {
-        removeCookie(ACCESS_TOKEN)
-        setAxiosAccessToken(null)
-        return { ...state, auth: { ...state.auth, accessToken: '' } }
-      }),
-
     reset: () =>
       set((state) => {
-        removeCookie(ACCESS_TOKEN)
-        removeCookie(USER_INFO)
-        removeCookie(REFRESH_TOKEN) // 👈 --- ADD THIS
+        removeCookie(ACCESS_TOKEN_KEY)
+        removeCookie(USER_INFO_KEY)
+        removeCookie(REFRESH_TOKEN_KEY)
         setAxiosAccessToken(null)
         return {
           ...state,
@@ -180,9 +133,10 @@ export const useAuthStore = create<AuthState>()((set) => ({
             ...state.auth,
             user: null,
             accessToken: '',
-            refreshToken: '', // 👈 --- ADD THIS
+            refreshToken: '',
           },
         }
       }),
   },
 }))
+

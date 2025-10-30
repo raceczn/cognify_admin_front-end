@@ -1,18 +1,9 @@
-// --- 1. NEW IMPORTS ---
-import { useEffect, useState } from 'react'
-import { useNavigate } from '@tanstack/react-router'
-import { roles } from '@/pages/users/data/data'
+// src/pages/dashboard/index.tsx
+
+// --- 1. REMOVED ALL UNUSED AUTH-RELATED IMPORTS ---
 import { IconTrendingUp } from '@tabler/icons-react'
-import { Loader2 } from 'lucide-react'
-import { toast } from 'sonner'
-import { useAuthStore } from '@/stores/auth-store'
-import { getProfile } from '@/lib/profile-hooks'
 import { usePermissions } from '@/hooks/use-permissions'
 import { Badge } from '@/components/ui/badge'
-// --- END NEW IMPORTS ---
-
-// --- Original Imports ---
-// import { Button } from '@/components/ui/button'
 import {
   Card,
   CardHeader,
@@ -33,83 +24,13 @@ import { Overview } from './components/overview'
 import { RecentSales } from './components/recent-sales'
 
 export function Dashboard() {
-  // --- 2. AUTH GUARD LOGIC ---
-  const { auth } = useAuthStore()
-  const navigate = useNavigate()
+  // --- 2. GET PERMISSIONS (This is fine) ---
   const { isAdmin } = usePermissions()
-  const [isCheckingRole, setIsCheckingRole] = useState(true) // Start loading
 
-  useEffect(() => {
-    const checkRoleAndFetchProfile = async () => {
-      // 1. Check if logged in (token and user ID must exist)
-      if (!auth.accessToken || !auth.user?.uid) {
-        toast.error('You must be logged in to view this page.')
-        navigate({ to: '/sign-in', replace: true })
-        return // Stop execution
-      }
+  // --- 3. REMOVED THE REDUNDANT `useEffect` AUTH GUARD ---
+  // Your `src/routes/__root.tsx` file already handles this!
 
-      let userProfile = auth.user
-
-      // 2. Check if profile is fully loaded (i.e., we don't have the role yet)
-      //    We check for `role_id` or `profile.role_id` for safety
-      if (!userProfile.role_id && !userProfile.profile?.role_id) {
-        try {
-          // Profile is not fully loaded, fetch it using the uid
-          const fullProfile = await getProfile(auth.user.uid)
-
-          // `getProfile` returns the full user object from the backend
-          auth.setUser(fullProfile) // Update the store
-          userProfile = fullProfile // Use this new data for the check
-        } catch (error) {
-          toast.error('Session expired. Please log in again.')
-          auth.reset()
-          navigate({ to: '/sign-in', replace: true })
-          return // Stop execution
-        }
-      }
-
-      // 3. Perform the role check using role IDs
-      const userRole = userProfile.role_id || userProfile.profile?.role_id
-
-      // Get the student role ID
-      const studentRoleId = roles.find(
-        (r) => r.designation === 'student'
-      )?.value
-      const facultyRoleId = roles.find(
-        (r) => r.designation === 'faculty_member'
-      )?.value
-      const adminRoleId = roles.find((r) => r.designation === 'admin')?.value
-
-      if (userRole === studentRoleId) {
-        toast.error(
-          'Access Denied: Only faculty and admin accounts can access the dashboard.'
-        )
-        auth.reset() // Log them out
-        navigate({ to: '/sign-in', replace: true })
-      } else if (userRole === facultyRoleId || userRole === adminRoleId) {
-        // User is logged in, has a profile, and is either faculty or admin
-        setIsCheckingRole(false) // Allow the page to render
-      } else {
-        toast.error('Access Denied: Invalid role or insufficient permissions.')
-        auth.reset() // Log them out
-        navigate({ to: '/sign-in', replace: true })
-      }
-    }
-
-    checkRoleAndFetchProfile()
-  }, [auth.user, auth.accessToken, auth.setUser, navigate, auth])
-
-  // Show a loading spinner while we verify the user's role
-  if (isCheckingRole) {
-    return (
-      <div className='flex h-screen w-full items-center justify-center'>
-        <Loader2 className='h-12 w-12 animate-spin' />
-      </div>
-    )
-  }
-  // --- END AUTH GUARD LOGIC ---
-
-  // --- 3. YOUR ORIGINAL DASHBOARD JSX ---
+  // --- 4. YOUR ORIGINAL DASHBOARD JSX ---
   // This will only render if the user is NOT a student
   return (
     <>
@@ -130,11 +51,8 @@ export function Dashboard() {
           <h1 className='text-2xl font-bold tracking-tight'>
             {isAdmin ? 'Admin Dashboard' : 'Faculty Dashboard'}
           </h1>
-          <div className='flex items-center space-x-2'>
-            {/* <Button>Generate Report</Button> */}
-          </div>
         </div>
-
+        
         {/* ===== Cards ===== */}
         <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4'>
           {/* Registered Users */}
@@ -231,25 +149,25 @@ export function Dashboard() {
   )
 }
 
-// --- YOUR UPDATED topNav ---
+// --- 5. YOUR UPDATED topNav ---
 const getTopNav = (isAdmin: boolean) => [
   {
     title: 'Overview',
-    href: 'dashboard/overview',
+    href: '/', // Changed from 'dashboard/overview' to '/'
     isActive: true,
     disabled: false,
   },
   {
-    title: 'Students',
-    href: '/users/students',
+    title: 'Users', // 'Students' and 'All Users' are confusing. Just 'Users'
+    href: '/users',
     isActive: false,
     disabled: false,
   },
   {
-    title: 'All Users',
-    href: '/users',
+    title: 'Analytics',
+    href: '/analytics',
     isActive: false,
-    disabled: !isAdmin, // Only enabled for admin
+    disabled: false,
   },
   {
     title: 'Settings',
@@ -258,3 +176,4 @@ const getTopNav = (isAdmin: boolean) => [
     disabled: false,
   },
 ]
+

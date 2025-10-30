@@ -1,10 +1,11 @@
+// src/pages/users/components/users-delete-dialog.tsx
 'use client'
 
 import { useState } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
+// --- FIX: Import the correct hook ---
 import { deleteProfile } from '@/lib/profile-hooks'
-import { showSubmittedData } from '@/lib/show-submitted-data'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -24,42 +25,43 @@ export function UsersDeleteDialog({
   currentRow,
 }: UserDeleteDialogProps) {
   const [value, setValue] = useState('')
-
+  const [isLoading, setIsLoading] = useState(false)
   const { updateLocalUsers } = useUsers()
 
   const handleDelete = async () => {
-    if (value.trim() !== currentRow.username) return
+    // --- FIX: Use 'email' for confirmation, it's more reliable ---
+    if (value.trim() !== currentRow.email) {
+      toast.error("The email you entered does not match.")
+      return
+    }
+    
+    setIsLoading(true)
     try {
-      // Call the API
+      // 1. Call the soft-delete API
       const response = await deleteProfile(currentRow.id)
-      console.log('Deleting user:', currentRow)
-      console.log('Deletion response:', response)
 
-      // Transform the response to match User schema
+      // 2. Update local state immediately
+      // The response is the soft-deleted user profile
       const updatedUser: User = {
         ...currentRow,
-        deleted: true,
-        // Update any other fields from response
-        ...(response.data || {}),
+        ...response.profile, // Merge latest data from backend
+        deleted: response.profile.deleted, // Ensure deleted is true
       }
+      updateLocalUsers(updatedUser, 'edit') // 'edit' to update status
 
-      // Update local state immediately
-      updateLocalUsers(updatedUser, 'edit')
-
-      // Close dialog and show success message
+      // 3. Close dialog and show success
       onOpenChange(false)
       toast.success(
-        `${currentRow.first_name} ${currentRow.last_name} has been deleted successfully`
+        `${currentRow.first_name} ${currentRow.last_name} has been soft-deleted.`
       )
-
-      // For debugging
-      showSubmittedData(updatedUser, 'The following user has been deleted:')
     } catch (error: any) {
       console.error('Error deleting user:', error)
       toast.error(
         error.response?.data?.detail ||
           'Failed to delete user. Please try again.'
       )
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -68,7 +70,7 @@ export function UsersDeleteDialog({
       open={open}
       onOpenChange={onOpenChange}
       handleConfirm={handleDelete}
-      disabled={value.trim() !== currentRow.username}
+      disabled={value.trim() !== currentRow.email || isLoading}
       title={
         <span className='text-destructive'>
           <AlertTriangle
@@ -82,34 +84,31 @@ export function UsersDeleteDialog({
         <div className='space-y-4'>
           <p className='mb-2'>
             Are you sure you want to delete{' '}
-            <span className='font-bold'>{currentRow.username}</span>?
+            <span className='font-bold'>{`${currentRow.first_name} ${currentRow.last_name}`}</span>?
             <br />
-            This action will permanently remove the user with the role of{' '}
-            <span className='font-bold'>
-              {currentRow.role.toUpperCase()}
-            </span>{' '}
-            from the system. This cannot be undone.
+            This action will perform a soft-delete. The user can be restored later.
           </p>
 
           <Label className='my-2'>
-            Username:
+            Type the user's email <span className='font-bold text-destructive'>{currentRow.email}</span> to confirm:
             <Input
               value={value}
               onChange={(e) => setValue(e.target.value)}
-              placeholder='Enter username to confirm deletion.'
+              placeholder='Enter user email to confirm deletion.'
             />
           </Label>
 
           <Alert variant='destructive'>
             <AlertTitle>Warning!</AlertTitle>
             <AlertDescription>
-              Please be careful, this operation can not be rolled back.
+              This will disable the user's account and remove them from active lists.
             </AlertDescription>
           </Alert>
         </div>
       }
-      confirmText='Delete'
+      confirmText='Delete User'
       destructive
+      isLoading={isLoading}
     />
   )
 }

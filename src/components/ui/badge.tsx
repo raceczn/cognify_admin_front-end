@@ -1,3 +1,4 @@
+// src/components/ui/badge.tsx
 import * as React from 'react'
 import { Slot } from '@radix-ui/react-slot'
 import { cva, type VariantProps } from 'class-variance-authority'
@@ -14,6 +15,9 @@ const badgeVariants = cva(
           'border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90',
         destructive:
           'border-transparent bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60',
+        // --- 1. ADD THIS 'success' VARIANT ---
+        success:
+          'border-transparent bg-green-600 text-white [a&]:hover:bg-green-600/90 dark:bg-green-700',
         outline:
           'text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground',
       },
@@ -43,3 +47,4 @@ function Badge({
 }
 
 export { Badge, badgeVariants }
+

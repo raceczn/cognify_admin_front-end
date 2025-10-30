@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { showSubmittedData } from '@/lib/show-submitted-data'
+// import { showSubmittedData } from '@/lib/show-submitted-data'
 import {
   Form,
   FormControl,
@@ -15,8 +15,10 @@ import {
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/auth-store'
-import { profile as profileApi } from '@/lib/auth-hooks'
-// import { syncAuthFromBackend } from '@/stores/auth-store'
+// --- FIX: Import from profile-hooks, not auth-hooks ---
+import { updateProfile } from '@/lib/profile-hooks'
+import { toast } from 'sonner'
+import { requestPasswordReset } from '@/lib/auth-hooks' // For password reset
 
 const accountFormSchema = z.object({
   nickname: z.string().optional(),
@@ -45,57 +47,62 @@ export function AccountForm() {
 
   // Helper to reset form to latest Zustand values
   function resetToStoreValues() {
+    // Re-fetch from store in case it updated
+    const currentUser = useAuthStore.getState().auth.user
     form.reset({
-      nickname: profile?.nickname ?? '',
-      email: user?.email ?? '',
+      nickname: currentUser?.profile?.nickname ?? '',
+      email: currentUser?.email ?? '',
     })
   }
 
   async function onSubmit(data: AccountFormValues) {
-    const userId = user?.profile?.user_id
+    // --- FIX: Use the UID from the root of the auth user ---
+    const userId = user?.uid
     if (!userId) {
+      toast.error('Missing user id; cannot update account')
       console.error('Missing user id; cannot update account')
       return
     }
 
-    const finalData = { ...data, update_at: new Date() }
-
     try {
       // ✅ 1. Send PUT to backend
-      const updated = await profileApi(finalData, userId, 'PUT')
+      const updatedProfile = await updateProfile(userId, data)
 
       // ✅ 2. Update Zustand store instantly with the latest data
       const authStore = useAuthStore.getState().auth
       const currentUser = authStore.user
 
-      if (currentUser && updated?.profile) {
+      if (currentUser && updatedProfile) {
         authStore.setUser({
           ...currentUser,
-          email: updated.email ?? currentUser.email,
+          email: updatedProfile.email ?? currentUser.email,
           profile: {
             ...currentUser.profile,
-            ...updated.profile,
+            ...updatedProfile, // merge the latest values
           },
         })
       }
 
       // ✅ 3. Update form UI immediately
       form.reset({
-        nickname: updated.profile.nickname ?? '',
-        email: updated.email ?? '',
+        nickname: updatedProfile.nickname ?? '',
+        email: updatedProfile.email ?? '',
       })
 
-      showSubmittedData(finalData)
-      console.log('✅ Account updated immediately:', updated.profile)
-
+      toast.success('Account updated successfully!')
       setIsEditing(false)
-    } catch (error) {
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || 'Failed to update account')
       console.error('❌ Error updating account:', error)
     }
   }
 
   function handleRequestPasswordChange() {
-    console.log('Requesting password change for:', user?.email)
+    if (user?.email) {
+      requestPasswordReset(user.email);
+    } else {
+      toast.error("Could not find user email to send reset link.")
+    }
   }
 
   function handleStartEditing(e?: React.MouseEvent) {
@@ -121,7 +128,7 @@ export function AccountForm() {
             <FormItem>
               <FormLabel>Username</FormLabel>
               <FormControl>
-                <Input placeholder="username" {...field} disabled={!isEditing} />
+                <Input placeholder="username" {...field} value={field.value || ''} disabled={!isEditing} />
               </FormControl>
               <FormDescription>
                 Public display name. Editable only when in edit mode.
@@ -173,7 +180,7 @@ export function AccountForm() {
               <Button
                 type="submit"
                 variant="default"
-                disabled={!form.formState.isValid || form.formState.isSubmitting}
+                disabled={!form.formState.isDirty || !form.formState.isValid || form.formState.isSubmitting}
               >
                 {form.formState.isSubmitting ? 'Saving...' : 'Save changes'}
               </Button>
@@ -192,3 +199,4 @@ export function AccountForm() {
     </Form>
   )
 }
+
