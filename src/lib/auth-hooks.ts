@@ -1,5 +1,5 @@
 // src/lib/auth-hooks.ts
-import api, { setAccessToken, setRefreshToken } from '@/lib/axios-client'
+import api, { getAccessToken, setAccessToken, setRefreshToken } from '@/lib/axios-client'
 import { auth } from '@/lib/firebase-config'
 import { sendPasswordResetEmail } from 'firebase/auth';
 
@@ -46,7 +46,7 @@ export async function logout() {
   // 2. Kept setAccessToken(null) as it's a good immediate failsafe.
   //    The store reset should be handled in the UI.
   // ---------------------------------
-  await api.post('/auth/logout', {}, { withCredentials: true })
+  await api.post('/auth/logout', { headers: { Authorization: `Bearer ${getAccessToken()}` } }, { withCredentials: true })
   setAccessToken(null)
   setRefreshToken(null) // clear in-memory backup
 }

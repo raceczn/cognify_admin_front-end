@@ -29,7 +29,7 @@ export const setRefreshToken = (token: string | null) => {
   if (token) {
     useAuthStore.getState().auth.setRefreshToken(token);
   } else {
-    // Handle reset if needed, though store.reset() is better
+    useAuthStore.getState().auth.reset();
   }
 };
 
