@@ -1,8 +1,9 @@
 import { z } from 'zod'
 
 const userStatusSchema = z.union([
-  z.literal('active'),
-  z.literal('deleted'),
+  z.literal('online'),
+  z.literal('offline'),
+  z.literal('busy'),
 
 ])
 export type UserStatus = z.infer<typeof userStatusSchema>
