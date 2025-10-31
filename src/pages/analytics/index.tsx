@@ -1,9 +1,23 @@
 // src/pages/analytics/index.tsx
 'use client'
-import { useQuery } from '@tanstack/react-query'
+
 // --- 1. Import the hook, not the function ---
+import { Users, UserCheck, UserX, Percent } from 'lucide-react'
 import { useGlobalPredictions } from '@/lib/analytics-hooks'
+import { Badge } from '@/components/ui/badge'
+// --- 2. Import new components ---
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
+import { Skeleton } from '@/components/ui/skeleton'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
@@ -11,18 +25,18 @@ import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { ChartAreaInteractive } from './components/Usergrowth'
-import { ChartPieSimple } from './components/Role-piechart'
+import { ChartTooltipLabelCustom } from './components/chart-tooltip-label-custom'
 import { PredictionsTable } from './components/predictions-table'
-// --- 2. Import new components ---
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Users, UserCheck, UserX, Percent } from 'lucide-react'
+
+// src/pages/analytics/index.tsx
+
+// src/pages/analytics/index.tsx
+
+// src/pages/analytics/index.tsx
+
+// src/pages/analytics/index.tsx
+
+// src/pages/analytics/index.tsx
 
 export function Apps() {
   // --- 3. Fetch global predictions data here for the summary cards ---
@@ -56,7 +70,8 @@ export function Apps() {
                 Dashboard Analytics
               </h1>
               <p className='text-muted-foreground'>
-                Monitor system activity, user growth, and AI-powered predictions.
+                Monitor system activity, user growth, and AI-powered
+                predictions.
               </p>
             </div>
 
@@ -68,82 +83,89 @@ export function Apps() {
             </h3>
             {isLoadingPredictions ? (
               <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4'>
-                <Skeleton className='h-32' />
-                <Skeleton className='h-32' />
-                <Skeleton className='h-32' />
-                <Skeleton className='h-32' />
+                <Skeleton className='h-28' />
+                <Skeleton className='h-28' />
+                <Skeleton className='h-28' />
+                <Skeleton className='h-28' />
               </div>
             ) : summary ? (
               <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4'>
+                {/* Total Students */}
                 <Card>
-                  <CardHeader className='flex-row items-center justify-between space-y-0 pb-2'>
-                    <CardTitle className='text-sm font-medium'>
-                      Total Students
-                    </CardTitle>
-                    <Users className='h-4 w-4 text-muted-foreground' />
-                  </CardHeader>
-                  <CardContent>
-                    <div className='text-2xl font-bold'>
+                  <CardHeader>
+                    <CardDescription>Total Students</CardDescription>
+                    <CardTitle className='text-3xl font-semibold'>
                       {summary.total_students_predicted}
-                    </div>
-                    <p className='text-xs text-muted-foreground'>
-                      Active students analyzed
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className='flex-row items-center justify-between space-y-0 pb-2'>
-                    <CardTitle className='text-sm font-medium'>
-                      Predicted Pass Rate
                     </CardTitle>
-                    <Percent className='h-4 w-4 text-muted-foreground' />
+                    <CardAction>
+                      <Badge variant='outline'>
+                        <Users className='mr-1 size-4' /> +5%
+                      </Badge>
+                    </CardAction>
                   </CardHeader>
-                  <CardContent>
-                    <div className='text-2xl font-bold'>
+                  <CardFooter className='text-muted-foreground text-sm'>
+                    Active students analyzed
+                  </CardFooter>
+                </Card>
+
+                {/* Predicted Pass Rate */}
+                <Card>
+                  <CardHeader>
+                    <CardDescription>Predicted Pass Rate</CardDescription>
+                    <CardTitle className='text-3xl font-semibold'>
                       {summary.predicted_pass_rate.toFixed(2)}%
-                    </div>
-                    <p className='text-xs text-muted-foreground'>
-                      Based on current model
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className='flex-row items-center justify-between space-y-0 pb-2'>
-                    <CardTitle className='text-sm font-medium'>
-                      Predicted to Pass
                     </CardTitle>
-                    <UserCheck className='h-4 w-4 text-muted-foreground' />
+                    <CardAction>
+                      <Badge variant='outline'>
+                        <Percent className='mr-1 size-4' /> +2%
+                      </Badge>
+                    </CardAction>
                   </CardHeader>
-                  <CardContent>
-                    <div className='text-2xl font-bold'>
+                  <CardFooter className='text-muted-foreground text-sm'>
+                    Based on current model
+                  </CardFooter>
+                </Card>
+
+                {/* Predicted to Pass */}
+                <Card>
+                  <CardHeader>
+                    <CardDescription>Predicted to Pass</CardDescription>
+                    <CardTitle className='text-3xl font-semibold'>
                       {summary.count_predicted_to_pass}
-                    </div>
-                    <p className='text-xs text-muted-foreground'>
-                      Students on track
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className='flex-row items-center justify-between space-y-0 pb-2'>
-                    <CardTitle className='text-sm font-medium'>
-                      At-Risk (Fail)
                     </CardTitle>
-                    <UserX className='h-4 w-4 text-muted-foreground' />
+                    <CardAction>
+                      <Badge variant='outline'>
+                        <UserCheck className='mr-1 size-4' /> +4%
+                      </Badge>
+                    </CardAction>
                   </CardHeader>
-                  <CardContent>
-                    <div className='text-2xl font-bold'>
+                  <CardFooter className='text-muted-foreground text-sm'>
+                    Students on track
+                  </CardFooter>
+                </Card>
+
+                {/* At-Risk (Fail) */}
+                <Card>
+                  <CardHeader>
+                    <CardDescription>At-Risk (Fail)</CardDescription>
+                    <CardTitle className='text-3xl font-semibold'>
                       {summary.count_predicted_to_fail}
-                    </div>
-                    <p className='text-xs text-muted-foreground'>
-                      Students needing support
-                    </p>
-                  </CardContent>
+                    </CardTitle>
+                    <CardAction>
+                      <Badge variant='outline'>
+                        <UserX className='mr-1 size-4' /> -3%
+                      </Badge>
+                    </CardAction>
+                  </CardHeader>
+                  <CardFooter className='text-muted-foreground text-sm'>
+                    Students needing support
+                  </CardFooter>
                 </Card>
               </div>
             ) : (
               <Card>
                 <CardContent className='pt-6'>
-                  <p className='text-center text-muted-foreground'>
+                  <p className='text-muted-foreground text-center'>
                     No prediction data available.
                   </p>
                 </CardContent>
@@ -151,18 +173,28 @@ export function Apps() {
             )}
 
             {/* --- 6. Existing Charts (now with margin) --- */}
-            <h3 className='my-4 text-lg font-semibold'>User Growth</h3>
-            <div className='flex flex-col gap-4 sm:flex-row'>
-              <div className='w-full sm:w-[70%]'>
-                <ChartAreaInteractive />
+            <h3 className='my-4 text-lg font-semibold'></h3>
+
+            {/* Wrapper for equal height layout */}
+            <div className='flex flex-col gap-4 sm:h-[420px] sm:flex-row'>
+              {/* Left Chart */}
+              <div className='h-full w-full sm:w-[60%]'>
+                <div className='h-full'>
+                  <ChartAreaInteractive />
+                </div>
               </div>
-              <div className='w-full sm:w-[30%]'>
-                <ChartPieSimple />
+
+              {/* Right Chart */}
+              <div className='h-full w-full sm:w-[40%]'>
+                <div className='h-full'>
+                  <ChartTooltipLabelCustom />
+                </div>
               </div>
             </div>
 
             {/* --- 7. Pass data down to Predictions Table --- */}
             <div className='mt-4'>
+              {' '}
               <PredictionsTable
                 data={predictionData}
                 isLoading={isLoadingPredictions}
@@ -175,4 +207,3 @@ export function Apps() {
     </>
   )
 }
-

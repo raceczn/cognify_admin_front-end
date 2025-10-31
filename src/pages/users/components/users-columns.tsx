@@ -37,12 +37,12 @@ export const usersColumns: ColumnDef<User>[] = [
     enableHiding: false,
   },
   {
-    accessorKey: 'username',
+    accessorKey: 'id',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Username' />
+      <DataTableColumnHeader column={column} title='ID' />
     ),
     cell: ({ row }) => (
-      <LongText className='max-w-36 ps-3'>{row.getValue('username')}</LongText>
+      <LongText className='max-w-36 ps-3'>{row.getValue('id')}</LongText>
     ),
     meta: {
       className: cn(
@@ -51,6 +51,16 @@ export const usersColumns: ColumnDef<User>[] = [
       ),
     },
     enableHiding: false,
+  },
+
+  {
+    accessorKey: 'username',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Username' />
+    ),
+    cell: ({ row }) => (
+      <div className='w-fit text-nowrap'>{row.getValue('username')}</div>
+    ),
   },
   {
     id: 'full_name',
@@ -68,14 +78,6 @@ export const usersColumns: ColumnDef<User>[] = [
     },
   },
 
-  {
-    accessorKey: 'nickname',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Nickname' />
-    ),
-    cell: ({ row }) => <div>{row.getValue('nickname')}</div>,
-    enableSorting: false,
-  },
   {
     accessorKey: 'email',
     header: ({ column }) => (

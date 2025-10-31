@@ -22,7 +22,7 @@ import {
 
 export const description = 'A simple pie chart with dynamic role data'
 
-export function ChartPieSimple() {
+export function RolePie() {
   const [chartData, setChartData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [topRole, setTopRole] = useState<string>('')
