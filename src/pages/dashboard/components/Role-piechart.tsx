@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { roles } from '@/pages/users/data/data'
 import { TrendingUp } from 'lucide-react'
 import { Pie, PieChart } from 'recharts'
 import { getAllProfiles } from '@/lib/profile-hooks'
+import { roles } from '@/pages/users/data/data'
+
 import {
   Card,
   CardContent,
@@ -20,14 +21,13 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart'
 
-export const description = 'A simple pie chart with dynamic role data'
+export const description = 'A pie chart showing dynamic user role distribution'
 
 export function RolePie() {
   const [chartData, setChartData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [topRole, setTopRole] = useState<string>('')
 
-  // ✅ Mapping raw roles to readable names
   const roleLabels: Record<string, string> = {
     faculty_member: 'Faculty Member',
     admin: 'Admin',
@@ -38,16 +38,13 @@ export function RolePie() {
     async function fetchRoles() {
       try {
         const profiles = await getAllProfiles()
-
         const roleCounts: Record<string, number> = {}
 
         profiles.forEach((p: any) => {
           const matchedRole =
             roles.find((r) => r.value === p.role_id)?.designation || 'Unknown'
 
-          // ✅ Convert to readable label
           const readableRole = roleLabels[matchedRole] || matchedRole
-
           roleCounts[readableRole] = (roleCounts[readableRole] || 0) + 1
         })
 
@@ -59,7 +56,6 @@ export function RolePie() {
 
         setChartData(data)
 
-        // ✅ Find the top role
         const top = data.reduce(
           (prev, curr) => (curr.count > prev.count ? curr : prev),
           { role: 'None', count: 0 }
@@ -86,7 +82,7 @@ export function RolePie() {
         <CardDescription>
           {loading
             ? 'Fetching user data...'
-            : 'Shows the number of users by role.'}
+            : 'Distribution of users by their assigned roles'}
         </CardDescription>
       </CardHeader>
 
@@ -98,32 +94,40 @@ export function RolePie() {
         ) : (
           <ChartContainer
             config={chartConfig}
-            className='mx-auto aspect-square max-h-[250px]'
+            className='[&_.recharts-pie-label-text]:fill-foreground mx-auto aspect-square max-h-[250px] pb-0'
           >
             <PieChart>
-              <ChartTooltip
-                cursor={false}
-                content={<ChartTooltipContent hideLabel />}
+              <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+              <Pie
+                data={chartData}
+                dataKey='count'
+                nameKey='role'
+                label
+                isAnimationActive
               />
-              <Pie data={chartData} dataKey='count' nameKey='role' />
             </PieChart>
           </ChartContainer>
         )}
       </CardContent>
 
-      <CardFooter className='text-muted-foreground flex items-center justify-center border-t pt-3 text-sm'>
+      <CardFooter className='flex-col gap-2 text-sm'>
         {loading ? (
-          <span>Analyzing user roles...</span>
+          <div className='text-muted-foreground leading-none'>
+            Analyzing user roles...
+          </div>
         ) : (
-          <div className='flex items-center gap-2 font-medium'>
-            <TrendingUp className='h-4 w-4 text-green-500' />
-            <span>
+          <>
+            <div className='flex items-center gap-2 leading-none font-medium'>
               Most users are{' '}
               <span className='text-foreground font-semibold capitalize'>
                 {topRole || 'Unknown'}
               </span>
-            </span>
-          </div>
+              <TrendingUp className='h-4 w-4 text-green-500' />
+            </div>
+            <div className='text-muted-foreground leading-none'>
+              Showing role distribution across all registered users
+            </div>
+          </>
         )}
       </CardFooter>
     </Card>
