@@ -16,7 +16,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
+// import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
@@ -24,13 +24,10 @@ import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { ChartAreaInteractive } from './components/Usergrowth'
+import { ChartLineDefault } from './components/chart-line-default'
+import { ChartPieLegend } from './components/chart-pie-legend'
 import { ChartTooltipLabelCustom } from './components/chart-tooltip-label-custom'
 import { PredictionsTable } from './components/predictions-table'
-
-// src/pages/analytics/index.tsx
-
-// src/pages/analytics/index.tsx
 
 // src/pages/analytics/index.tsx
 
@@ -74,13 +71,13 @@ export function Apps() {
                 predictions.
               </p>
             </div>
-
+            <div className='my-4'></div>
+            {/* 
             <Separator className='my-4 shadow-sm' />
 
-            {/* --- 5. Add new Summary Cards --- */}
             <h3 className='mb-4 text-lg font-semibold'>
               AI Prediction Summary
-            </h3>
+            </h3> */}
             {isLoadingPredictions ? (
               <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4'>
                 <Skeleton className='h-28' />
@@ -172,27 +169,20 @@ export function Apps() {
               </Card>
             )}
 
-            {/* --- 6. Existing Charts (now with margin) --- */}
             <h3 className='my-4 text-lg font-semibold'></h3>
 
-            {/* Wrapper for equal height layout */}
-            <div className='flex flex-col gap-4 sm:h-[420px] sm:flex-row'>
-              {/* Left Chart */}
-              <div className='h-full w-full sm:w-[60%]'>
-                <div className='h-full'>
-                  <ChartAreaInteractive />
-                </div>
+            <div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
+              <div className='flex h-full flex-col'>
+                <ChartTooltipLabelCustom />
               </div>
-
-              {/* Right Chart */}
-              <div className='h-full w-full sm:w-[40%]'>
-                <div className='h-full'>
-                  <ChartTooltipLabelCustom />
-                </div>
+              <div className='flex h-full flex-col'>
+                <ChartPieLegend />
+              </div>
+              <div className='flex h-full flex-col'>
+                <ChartLineDefault />
               </div>
             </div>
 
-            {/* --- 7. Pass data down to Predictions Table --- */}
             <div className='mt-4'>
               {' '}
               <PredictionsTable

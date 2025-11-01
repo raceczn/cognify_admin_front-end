@@ -123,7 +123,7 @@ export function PredictionsTable({
       </CardHeader>
 
       <CardContent>
-        <ScrollArea className='h-[420px] rounded-md border'>
+        <ScrollArea className='h-[600px] rounded-md border'>
           <Table>
             <TableHeader>
               <TableRow>
