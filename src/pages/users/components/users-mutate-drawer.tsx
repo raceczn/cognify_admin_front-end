@@ -198,7 +198,7 @@ export function UsersMutateDrawer({
             {isEdit
               ? 'Update the user by providing necessary info.'
               : 'Add a new user by providing necessary info.'}{' '}
-            Click save when done.
+            
           </SheetDescription>
         </SheetHeader>
 
@@ -230,20 +230,6 @@ export function UsersMutateDrawer({
                   <FormLabel>Last Name</FormLabel>
                   <FormControl>
                     <Input placeholder='User last name' {...field} value={field.value || ''} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name='nickname'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nickname (Optional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder='User nickname' {...field} value={field.value || ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

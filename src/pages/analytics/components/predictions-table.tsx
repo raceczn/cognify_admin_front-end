@@ -1,6 +1,18 @@
 // src/pages/analytics/components/predictions-table.tsx
-// --- 1. Import `useNavigate` ---
+'use client'
+
 import { useNavigate } from '@tanstack/react-router'
+import { Loader2, CheckCircle2, XCircle, TrendingUp } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Progress } from '@/components/ui/progress'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Table,
   TableBody,
@@ -9,23 +21,15 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Loader2 } from 'lucide-react'
-import { ScrollArea } from '@/components/ui/scroll-area'
 
-// Define the types for the prediction data
+// src/pages/analytics/components/predictions-table.tsx
+
 interface Prediction {
   student_id: string
   predicted_to_pass: boolean
   pass_probability: number
 }
+
 interface PredictionData {
   summary: {
     total_students_predicted: number
@@ -36,7 +40,6 @@ interface PredictionData {
   predictions: Prediction[]
 }
 
-// --- 2. Accept data as props ---
 interface PredictionsTableProps {
   data: PredictionData | null | undefined
   isLoading: boolean
@@ -48,12 +51,10 @@ export function PredictionsTable({
   isLoading,
   error,
 }: PredictionsTableProps) {
-  // --- 3. Get the navigate function ---
   const navigate = useNavigate()
 
   const handleRowClick = (studentId: string) => {
     navigate({
-      // This is the new route you created
       to: '/analytics/student/$studentId',
       params: { studentId },
     })
@@ -61,15 +62,18 @@ export function PredictionsTable({
 
   if (isLoading) {
     return (
-      <Card>
+      <Card className='bg-background/60 border-border/50 border shadow-sm backdrop-blur-sm'>
         <CardHeader>
-          <CardTitle>AI Pass/Fail Predictions</CardTitle>
+          <CardTitle className='flex items-center gap-2'>
+            <TrendingUp className='text-primary h-5 w-5' />
+            AI Pass/Fail Predictions
+          </CardTitle>
           <CardDescription>
-            Running the predictive model on all active students...
+            Running predictive model on all active students...
           </CardDescription>
         </CardHeader>
-        <CardContent className='flex h-[200px] items-center justify-center'>
-          <Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
+        <CardContent className='flex h-[220px] items-center justify-center'>
+          <Loader2 className='text-muted-foreground h-8 w-8 animate-spin' />
         </CardContent>
       </Card>
     )
@@ -77,12 +81,12 @@ export function PredictionsTable({
 
   if (error || !data) {
     return (
-      <Card>
+      <Card className='border-border/50 border shadow-sm'>
         <CardHeader>
           <CardTitle>AI Pass/Fail Predictions</CardTitle>
-          <CardDescription>Could not load AI model data.</CardDescription>
+          <CardDescription>Could not load model data.</CardDescription>
         </CardHeader>
-        <CardContent className='flex h-[200px] items-center justify-center'>
+        <CardContent className='flex h-[220px] items-center justify-center'>
           <span className='text-destructive'>
             {error?.message || 'Failed to load predictions.'}
           </span>
@@ -92,16 +96,34 @@ export function PredictionsTable({
   }
 
   return (
-    <Card>
+    <Card className='border-border/50 bg-background/70 border shadow-sm backdrop-blur-sm'>
       <CardHeader>
-        <CardTitle>AI Pass/Fail Predictions</CardTitle>
-        <CardDescription>
-          Click on a student row to see their detailed analytics.
-        </CardDescription>
+        <div className='flex flex-col md:flex-row md:items-center md:justify-between'>
+          <div>
+            <CardTitle className='flex items-center gap-2'>
+              <TrendingUp className='text-primary h-5 w-5' />
+              AI Pass/Fail Predictions
+            </CardTitle>
+            <CardDescription>
+              Click on a student row to view detailed analytics.
+            </CardDescription>
+          </div>
+          <div className='mt-3 flex flex-wrap gap-2 md:mt-0'>
+            <Badge variant='outline'>
+              Total: {data.summary.total_students_predicted}
+            </Badge>
+            <Badge variant='success'>
+              Pass: {data.summary.count_predicted_to_pass}
+            </Badge>
+            <Badge variant='destructive'>
+              Fail: {data.summary.count_predicted_to_fail}
+            </Badge>
+          </div>
+        </div>
       </CardHeader>
+
       <CardContent>
-        {/* --- 4. Add ScrollArea for the table --- */}
-        <ScrollArea className='h-[400px]'>
+        <ScrollArea className='h-[600px] rounded-md border'>
           <Table>
             <TableHeader>
               <TableRow>
@@ -115,26 +137,47 @@ export function PredictionsTable({
                 data.predictions.map((p) => (
                   <TableRow
                     key={p.student_id}
-                    // --- 5. Add click handler and styling ---
                     onClick={() => handleRowClick(p.student_id)}
-                    className='cursor-pointer hover:bg-muted/50'
+                    className='hover:bg-muted/60 cursor-pointer transition-all hover:shadow-sm'
                   >
-                    <TableCell className='font-medium'>{p.student_id}</TableCell>
+                    <TableCell className='font-medium'>
+                      {p.student_id}
+                    </TableCell>
                     <TableCell>
                       <Badge
-                        variant={p.predicted_to_pass ? 'success' : 'destructive'}
+                        variant='outline'
+                        className='text-muted-foreground flex items-center gap-1.5 px-2 py-0.5 text-sm'
                       >
-                        {p.predicted_to_pass ? 'Pass' : 'Fail'}
+                        {p.predicted_to_pass ? (
+                          <CheckCircle2 className='h-4 w-4 text-green-500 dark:text-green-400' />
+                        ) : (
+                          <XCircle className='h-4 w-4 text-red-500 dark:text-red-400' />
+                        )}
+                        {p.predicted_to_pass ? 'Predicted to Pass' : 'At Risk'}
                       </Badge>
                     </TableCell>
+
                     <TableCell className='text-right'>
-                      {p.pass_probability.toFixed(2)}%
+                      <div className='flex flex-col items-end gap-1'>
+                        <span className='font-semibold'>
+                          {p.pass_probability.toFixed(2)}%
+                        </span>
+                        <Progress
+                          value={p.pass_probability}
+                          className={`h-2 w-[120px] ${
+                            p.predicted_to_pass ? 'bg-green-100' : 'bg-red-100'
+                          }`}
+                        />
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={3} className='h-24 text-center'>
+                  <TableCell
+                    colSpan={3}
+                    className='text-muted-foreground h-24 text-center'
+                  >
                     No student predictions found.
                   </TableCell>
                 </TableRow>
@@ -146,4 +189,3 @@ export function PredictionsTable({
     </Card>
   )
 }
-

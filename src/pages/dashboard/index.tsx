@@ -1,5 +1,4 @@
 // src/pages/dashboard/index.tsx
-
 // --- 1. REMOVED ALL UNUSED AUTH-RELATED IMPORTS ---
 import { IconTrendingUp } from '@tabler/icons-react'
 import { usePermissions } from '@/hooks/use-permissions'
@@ -11,7 +10,6 @@ import {
   CardDescription,
   CardAction,
   CardFooter,
-  CardContent,
 } from '@/components/ui/card'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
@@ -21,7 +19,6 @@ import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { Overview } from './components/overview'
-import { RecentSales } from './components/recent-sales'
 
 export function Dashboard() {
   // --- 2. GET PERMISSIONS (This is fine) ---
@@ -36,7 +33,7 @@ export function Dashboard() {
     <>
       {/* ===== Top Heading ===== */}
       <Header>
-        <TopNav links={getTopNav(isAdmin)} />
+        <TopNav links={getTopNav()} />
         <div className='ms-auto flex items-center space-x-4'>
           <Search />
           <ThemeSwitch />
@@ -121,28 +118,10 @@ export function Dashboard() {
         </div>
 
         {/* ===== Charts ===== */}
-        <div className='mt-4 grid grid-cols-1 gap-4 lg:grid-cols-7'>
-          <Card className='col-span-1 lg:col-span-4'>
-            <CardHeader>
-              <CardTitle>Overview</CardTitle>
-              <CardDescription>
-                Total registered users over time
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Overview />
-            </CardContent>
-          </Card>
+        <div className='mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2'>
+          {/* Overview (left, 50%) */}
 
-          <Card className='col-span-1 lg:col-span-3'>
-            <CardHeader>
-              <CardTitle>Recent Enrollments</CardTitle>
-              <CardDescription>Latest student sign-ups</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <RecentSales />
-            </CardContent>
-          </Card>
+          <Overview />
         </div>
       </Main>
     </>
@@ -150,7 +129,7 @@ export function Dashboard() {
 }
 
 // --- 5. YOUR UPDATED topNav ---
-const getTopNav = (isAdmin: boolean) => [
+const getTopNav = () => [
   {
     title: 'Overview',
     href: '/', // Changed from 'dashboard/overview' to '/'
@@ -176,3 +155,4 @@ const getTopNav = (isAdmin: boolean) => [
     disabled: false,
   },
 ]
+
