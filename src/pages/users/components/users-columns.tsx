@@ -9,6 +9,7 @@ import { type User } from '../data/schema'
 import { DataTableRowActions } from './data-table-row-actions'
 
 export const usersColumns: ColumnDef<User>[] = [
+  // ... (select, username, full_name, nickname, email, status columns are unchanged) ...
   {
     id: 'select',
     header: ({ table }) => (
@@ -108,11 +109,13 @@ export const usersColumns: ColumnDef<User>[] = [
     enableSorting: false,
   },
   {
-    accessorKey: 'role',
+    // --- 1. FIX: Change accessorKey to 'role_id' ---
+    accessorKey: 'role_id',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Role' />
     ),
     cell: ({ row }) => {
+      // --- 2. Keep using 'row.original.role' (the string) for display ---
       const { role } = row.original
       const userType = roles.find(({ designation }) => designation === role)
 
@@ -128,6 +131,7 @@ export const usersColumns: ColumnDef<User>[] = [
       )
     },
     filterFn: (row, id, value) => {
+      // --- 3. This filter now correctly compares the role_id ---
       return value.includes(row.getValue(id))
     },
     enableSorting: false,

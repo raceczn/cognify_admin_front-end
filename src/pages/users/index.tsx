@@ -1,3 +1,4 @@
+// src/pages/users/index.tsx
 import { useState } from 'react'
 import { getRouteApi } from '@tanstack/react-router'
 import { ConfigDrawer } from '@/components/config-drawer'
@@ -8,11 +9,14 @@ import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { UsersDialogs } from './components/users-dialogs'
 import { UsersPrimaryButtons } from './components/users-primary-buttons'
-import { UsersProvider, useUsers } from './components/users-provider'
+import { useUsers } from './components/users-provider'
 import { UsersTable } from './components/users-table'
 import { Skeleton } from '@/components/ui/skeleton'
+import { roles } from './data/data' // Import roles
 
+// --- FIX: Use the full, correct route ID ---
 const route = getRouteApi('/_authenticated/users/')
+// --- END FIX ---
 
 // ✅ Separate component to access context
 function UsersContent() {
@@ -20,6 +24,11 @@ function UsersContent() {
   const navigate = route.useNavigate()
   const { users, isLoading } = useUsers()
   const [showDeleted, setShowDeleted] = useState(false)
+
+  // Filter logic: show all users, but filter by role if needed
+  const filteredUsers = users.filter((user) => {
+    return true // For now, show all users
+  })
 
   return (
     <>
@@ -58,11 +67,13 @@ function UsersContent() {
         <div className='-mx-4 flex-1 overflow-auto px-4 py-1 lg:flex-row lg:space-y-0 lg:space-x-12'>
           {isLoading ? (
             <div className='grid grid-cols-1'>
-                <Skeleton className='h-32 flex items-center justify-center gap-2'>Loading users...</Skeleton>
-              </div>
+              <Skeleton className='h-32 flex items-center justify-center gap-2'>
+                Loading users...
+              </Skeleton>
+            </div>
           ) : (
             <UsersTable
-              data={users}
+              data={filteredUsers} // Use the filtered list
               search={search}
               navigate={navigate}
               showDeleted={showDeleted}
@@ -77,8 +88,6 @@ function UsersContent() {
 
 export function Users() {
   return (
-    <UsersProvider>
-      <UsersContent />
-    </UsersProvider>
+    <UsersContent />
   )
 }

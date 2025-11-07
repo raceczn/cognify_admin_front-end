@@ -33,6 +33,12 @@ type UserProfile = {
   [key: string]: any
 }
 
+// --- 1. Define the paginated response type ---
+type PaginatedUsersResponse = {
+  items: UserProfile[]
+  last_doc_id: string | null
+}
+
 type ChartPoint = {
   date: string
   users: number
@@ -54,7 +60,11 @@ export function ChartAreaInteractive() {
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        const profiles: UserProfile[] = await getAllProfiles()
+        // --- 2. Get the full response object ---
+        const response: PaginatedUsersResponse = await getAllProfiles()
+        
+        // --- 3. Use response.items ---
+        const profiles: UserProfile[] = response.items || []
 
         // ✅ Filter valid creation dates
         const validProfiles = profiles.filter(
@@ -91,8 +101,9 @@ export function ChartAreaInteractive() {
 
     fetchData()
   }, [])
+  
+  // ... (rest of the file is unchanged) ...
 
-  // Filter data based on time range (7d, 30d, 90d)
   const filteredData = React.useMemo(() => {
     if (!chartData.length) return []
 

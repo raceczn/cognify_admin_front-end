@@ -1,4 +1,4 @@
-// src/pages/users/components/users-table.tsx
+// src/pages/modules/components/modules-table.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { getRouteApi } from '@tanstack/react-router'
 import {
@@ -13,7 +13,6 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { cn } from '@/lib/utils'
 import { type NavigateFn, useTableUrlState } from '@/hooks/use-table-url-state'
 import {
   Table,
@@ -24,42 +23,32 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { DataTablePagination, DataTableToolbar } from '@/components/data-table'
-// --- 1. Import the roles definitions ---
-import { roles as roleDefinitions } from '../data/data'
-import { type User } from '../data/schema'
-import { DataTableBulkActions } from './data-table-bulk-actions'
-import { usersColumns as columns } from './users-columns'
+import { type Module } from '../data/schema'
+import { modulesColumns as columns } from './modules-columns'
+// --- FIX: Corrected the import path ---
+import { useModules } from './modules-provider'
 
-const route = getRouteApi('/_authenticated/users/')
-
-declare module '@tanstack/react-table' {
-  interface ColumnMeta<TData, TValue> {
-    className: string
-  }
-}
+const route = getRouteApi('/_authenticated/modules')
 
 type DataTableProps = {
-  data: User[]
+  data: Module[]
   search: Record<string, unknown>
   navigate: NavigateFn
-  showDeleted?: boolean
 }
 
-export function UsersTable({
-  data,
-  search,
-  navigate,
-  showDeleted = false,
-}: DataTableProps) {
+export function ModulesTable({ data, search, navigate }: DataTableProps) {
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [sorting, setSorting] = useState<SortingState>([])
 
-  // Filter out deleted users unless explicitly shown
-  const filteredData = useMemo(() => {
-    if (showDeleted) return data
-    return data.filter((user) => !user.deleted)
-  }, [data, showDeleted])
+  const { subjects } = useModules() //
+
+  const subjectOptions = useMemo(() => {
+    return subjects.map((s) => ({
+      label: s.subject_name,
+      value: s.subject_id,
+    }))
+  }, [subjects])
 
   const {
     columnFilters,
@@ -73,22 +62,13 @@ export function UsersTable({
     pagination: { defaultPage: 1, defaultPageSize: 10 },
     globalFilter: { enabled: false },
     columnFilters: [
-      { columnId: 'email', searchKey: 'email', type: 'string' },
-      { columnId: 'status', searchKey: 'status', type: 'array' },
-      { columnId: 'role_id', searchKey: 'role', type: 'array' },
+      { columnId: 'title', searchKey: 'title', type: 'string' },
+      { columnId: 'subject_id', searchKey: 'subject', type: 'array' },
     ],
   })
 
-  // --- 3. FIX: Create filter options using the 'value' (Role ID) ---
-  const roleOptions = useMemo(() => {
-    return roleDefinitions.map(role => ({
-      label: role.label,
-      value: role.value, // This is the role_id
-    }))
-  }, [])
-
   const table = useReactTable({
-    data: filteredData,
+    data,
     columns,
     state: {
       sorting,
@@ -112,38 +92,23 @@ export function UsersTable({
   })
 
   // --- THIS IS THE FIX ---
-  // We get the pageCount (a stable number) from the table
   const pageCount = table.getPageCount()
-  
-  // We make the useEffect depend on the stable 'pageCount'
-  // instead of the unstable 'table' object.
   useEffect(() => {
     ensurePageInRange(pageCount)
   }, [pageCount, ensurePageInRange])
   // --- END FIX ---
 
-
   return (
     <div className='space-y-4 max-sm:has-[div[role="toolbar"]]:mb-16'>
       <DataTableToolbar
         table={table}
-        searchPlaceholder='Filter by email...'
-        searchKey='email'
+        searchPlaceholder='Filter by title...'
+        searchKey='title'
         filters={[
           {
-            columnId: 'status',
-            title: 'Status',
-            options: [
-              { label: 'Online', value: 'online' },
-              { label: 'Offline', value: 'offline' },
-              { label: 'Busy', value: 'busy' },
-            ],
-          },
-          {
-            // --- 4. FIX: Use new dynamic roleOptions and target 'role_id' ---
-            columnId: 'role_id',
-            title: 'Role',
-            options: roleOptions,
+            columnId: 'subject_id',
+            title: 'Subject',
+            options: subjectOptions,
           },
         ]}
       />
@@ -157,10 +122,6 @@ export function UsersTable({
                     <TableHead
                       key={header.id}
                       colSpan={header.colSpan}
-                      className={cn(
-                        'bg-background group-hover/row:bg-muted group-data-[state=selected]/row:bg-muted',
-                        header.column.columnDef.meta?.className ?? ''
-                      )}
                     >
                       {header.isPlaceholder
                         ? null
@@ -183,13 +144,7 @@ export function UsersTable({
                   className='group/row'
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      key={cell.id}
-                      className={cn(
-                        'bg-background group-hover/row:bg-muted group-data-[state=selected]/row:bg-muted',
-                        cell.column.columnDef.meta?.className ?? ''
-                      )}
-                    >
+                    <TableCell key={cell.id}>
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
@@ -212,7 +167,7 @@ export function UsersTable({
         </Table>
       </div>
       <DataTablePagination table={table} />
-      <DataTableBulkActions table={table} />
+      {/* <DataTableBulkActions table={table} /> // TODO: Add bulk actions later */}
     </div>
   )
 }

@@ -1,3 +1,4 @@
+// src/routes/_authenticated/analytics/student.$studentId.tsx
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { getStudentAnalytics } from '@/lib/analytics-hooks'
@@ -24,31 +25,38 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, BarChart, Brain, Clock, Target } from 'lucide-react'
+import {
+  ArrowLeft,
+  BarChart,
+  Brain,
+  Clock,
+  Target,
+  Check,
+  X,
+} from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
+import React from 'react'
 
-// Define the types for the student analytics data
-interface PerformanceTopic {
-  topic: string
-  score: number
-}
-interface PerformanceBloom {
-  bloom_level: string
-  score: number
-}
+// --- 1. FIX: Updated interface to match backend response ---
 interface StudentAnalyticsData {
+  student_id: string
   summary: {
     total_activities: number
     overall_score: number
     time_spent_sec: number
   }
-  strengths: string[]
-  weaknesses: string[]
-  performance_by_bloom: PerformanceBloom[]
-  performance_by_topic: PerformanceTopic[]
+  // This is an object/dictionary, not an array
+  performance_by_bloom: { [key: string]: number }
+  prediction: {
+    predicted_to_pass?: boolean
+    pass_probability?: number
+  }
+  ai_motivation?: string
+  last_updated?: any
 }
+// --- END FIX ---
 
 // This is the component for the new page
 function StudentAnalyticsPage() {
@@ -67,12 +75,33 @@ function StudentAnalyticsPage() {
   const hours = Math.floor(timeSpent / 3600)
   const minutes = Math.floor((timeSpent % 3600) / 60)
 
+  // --- 2. FIX: Helper to process performance_by_bloom object ---
+  const bloomPerformance = React.useMemo(() => {
+    if (!analytics?.performance_by_bloom) return []
+    // Use Object.entries() to convert the object to an array
+    return Object.entries(analytics.performance_by_bloom).map(
+      ([level, score]) => ({
+        bloom_level: level,
+        score: score,
+      })
+    )
+  }, [analytics?.performance_by_bloom])
+
+  const strengths = bloomPerformance
+    .filter((p) => p.score >= 80)
+    .map((p) => p.bloom_level)
+  const weaknesses = bloomPerformance
+    .filter((p) => p.score < 70)
+    .map((p) => p.bloom_level)
+  // --- END FIX ---
+
   const renderContent = () => {
     if (isLoading) {
       return (
         <div className='space-y-4'>
           {/* Skeletons for summary cards */}
-          <div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
+          <div className='grid grid-cols-1 gap-4 md:grid-cols-4'>
+            <Skeleton className='h-32' />
             <Skeleton className='h-32' />
             <Skeleton className='h-32' />
             <Skeleton className='h-32' />
@@ -91,7 +120,6 @@ function StudentAnalyticsPage() {
         <Card className='flex min-h-64 items-center justify-center'>
           <p className='text-destructive'>
             No data analytics found for this student.
-            {/* Error loading analytics: {(error as Error).message} */}
           </p>
         </Card>
       )
@@ -101,7 +129,7 @@ function StudentAnalyticsPage() {
       return (
         <Card className='flex min-h-64 items-center justify-center'>
           <p className='text-muted-foreground'>
-            No analytics found for this student.
+            No analytics recorded for this student yet.
           </p>
         </Card>
       )
@@ -110,7 +138,7 @@ function StudentAnalyticsPage() {
     return (
       <div className='space-y-4'>
         {/* 1. Summary Cards */}
-        <div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
+        <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4'>
           <Card>
             <CardHeader className='flex-row items-center justify-between space-y-0 pb-2'>
               <CardTitle className='text-sm font-medium'>
@@ -160,6 +188,35 @@ function StudentAnalyticsPage() {
               </p>
             </CardContent>
           </Card>
+          {/* --- 3. NEW: Add AI Prediction Card --- */}
+          <Card>
+            <CardHeader className='flex-row items-center justify-between space-y-0 pb-2'>
+              <CardTitle className='text-sm font-medium'>
+                AI Prediction
+              </CardTitle>
+              {analytics.prediction?.predicted_to_pass ? (
+                <Check className='h-4 w-4 text-green-500' />
+              ) : (
+                <X className='h-4 w-4 text-red-500' />
+              )}
+            </CardHeader>
+            <CardContent>
+              <div
+                className={`text-2xl font-bold ${
+                  analytics.prediction?.predicted_to_pass
+                    ? 'text-green-600'
+                    : 'text-red-600'
+                }`}
+              >
+                {analytics.prediction?.predicted_to_pass ? 'Pass' : 'At-Risk'}
+              </div>
+              <p className='text-xs text-muted-foreground'>
+                {analytics.prediction?.pass_probability?.toFixed(2) || '0.00'}%
+                Pass Probability
+              </p>
+            </CardContent>
+          </Card>
+          {/* --- END NEW --- */}
         </div>
 
         {/* 2. Strengths & Weaknesses */}
@@ -179,9 +236,14 @@ function StudentAnalyticsPage() {
                 <h4 className='font-semibold'>Strengths (Score {'>='} 80%)</h4>
                 <Separator className='my-2' />
                 <div className='flex flex-wrap gap-2'>
-                  {analytics.strengths.length > 0 ? (
-                    analytics.strengths.map((strength) => (
-                      <Badge key={strength} variant='success'>
+                  {/* --- 4. FIX: Use derived strengths --- */}
+                  {strengths.length > 0 ? (
+                    strengths.map((strength) => (
+                      <Badge
+                        key={strength}
+                        variant='success'
+                        className='capitalize'
+                      >
                         {strength}
                       </Badge>
                     ))
@@ -196,9 +258,14 @@ function StudentAnalyticsPage() {
                 <h4 className='font-semibold'>Weaknesses (Score {'<'} 70%)</h4>
                 <Separator className='my-2' />
                 <div className='flex flex-wrap gap-2'>
-                  {analytics.weaknesses.length > 0 ? (
-                    analytics.weaknesses.map((weakness) => (
-                      <Badge key={weakness} variant='destructive'>
+                  {/* --- 5. FIX: Use derived weaknesses --- */}
+                  {weaknesses.length > 0 ? (
+                    weaknesses.map((weakness) => (
+                      <Badge
+                        key={weakness}
+                        variant='destructive'
+                        className='capitalize'
+                      >
                         {weakness}
                       </Badge>
                     ))
@@ -212,41 +279,40 @@ function StudentAnalyticsPage() {
             </CardContent>
           </Card>
 
-          {/* 3. Performance by Topic */}
+          {/* 3. Performance by Topic (Bloom Level) */}
           <Card>
             <CardHeader>
-              <CardTitle>Performance by Topic</CardTitle>
+              {/* --- 6. FIX: Title changed to Bloom --- */}
+              <CardTitle>Performance by Bloom's Level</CardTitle>
               <CardDescription>
-                Average score per quiz topic.
+                Average score per Bloom's category.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Topic</TableHead>
+                    <TableHead>Bloom's Level</TableHead>
                     <TableHead className='text-right'>Score</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {analytics.performance_by_topic.length > 0 ? (
-                    analytics.performance_by_topic.map((topic) => (
-                      <TableRow key={topic.topic}>
-                        <TableCell className='font-medium'>
-                          {topic.topic}
+                  {/* --- 7. FIX: Render from bloomPerformance --- */}
+                  {bloomPerformance.length > 0 ? (
+                    bloomPerformance.map((item) => (
+                      <TableRow key={item.bloom_level}>
+                        <TableCell className='font-medium capitalize'>
+                          {item.bloom_level}
                         </TableCell>
                         <TableCell className='text-right'>
-                          {topic.score.toFixed(2)}%
+                          {item.score.toFixed(2)}%
                         </TableCell>
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell
-                        colSpan={2}
-                        className='h-24 text-center'
-                      >
-                        No topic scores recorded.
+                      <TableCell colSpan={2} className='h-24 text-center'>
+                        No scores recorded.
                       </TableCell>
                     </TableRow>
                   )}
@@ -289,7 +355,6 @@ function StudentAnalyticsPage() {
           </p>
         </div>
         <Separator className='my-4' />
-        {/* Use a ScrollArea for just the content part */}
         <ScrollArea className='h-[calc(100vh-14rem)]'>
           <div className='pr-4'>{renderContent()}</div>
         </ScrollArea>
@@ -303,4 +368,3 @@ export const Route = createFileRoute(
 )({
   component: StudentAnalyticsPage,
 })
-

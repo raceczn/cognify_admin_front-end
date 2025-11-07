@@ -1,11 +1,19 @@
+// src/pages/users/components/users-provider.tsx
 'use client'
 
 import React, { useState, useCallback, useEffect } from 'react'
 import { getAllProfiles } from '@/lib/profile-hooks'
 import useDialogState from '@/hooks/use-dialog-state'
 import { type User } from '../data/schema'
+import { roles } from '../data/data' // --- 1. Import roles ---
 
 type UsersDialogType = 'invite' | 'add' | 'edit' | 'delete'
+
+// --- 2. Define the paginated response type ---
+type PaginatedUsersResponse = {
+  items: User[]
+  last_doc_id: string | null
+}
 
 type UsersContextType = {
   open: UsersDialogType | null
@@ -33,8 +41,23 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
   const loadUsers = useCallback(async () => {
     try {
       setIsLoading(true)
-      const res = await getAllProfiles()
-      if (Array.isArray(res)) setUsers(res)
+      // --- 3. Expect the paginated object ---
+      const res: PaginatedUsersResponse = await getAllProfiles()
+      
+      // --- 4. Check for 'items' array and map roles ---
+      if (res && Array.isArray(res.items)) {
+        // The backend /profiles/all route already adds the 'role' designation string.
+        // But if not, we map it here to be safe for the UI.
+        const usersWithRoles = res.items.map(user => ({
+          ...user,
+          username: user.email, // Ensure username (used in columns) is set
+          role: user.role || roles.find(r => r.value === user.role_id)?.designation || 'unknown'
+        }))
+        setUsers(usersWithRoles)
+      } else {
+        console.warn("getAllProfiles response was not in the expected format:", res)
+        setUsers([])
+      }
     } catch (err) {
       console.error('❌ Failed to load users:', err)
     } finally {
@@ -60,7 +83,11 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
         if (action === 'delete') {
           const deletedUsers = Array.isArray(updated) ? updated : [updated]
           const deletedIds = new Set(deletedUsers.map((u) => u.id))
-          return prev.filter((usr) => !deletedIds.has(usr.id))
+          // --- FIX: Don't filter out, just mark as deleted ---
+          // return prev.filter((usr) => !deletedIds.has(usr.id))
+          return prev.map(usr => 
+            deletedIds.has(usr.id) ? { ...usr, deleted: true } : usr
+          )
         }
         return prev
       })

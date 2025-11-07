@@ -4,7 +4,6 @@
 import { useState } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
-// --- FIX: Import the correct hook ---
 import { deleteProfile } from '@/lib/profile-hooks'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
@@ -12,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { type User } from '../data/schema'
 import { useUsers } from './users-provider'
+import { roles } from '../data/data' // --- 1. Import roles ---
 
 type UserDeleteDialogProps = {
   open: boolean
@@ -29,7 +29,7 @@ export function UsersDeleteDialog({
   const { updateLocalUsers } = useUsers()
 
   const handleDelete = async () => {
-    // --- FIX: Use 'email' for confirmation, it's more reliable ---
+    // --- 2. FIX: Check against 'email' ---
     if (value.trim() !== currentRow.email) {
       toast.error("The email you entered does not match.")
       return
@@ -41,11 +41,14 @@ export function UsersDeleteDialog({
       const response = await deleteProfile(currentRow.id)
 
       // 2. Update local state immediately
-      // The response is the soft-deleted user profile
+      // --- 3. FIX: Spread 'response' directly, not 'response.profile' ---
       const updatedUser: User = {
         ...currentRow,
-        ...response.profile, // Merge latest data from backend
-        deleted: response.profile.deleted, // Ensure deleted is true
+        ...response, // Spread the returned UserProfileModel
+        deleted: response.deleted,
+        deleted_at: response.deleted_at || new Date().toISOString(),
+        // Ensure 'role' designation is populated for the local state
+        role: roles.find(r => r.value === response.role_id)?.designation || 'unknown',
       }
       updateLocalUsers(updatedUser, 'edit') // 'edit' to update status
 
@@ -70,6 +73,7 @@ export function UsersDeleteDialog({
       open={open}
       onOpenChange={onOpenChange}
       handleConfirm={handleDelete}
+      // --- 4. FIX: Check against 'email' ---
       disabled={value.trim() !== currentRow.email || isLoading}
       title={
         <span className='text-destructive'>
@@ -89,6 +93,7 @@ export function UsersDeleteDialog({
             This action will perform a soft-delete. The user can be restored later.
           </p>
 
+          {/* --- 5. FIX: Ask for email, not username/name --- */}
           <Label className='my-2'>
             Type the user's email <span className='font-bold text-destructive'>{currentRow.email}</span> to confirm:
             <Input

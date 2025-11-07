@@ -1,3 +1,4 @@
+// src/pages/dashboard/components/overview.tsx
 'use client'
 
 import * as React from 'react'
@@ -16,10 +17,16 @@ import { Card, CardContent } from '@/components/ui/card'
 
 export const description = 'Overview line chart showing total registered users'
 
+// --- 1. Define types ---
 type UserProfile = {
   id: string
   created_at?: string
   [key: string]: any
+}
+
+type PaginatedUsersResponse = {
+  items: UserProfile[]
+  last_doc_id: string | null
 }
 
 type ChartPoint = {
@@ -35,8 +42,12 @@ export function Overview() {
   React.useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const profiles: UserProfile[] = await getAllProfiles()
-        console.log('✅ Profiles fetched:', profiles) // 👈 ADD THIS LINE
+        // --- 2. Expect the paginated object ---
+        const res: PaginatedUsersResponse = await getAllProfiles()
+        
+        // --- 3. Use res.items ---
+        const profiles: UserProfile[] = res.items || [] 
+        console.log('✅ Profiles fetched:', profiles) 
 
         // ✅ Filter out records without valid dates
         const validProfiles = profiles.filter(

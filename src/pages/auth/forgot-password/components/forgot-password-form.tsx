@@ -1,10 +1,11 @@
+// src/pages/auth/forgot-password/components/forgot-password-form.tsx
 import { useState } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from '@tanstack/react-router'
 import { ArrowRight, Loader2 } from 'lucide-react'
-import { toast } from 'sonner'
+// --- 1. Remove toast import, it's handled in the hook ---
 import { sleep, cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -37,26 +38,25 @@ export function ForgotPasswordForm({
   })
 
   async function onSubmit(data: z.infer<typeof formSchema>) {
-    try {
-      await requestPasswordReset(data.email);
-      alert("Password reset email sent!");
-    } catch (error: any) {
-    console.error(error.message);
-  } 
     setIsLoading(true)
-    // eslint-disable-next-line no-console
-    console.log(data)
+    try {
+      // --- 2. Await the function which handles its own toasts ---
+      await requestPasswordReset(data.email);
+      
+      // --- 3. On success, reset form and navigate ---
+      // We don't navigate to OTP, as the user needs to check email.
+      // We'll navigate back to sign-in.
+      form.reset()
+      navigate({ to: '/sign-in' })
 
-    toast.promise(sleep(2000), {
-      loading: 'Sending email...',
-      success: () => {
-        setIsLoading(false)
-        form.reset()
-        navigate({ to: '/otp' })
-        return `Email sent to ${data.email}`
-      },
-      error: 'Error',
-    })
+    } catch (error: any) {
+      // Error is already toasted by the hook
+      console.error(error.message);
+    } finally {
+      setIsLoading(false)
+    }
+    
+    // --- 4. REMOVE the old toast.promise and sleep ---
   }
 
   return (
@@ -80,8 +80,9 @@ export function ForgotPasswordForm({
           )}
         />
         <Button className='mt-2' disabled={isLoading}>
-          Continue
+          {/* --- 5. Update button text and icon --- */}
           {isLoading ? <Loader2 className='animate-spin' /> : <ArrowRight />}
+          Send Reset Link
         </Button>
       </form>
     </Form>

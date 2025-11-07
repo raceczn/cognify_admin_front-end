@@ -23,7 +23,8 @@ export function useGlobalPredictions() {
  * [Admin/Faculty/Student] Gets the strengths/weaknesses for one student.
  */
 export async function getStudentAnalytics(studentId: string) {
-  const res = await api.get(`/analytics/student/${studentId}`)
+  // --- FIX: Corrected the API path ---
+  const res = await api.get(`/analytics/student_report/${studentId}`)
   return res.data
 }
 
@@ -35,4 +36,3 @@ export function useStudentAnalytics(studentId: string) {
     enabled: !!studentId, // Only run if studentId is provided
   })
 }
-

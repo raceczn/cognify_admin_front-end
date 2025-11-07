@@ -52,7 +52,7 @@ export function Dashboard() {
             {isAdmin ? 'Admin Dashboard' : 'Faculty Dashboard'}
           </h1>
         </div>
-        
+
         {/* ===== Cards ===== */}
         <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4'>
           {/* Registered Users */}
@@ -176,4 +176,3 @@ const getTopNav = (isAdmin: boolean) => [
     disabled: false,
   },
 ]
-

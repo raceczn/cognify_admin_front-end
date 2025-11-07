@@ -1,4 +1,4 @@
-// data/sidebar-data.ts
+// src/components/layout/data/sidebar-data.ts
 import {
   LayoutDashboard,
   Monitor,
@@ -13,6 +13,7 @@ import {
   Users,
   MessagesSquare,
   Command,
+  BookOpen, // 1. Import a new icon
 } from 'lucide-react'
 import { type SidebarData } from '../types'
 
@@ -43,7 +44,13 @@ export const staticSidebarData: Omit<SidebarData, 'user'> = {
           url: '/users',
           icon: Users,
         },
-
+        // --- 2. ADD THE NEW MODULES LINK ---
+        {
+          title: 'Modules',
+          url: '/modules',
+          icon: BookOpen,
+        },
+        // --- END ---
         {
           title: 'System Logs',
           url: '/system-logs',
@@ -67,7 +74,11 @@ export const staticSidebarData: Omit<SidebarData, 'user'> = {
             { title: 'Profile', url: '/settings', icon: UserCog },
             { title: 'Account', url: '/settings/account', icon: Wrench },
             { title: 'Appearance', url: '/settings/appearance', icon: Palette },
-            { title: 'Notifications', url: '/settings/notifications', icon: Bell },
+            {
+              title: 'Notifications',
+              url: '/settings/notifications',
+              icon: Bell,
+            },
             { title: 'Display', url: '/settings/display', icon: Monitor },
           ],
         },

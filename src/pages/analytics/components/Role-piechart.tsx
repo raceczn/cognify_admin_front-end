@@ -22,12 +22,24 @@ import {
 
 export const description = 'A simple pie chart with dynamic role data'
 
+// --- 1. Define types ---
+type UserProfile = {
+  id: string
+  role_id: string
+  [key: string]: any
+}
+
+type PaginatedUsersResponse = {
+  items: UserProfile[]
+  last_doc_id: string | null
+}
+
+
 export function ChartPieSimple() {
   const [chartData, setChartData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [topRole, setTopRole] = useState<string>('')
 
-  // ✅ Mapping raw roles to readable names
   const roleLabels: Record<string, string> = {
     faculty_member: 'Faculty Member',
     admin: 'Admin',
@@ -37,7 +49,11 @@ export function ChartPieSimple() {
   useEffect(() => {
     async function fetchRoles() {
       try {
-        const profiles = await getAllProfiles()
+        // --- 2. Get the full response object ---
+        const response: PaginatedUsersResponse = await getAllProfiles()
+
+        // --- 3. Use response.items ---
+        const profiles: UserProfile[] = response.items || []
 
         const roleCounts: Record<string, number> = {}
 
@@ -45,7 +61,6 @@ export function ChartPieSimple() {
           const matchedRole =
             roles.find((r) => r.value === p.role_id)?.designation || 'Unknown'
 
-          // ✅ Convert to readable label
           const readableRole = roleLabels[matchedRole] || matchedRole
 
           roleCounts[readableRole] = (roleCounts[readableRole] || 0) + 1
@@ -59,7 +74,6 @@ export function ChartPieSimple() {
 
         setChartData(data)
 
-        // ✅ Find the top role
         const top = data.reduce(
           (prev, curr) => (curr.count > prev.count ? curr : prev),
           { role: 'None', count: 0 }
@@ -78,6 +92,8 @@ export function ChartPieSimple() {
   const chartConfig: ChartConfig = {
     count: { label: 'Users' },
   }
+  
+  // ... (rest of the file is unchanged) ...
 
   return (
     <Card className='flex flex-col'>

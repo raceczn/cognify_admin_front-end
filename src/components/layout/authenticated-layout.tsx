@@ -1,3 +1,4 @@
+// src/components/layout/authenticated-layout.tsx
 import { Outlet } from '@tanstack/react-router'
 import { getCookie } from '@/lib/cookies'
 import { cn } from '@/lib/utils'
@@ -8,6 +9,7 @@ import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { Toaster } from '@/components/ui/toaster'
 import { AppSidebar } from '@/components/layout/app-sidebar'
 import { SkipToMain } from '@/components/skip-to-main'
+import { UsersProvider } from '@/pages/users/components/users-provider' // 1. IMPORT
 
 type AuthenticatedLayoutProps = {
   children?: React.ReactNode
@@ -19,30 +21,32 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
   // Initialize user status tracking
   useUserStatus()
   return (
-    <SearchProvider>
-      <LayoutProvider>
-        <SidebarProvider defaultOpen={defaultOpen}>
-          <SkipToMain />
-          <AppSidebar />
-          <SidebarInset
-            className={cn(
-              // Set content container, so we can use container queries
-              '@container/content',
+    <UsersProvider> {/* 2. WRAP HERE */}
+      <SearchProvider>
+        <LayoutProvider>
+          <SidebarProvider defaultOpen={defaultOpen}>
+            <SkipToMain />
+            <AppSidebar />
+            <SidebarInset
+              className={cn(
+                // Set content container, so we can use container queries
+                '@container/content',
 
-              // If layout is fixed, set the height
-              // to 100svh to prevent overflow
-              'has-[[data-layout=fixed]]:h-svh',
+                // If layout is fixed, set the height
+                // to 100svh to prevent overflow
+                'has-[[data-layout=fixed]]:h-svh',
 
-              // If layout is fixed and sidebar is inset,
-              // set the height to 100svh - spacing (total margins) to prevent overflow
-              'peer-data-[variant=inset]:has-[[data-layout=fixed]]:h-[calc(100svh-(var(--spacing)*4))]'
-            )}
-          >
-            {children ?? <Outlet />}
-            <Toaster />
-          </SidebarInset>
-        </SidebarProvider>
-      </LayoutProvider>
-    </SearchProvider>
+                // If layout is fixed and sidebar is inset,
+                // set the height to 100svh - spacing (total margins) to prevent overflow
+                'peer-data-[variant=inset]:has-[[data-layout=fixed]]:h-[calc(100svh-(var(--spacing)*4))]'
+              )}
+            >
+              {children ?? <Outlet />}
+              <Toaster />
+            </SidebarInset>
+          </SidebarProvider>
+        </LayoutProvider>
+      </SearchProvider>
+    </UsersProvider> /* 3. END WRAP */
   )
 }
