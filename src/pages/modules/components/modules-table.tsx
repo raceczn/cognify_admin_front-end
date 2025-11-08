@@ -1,9 +1,11 @@
 // src/pages/modules/components/modules-table.tsx
 import { useEffect, useMemo, useState } from 'react'
-import { getRouteApi } from '@tanstack/react-router'
+// import { getRouteApi } from '@tanstack/react-router' // Remove
 import {
   type SortingState,
   type VisibilityState,
+  type ColumnFiltersState, // Import this
+  type PaginationState, // Import this
   flexRender,
   getCoreRowModel,
   getFacetedRowModel,
@@ -13,7 +15,8 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { type NavigateFn, useTableUrlState } from '@/hooks/use-table-url-state'
+// --- REMOVE useTableUrlState ---
+// import { type NavigateFn, useTableUrlState } from '@/hooks/use-table-url-state'
 import {
   Table,
   TableBody,
@@ -25,21 +28,29 @@ import {
 import { DataTablePagination, DataTableToolbar } from '@/components/data-table'
 import { type Module } from '../data/schema'
 import { modulesColumns as columns } from './modules-columns'
-// --- FIX: Corrected the import path ---
 import { useModules } from './modules-provider'
 
-const route = getRouteApi('/_authenticated/modules')
+// const route = getRouteApi('/_authenticated/modules') // Remove
 
 type DataTableProps = {
   data: Module[]
-  search: Record<string, unknown>
-  navigate: NavigateFn
+  // --- REMOVE search and navigate ---
+  // search: Record<string, unknown>
+  // navigate: NavigateFn
 }
 
-export function ModulesTable({ data, search, navigate }: DataTableProps) {
+export function ModulesTable({ data }: DataTableProps) {
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [sorting, setSorting] = useState<SortingState>([])
+
+  // --- REVERT PAGINATION & FILTERS TO LOCAL STATE ---
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  })
+  // --- END REVERT ---
 
   const { subjects } = useModules() //
 
@@ -50,36 +61,21 @@ export function ModulesTable({ data, search, navigate }: DataTableProps) {
     }))
   }, [subjects])
 
-  const {
-    columnFilters,
-    onColumnFiltersChange,
-    pagination,
-    onPaginationChange,
-    ensurePageInRange,
-  } = useTableUrlState({
-    search,
-    navigate,
-    pagination: { defaultPage: 1, defaultPageSize: 10 },
-    globalFilter: { enabled: false },
-    columnFilters: [
-      { columnId: 'title', searchKey: 'title', type: 'string' },
-      { columnId: 'subject_id', searchKey: 'subject', type: 'array' },
-    ],
-  })
+  // --- REMOVE useTableUrlState hook ---
 
   const table = useReactTable({
     data,
     columns,
     state: {
       sorting,
-      pagination,
+      pagination, // Use local state
       rowSelection,
-      columnFilters,
+      columnFilters, // Use local state
       columnVisibility,
     },
     enableRowSelection: true,
-    onPaginationChange,
-    onColumnFiltersChange,
+    onPaginationChange: setPagination, // Use local state setter
+    onColumnFiltersChange: setColumnFilters, // Use local state setter
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
@@ -91,12 +87,7 @@ export function ModulesTable({ data, search, navigate }: DataTableProps) {
     getFacetedUniqueValues: getFacetedUniqueValues(),
   })
 
-  // --- THIS IS THE FIX ---
-  const pageCount = table.getPageCount()
-  useEffect(() => {
-    ensurePageInRange(pageCount)
-  }, [pageCount, ensurePageInRange])
-  // --- END FIX ---
+  // --- REMOVE the ensurePageInRange useEffect ---
 
   return (
     <div className='space-y-4 max-sm:has-[div[role="toolbar"]]:mb-16'>
@@ -112,6 +103,7 @@ export function ModulesTable({ data, search, navigate }: DataTableProps) {
           },
         ]}
       />
+      {/* ... (rest of table JSX is unchanged) ... */}
       <div className='overflow-hidden rounded-md border'>
         <Table>
           <TableHeader>
@@ -119,10 +111,7 @@ export function ModulesTable({ data, search, navigate }: DataTableProps) {
               <TableRow key={headerGroup.id} className='group/row'>
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead
-                      key={header.id}
-                      colSpan={header.colSpan}
-                    >
+                    <TableHead key={header.id} colSpan={header.colSpan}>
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -167,7 +156,6 @@ export function ModulesTable({ data, search, navigate }: DataTableProps) {
         </Table>
       </div>
       <DataTablePagination table={table} />
-      {/* <DataTableBulkActions table={table} /> // TODO: Add bulk actions later */}
     </div>
   )
 }

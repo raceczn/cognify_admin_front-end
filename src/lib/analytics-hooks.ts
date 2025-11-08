@@ -1,6 +1,5 @@
 // src/lib/analytics-hooks.ts
 import api from '@/lib/axios-client'
-// --- 1. Import useQuery ---
 import { useQuery } from '@tanstack/react-query'
 
 /**
@@ -11,7 +10,6 @@ export async function getGlobalPredictions() {
   return res.data
 }
 
-// --- 2. Create a re-usable hook for predictions ---
 export function useGlobalPredictions() {
   return useQuery({
     queryKey: ['globalPredictions'],
@@ -23,12 +21,10 @@ export function useGlobalPredictions() {
  * [Admin/Faculty/Student] Gets the strengths/weaknesses for one student.
  */
 export async function getStudentAnalytics(studentId: string) {
-  // --- FIX: Corrected the API path ---
   const res = await api.get(`/analytics/student_report/${studentId}`)
   return res.data
 }
 
-// --- 3. Create a re-usable hook for single student analytics ---
 export function useStudentAnalytics(studentId: string) {
   return useQuery({
     queryKey: ['studentAnalytics', studentId],

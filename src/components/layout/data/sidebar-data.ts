@@ -13,7 +13,8 @@ import {
   Users,
   MessagesSquare,
   Command,
-  BookOpen, // 1. Import a new icon
+  BookOpen,
+  Library, // 1. Import a new icon
 } from 'lucide-react'
 import { type SidebarData } from '../types'
 
@@ -44,11 +45,16 @@ export const staticSidebarData: Omit<SidebarData, 'user'> = {
           url: '/users',
           icon: Users,
         },
-        // --- 2. ADD THE NEW MODULES LINK ---
         {
           title: 'Modules',
           url: '/modules',
           icon: BookOpen,
+        },
+        // --- 2. ADD THE NEW SUBJECTS LINK ---
+        {
+          title: 'Subjects',
+          url: '/subjects',
+          icon: Library,
         },
         // --- END ---
         {

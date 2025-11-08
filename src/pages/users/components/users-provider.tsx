@@ -5,11 +5,11 @@ import React, { useState, useCallback, useEffect } from 'react'
 import { getAllProfiles } from '@/lib/profile-hooks'
 import useDialogState from '@/hooks/use-dialog-state'
 import { type User } from '../data/schema'
-import { roles } from '../data/data' // --- 1. Import roles ---
+import { roles } from '../data/data'
 
-type UsersDialogType = 'invite' | 'add' | 'edit' | 'delete'
+type UsersDialogType = 'invite' | 'add' | 'edit' | 'delete' | 'purge'
 
-// --- 2. Define the paginated response type ---
+// This matches the PaginatedResponse from backend
 type PaginatedUsersResponse = {
   items: User[]
   last_doc_id: string | null
@@ -25,7 +25,7 @@ type UsersContextType = {
   refreshUsers: () => Promise<void>
   updateLocalUsers: (
     updated: User | User[],
-    action: 'add' | 'edit' | 'delete'
+    action: 'add' | 'edit' | 'delete' | 'purge'
   ) => void
   isLoading: boolean
 }
@@ -41,21 +41,27 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
   const loadUsers = useCallback(async () => {
     try {
       setIsLoading(true)
-      // --- 3. Expect the paginated object ---
+      // Expect the paginated object
       const res: PaginatedUsersResponse = await getAllProfiles()
-      
-      // --- 4. Check for 'items' array and map roles ---
+
+      // Check for 'items' array and map roles
       if (res && Array.isArray(res.items)) {
         // The backend /profiles/all route already adds the 'role' designation string.
-        // But if not, we map it here to be safe for the UI.
-        const usersWithRoles = res.items.map(user => ({
+        // We map it here just to be safe and ensure 'username' exists.
+        const usersWithRoles = res.items.map((user) => ({
           ...user,
           username: user.email, // Ensure username (used in columns) is set
-          role: user.role || roles.find(r => r.value === user.role_id)?.designation || 'unknown'
+          role:
+            user.role ||
+            roles.find((r) => r.value === user.role_id)?.designation ||
+            'unknown',
         }))
         setUsers(usersWithRoles)
       } else {
-        console.warn("getAllProfiles response was not in the expected format:", res)
+        console.warn(
+          'getAllProfiles response was not in the expected format:',
+          res
+        )
         setUsers([])
       }
     } catch (err) {
@@ -67,9 +73,11 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUsers = loadUsers
 
-  // ✅ NEW: Instantly update UI
   const updateLocalUsers = useCallback(
-    async (updated: User | User[], action: 'add' | 'edit' | 'delete') => {
+    async (
+      updated: User | User[],
+      action: 'add' | 'edit' | 'delete' | 'purge'
+    ) => {
       // First update local state for immediate UI feedback
       setUsers((prev) => {
         if (action === 'add') {
@@ -83,12 +91,19 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
         if (action === 'delete') {
           const deletedUsers = Array.isArray(updated) ? updated : [updated]
           const deletedIds = new Set(deletedUsers.map((u) => u.id))
-          // --- FIX: Don't filter out, just mark as deleted ---
-          // return prev.filter((usr) => !deletedIds.has(usr.id))
-          return prev.map(usr => 
+          // Mark as deleted, don't filter out
+          return prev.map((usr) =>
             deletedIds.has(usr.id) ? { ...usr, deleted: true } : usr
           )
         }
+
+        if (action === 'purge') {
+          const deletedUsers = Array.isArray(updated) ? updated : [updated]
+          const deletedIds = new Set(deletedUsers.map((u) => u.id))
+          // *Actually filter* them out of the state
+          return prev.filter((usr) => !deletedIds.has(usr.id))
+        }
+
         return prev
       })
 

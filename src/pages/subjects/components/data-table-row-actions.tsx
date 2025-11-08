@@ -1,6 +1,7 @@
+// src/pages/subjects/components/data-table-row-actions.tsx
 import { DotsHorizontalIcon } from '@radix-ui/react-icons'
 import { type Row } from '@tanstack/react-table'
-import { Trash2, UserPen, ShieldAlert } from 'lucide-react'
+import { Trash2, FilePenLine } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -10,15 +11,17 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { type User } from '../data/schema'
-import { useUsers } from './users-provider'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+import { type Subject } from '../data/schema'
+import { useSubjects } from './subjects-provider'
 
 type DataTableRowActionsProps = {
-  row: Row<User>
+  row: Row<Subject>
 }
 
 export function DataTableRowActions({ row }: DataTableRowActionsProps) {
-  const { setOpen, setCurrentRow } = useUsers()
+  const { setOpen, setCurrentRow } = useSubjects()
+
   return (
     <>
       <DropdownMenu modal={false}>
@@ -31,7 +34,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
             <span className='sr-only'>Open menu</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align='end' className='w-[160px]'>
+        <DropdownMenuContent align='end' className='w-[180px]'>
           <DropdownMenuItem
             onClick={() => {
               setCurrentRow(row.original)
@@ -40,37 +43,28 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           >
             Edit
             <DropdownMenuShortcut>
-              <UserPen size={16} />
+              <FilePenLine size={16} />
             </DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={() => {
-              setCurrentRow(row.original)
-              setOpen('delete')
-            }}
-            className='text-red-500!'
-          >
-            Delete
-            <DropdownMenuShortcut>
-              <Trash2 size={16} />
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-
-          <DropdownMenuItem
-            onClick={() => {
-              setCurrentRow(row.original)
-              setOpen('purge')
-            }}
-            className='text-destructive'
-            data-variant='destructive'
-          >
-            Purge (Permanent)
-            <DropdownMenuShortcut>
-              <ShieldAlert size={16} />
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              {/* This item is disabled because the backend endpoint is missing */}
+              <DropdownMenuItem
+                disabled
+                className='text-destructive'
+                data-variant='destructive'
+              >
+                Delete
+                <DropdownMenuShortcut>
+                  <Trash2 size={16} />
+                </DropdownMenuShortcut>
+              </DropdownMenuItem>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Delete endpoint is not available on the backend.</p>
+            </TooltipContent>
+          </Tooltip>
         </DropdownMenuContent>
       </DropdownMenu>
     </>

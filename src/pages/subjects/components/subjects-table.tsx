@@ -1,6 +1,6 @@
-// src/pages/users/components/users-table.tsx
+// src/pages/subjects/components/subjects-table.tsx
 import { useEffect, useMemo, useState } from 'react'
-import { getRouteApi } from '@tanstack/react-router' // Keep this for types, but we won't use the hooks
+// import { getRouteApi } from '@tanstack/react-router' // Remove
 import {
   type SortingState,
   type VisibilityState,
@@ -15,7 +15,6 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { cn } from '@/lib/utils'
 // --- REMOVE useTableUrlState ---
 // import { type NavigateFn, useTableUrlState } from '@/hooks/use-table-url-state'
 import {
@@ -27,29 +26,19 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { DataTablePagination, DataTableToolbar } from '@/components/data-table'
-import { roles as roleDefinitions } from '../data/data'
-import { type User } from '../data/schema'
-import { DataTableBulkActions } from './data-table-bulk-actions'
-import { usersColumns as columns } from './users-columns'
+import { type Subject } from '../data/schema'
+import { subjectsColumns as columns } from './subjects-columns'
 
-// We can still use the route API type, but we won't use the hooks
-const route = getRouteApi('/_authenticated/users/')
-
-declare module '@tanstack/react-table' {
-  interface ColumnMeta<TData, TValue> {
-    className: string
-  }
-}
+// const route = getRouteApi('/_authenticated/subjects') // Remove
 
 type DataTableProps = {
-  data: User[]
-  showDeleted?: boolean
+  data: Subject[]
+  // --- REMOVE search and navigate ---
+  // search: Record<string, unknown>
+  // navigate: NavigateFn
 }
 
-export function UsersTable({
-  data,
-  showDeleted = false,
-}: DataTableProps) {
+export function SubjectsTable({ data }: DataTableProps) {
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [sorting, setSorting] = useState<SortingState>([])
@@ -62,23 +51,10 @@ export function UsersTable({
   })
   // --- END REVERT ---
 
-  // Filter out deleted users unless explicitly shown
-  const filteredData = useMemo(() => {
-    if (showDeleted) return data
-    return data.filter((user) => !user.deleted)
-  }, [data, showDeleted])
-
   // --- REMOVE useTableUrlState hook ---
 
-  const roleOptions = useMemo(() => {
-    return roleDefinitions.map((role) => ({
-      label: role.label,
-      value: role.value,
-    }))
-  }, [])
-
   const table = useReactTable({
-    data: filteredData,
+    data,
     columns,
     state: {
       sorting,
@@ -87,7 +63,7 @@ export function UsersTable({
       columnFilters, // Use local state
       columnVisibility,
     },
-    enableRowSelection: true,
+    enableRowSelection: false,
     onPaginationChange: setPagination, // Use local state setter
     onColumnFiltersChange: setColumnFilters, // Use local state setter
     onRowSelectionChange: setRowSelection,
@@ -102,30 +78,13 @@ export function UsersTable({
   })
 
   // --- REMOVE the ensurePageInRange useEffect ---
-  // The table will auto-reset the page index by default now
 
   return (
-    <div className='space-y-4 max-sm:has-[div[role="toolbar"]]:mb-16'>
+    <div className='space-y-4'>
       <DataTableToolbar
         table={table}
-        searchPlaceholder='Filter by email...'
-        searchKey='email'
-        filters={[
-          {
-            columnId: 'status',
-            title: 'Status',
-            options: [
-              { label: 'Online', value: 'online' },
-              { label: 'Offline', value: 'offline' },
-              { label: 'Busy', value: 'busy' },
-            ],
-          },
-          {
-            columnId: 'role_id',
-            title: 'Role',
-            options: roleOptions,
-          },
-        ]}
+        searchPlaceholder='Filter by name...'
+        searchKey='subject_name'
       />
       {/* ... (rest of table JSX is unchanged) ... */}
       <div className='overflow-hidden rounded-md border'>
@@ -135,14 +94,7 @@ export function UsersTable({
               <TableRow key={headerGroup.id} className='group/row'>
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead
-                      key={header.id}
-                      colSpan={header.colSpan}
-                      className={cn(
-                        'bg-background group-hover/row:bg-muted group-data-[state=selected]/row:bg-muted',
-                        header.column.columnDef.meta?.className ?? ''
-                      )}
-                    >
+                    <TableHead key={header.id} colSpan={header.colSpan}>
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -158,19 +110,9 @@ export function UsersTable({
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && 'selected'}
-                  className='group/row'
-                >
+                <TableRow key={row.id} className='group/row'>
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      key={cell.id}
-                      className={cn(
-                        'bg-background group-hover/row:bg-muted group-data-[state=selected]/row:bg-muted',
-                        cell.column.columnDef.meta?.className ?? ''
-                      )}
-                    >
+                    <TableCell key={cell.id}>
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
@@ -193,7 +135,6 @@ export function UsersTable({
         </Table>
       </div>
       <DataTablePagination table={table} />
-      <DataTableBulkActions table={table} />
     </div>
   )
 }

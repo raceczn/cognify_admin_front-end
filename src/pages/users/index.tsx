@@ -1,6 +1,7 @@
 // src/pages/users/index.tsx
 import { useState } from 'react'
-import { getRouteApi } from '@tanstack/react-router'
+// --- REMOVE route imports ---
+// import { getRouteApi } from '@tanstack/react-router' 
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
@@ -12,16 +13,14 @@ import { UsersPrimaryButtons } from './components/users-primary-buttons'
 import { useUsers } from './components/users-provider'
 import { UsersTable } from './components/users-table'
 import { Skeleton } from '@/components/ui/skeleton'
-import { roles } from './data/data' // Import roles
-
-// --- FIX: Use the full, correct route ID ---
-const route = getRouteApi('/_authenticated/users/')
-// --- END FIX ---
+// --- REMOVE route import ---
+// const route = getRouteApi('/_authenticated/users/')
 
 // ✅ Separate component to access context
 function UsersContent() {
-  const search = route.useSearch()
-  const navigate = route.useNavigate()
+  // --- REMOVE search and navigate hooks ---
+  // const search = route.useSearch()
+  // const navigate = route.useNavigate()
   const { users, isLoading } = useUsers()
   const [showDeleted, setShowDeleted] = useState(false)
 
@@ -72,10 +71,9 @@ function UsersContent() {
               </Skeleton>
             </div>
           ) : (
+            // --- REMOVE search and navigate props ---
             <UsersTable
-              data={filteredUsers} // Use the filtered list
-              search={search}
-              navigate={navigate}
+              data={filteredUsers}
               showDeleted={showDeleted}
             />
           )}
@@ -87,7 +85,5 @@ function UsersContent() {
 }
 
 export function Users() {
-  return (
-    <UsersContent />
-  )
+  return <UsersContent />
 }

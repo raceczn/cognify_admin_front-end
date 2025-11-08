@@ -101,20 +101,18 @@ export function ChartAreaInteractive() {
 
     fetchData()
   }, [])
-  
-  // ... (rest of the file is unchanged) ...
 
   const filteredData = React.useMemo(() => {
     if (!chartData.length) return []
 
-    const latestDate = new Date(chartData[chartData.length - 1].date)
-    let daysToSubtract = 90
-    if (timeRange === "30d") daysToSubtract = 30
-    else if (timeRange === "7d") daysToSubtract = 7
-
-    const startDate = new Date(latestDate)
+    const daysToSubtract = parseInt(timeRange)
+    if (isNaN(daysToSubtract)) {
+      return chartData // Return all data if range is invalid
+    }
+    
+    const startDate = new Date()
     startDate.setDate(startDate.getDate() - daysToSubtract)
-
+    
     return chartData.filter((item) => new Date(item.date) >= startDate)
   }, [chartData, timeRange])
 
@@ -147,13 +145,13 @@ export function ChartAreaInteractive() {
             <SelectValue placeholder="Last 3 months" />
           </SelectTrigger>
           <SelectContent className="rounded-xl">
-            <SelectItem value="90d" className="rounded-lg">
+            <SelectItem value="90" className="rounded-lg">
               Last 3 months
             </SelectItem>
-            <SelectItem value="30d" className="rounded-lg">
+            <SelectItem value="30" className="rounded-lg">
               Last 30 days
             </SelectItem>
-            <SelectItem value="7d" className="rounded-lg">
+            <SelectItem value="7" className="rounded-lg">
               Last 7 days
             </SelectItem>
           </SelectContent>

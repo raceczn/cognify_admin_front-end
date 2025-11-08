@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedSubjectsRouteImport } from './routes/_authenticated/subjects'
 import { Route as AuthenticatedModulesRouteImport } from './routes/_authenticated/modules'
 import { Route as errors503RouteImport } from './routes/(errors)/503'
 import { Route as errors500RouteImport } from './routes/(errors)/500'
@@ -42,6 +43,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSubjectsRoute = AuthenticatedSubjectsRouteImport.update({
+  id: '/subjects',
+  path: '/subjects',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedModulesRoute = AuthenticatedModulesRouteImport.update({
@@ -184,6 +190,7 @@ export interface FileRoutesByFullPath {
   '/500': typeof errors500Route
   '/503': typeof errors503Route
   '/modules': typeof AuthenticatedModulesRoute
+  '/subjects': typeof AuthenticatedSubjectsRoute
   '/': typeof AuthenticatedIndexRoute
   '/errors/$error': typeof AuthenticatedErrorsErrorRoute
   '/settings/account': typeof AuthenticatedSettingsAccountRoute
@@ -209,6 +216,7 @@ export interface FileRoutesByTo {
   '/500': typeof errors500Route
   '/503': typeof errors503Route
   '/modules': typeof AuthenticatedModulesRoute
+  '/subjects': typeof AuthenticatedSubjectsRoute
   '/': typeof AuthenticatedIndexRoute
   '/errors/$error': typeof AuthenticatedErrorsErrorRoute
   '/settings/account': typeof AuthenticatedSettingsAccountRoute
@@ -237,6 +245,7 @@ export interface FileRoutesById {
   '/(errors)/500': typeof errors500Route
   '/(errors)/503': typeof errors503Route
   '/_authenticated/modules': typeof AuthenticatedModulesRoute
+  '/_authenticated/subjects': typeof AuthenticatedSubjectsRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/errors/$error': typeof AuthenticatedErrorsErrorRoute
   '/_authenticated/settings/account': typeof AuthenticatedSettingsAccountRoute
@@ -265,6 +274,7 @@ export interface FileRouteTypes {
     | '/500'
     | '/503'
     | '/modules'
+    | '/subjects'
     | '/'
     | '/errors/$error'
     | '/settings/account'
@@ -290,6 +300,7 @@ export interface FileRouteTypes {
     | '/500'
     | '/503'
     | '/modules'
+    | '/subjects'
     | '/'
     | '/errors/$error'
     | '/settings/account'
@@ -317,6 +328,7 @@ export interface FileRouteTypes {
     | '/(errors)/500'
     | '/(errors)/503'
     | '/_authenticated/modules'
+    | '/_authenticated/subjects'
     | '/_authenticated/'
     | '/_authenticated/errors/$error'
     | '/_authenticated/settings/account'
@@ -359,6 +371,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/subjects': {
+      id: '/_authenticated/subjects'
+      path: '/subjects'
+      fullPath: '/subjects'
+      preLoaderRoute: typeof AuthenticatedSubjectsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/modules': {
@@ -551,6 +570,7 @@ const AuthenticatedSettingsRouteRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsRouteRoute: typeof AuthenticatedSettingsRouteRouteWithChildren
   AuthenticatedModulesRoute: typeof AuthenticatedModulesRoute
+  AuthenticatedSubjectsRoute: typeof AuthenticatedSubjectsRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedErrorsErrorRoute: typeof AuthenticatedErrorsErrorRoute
   AuthenticatedAnalyticsIndexRoute: typeof AuthenticatedAnalyticsIndexRoute
@@ -564,6 +584,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsRouteRoute: AuthenticatedSettingsRouteRouteWithChildren,
   AuthenticatedModulesRoute: AuthenticatedModulesRoute,
+  AuthenticatedSubjectsRoute: AuthenticatedSubjectsRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedErrorsErrorRoute: AuthenticatedErrorsErrorRoute,
   AuthenticatedAnalyticsIndexRoute: AuthenticatedAnalyticsIndexRoute,

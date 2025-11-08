@@ -2,6 +2,7 @@ import { UsersDeleteDialog } from './users-delete-dialog'
 import { UsersInviteDialog } from './users-invite-dialog'
 import { UsersMutateDrawer } from './users-mutate-drawer'
 import { useUsers } from './users-provider'
+import { UsersPurgeDialog } from './users-purge-dialog'
 
 export function UsersDialogs() {
   const { open, setOpen, currentRow, setCurrentRow, loadUsers } = useUsers()
@@ -42,6 +43,16 @@ export function UsersDialogs() {
             open={open === 'delete'}
             onOpenChange={() => {
               setOpen('delete')
+              setTimeout(() => setCurrentRow(null), 500)
+            }}
+            currentRow={currentRow}
+          />
+
+          <UsersPurgeDialog
+            key={`user-purge-${currentRow?.id ?? 'unknown'}`}
+            open={open === 'purge'}
+            onOpenChange={() => {
+              setOpen(null) // Set to null to close
               setTimeout(() => setCurrentRow(null), 500)
             }}
             currentRow={currentRow}

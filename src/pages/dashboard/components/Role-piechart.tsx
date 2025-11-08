@@ -27,6 +27,7 @@ export const description = 'A pie chart showing dynamic user role distribution'
 type UserProfile = {
   id: string
   role_id: string
+  role?: string // The backend /profiles/all adds this
   [key: string]: any
 }
 
@@ -41,28 +42,28 @@ export function ChartPieSimple() {
   const [loading, setLoading] = useState(true)
   const [topRole, setTopRole] = useState<string>('')
 
-  const roleLabels: Record<string, string> = {
-    faculty_member: 'Faculty Member',
-    admin: 'Admin',
-    student: 'Student',
-  }
+  // --- THIS IS THE FIX ---
+  // We build the labels from the 'roles' data to ensure they are in sync
+  const roleLabels = roles.reduce((acc, role) => {
+    acc[role.designation] = role.label
+    return acc
+  }, {} as Record<string, string>) // <-- This explicit type cast fixes the error
+  // --- END FIX ---
+
 
   useEffect(() => {
     async function fetchRoles() {
       try {
-        // --- 2. Get the full response object ---
         const response: PaginatedUsersResponse = await getAllProfiles()
-
-        // --- 3. Use response.items ---
         const profiles: UserProfile[] = response.items || []
 
         const roleCounts: Record<string, number> = {}
 
-        profiles.forEach((p: any) => {
-          const matchedRole =
-            roles.find((r) => r.value === p.role_id)?.designation || 'Unknown'
-
-          const readableRole = roleLabels[matchedRole] || matchedRole
+        // Use the role designation from the profile (which comes from the backend)
+        profiles.forEach((p: UserProfile) => {
+          const roleDesignation = p.role || 'Unknown' // 'role' is the designation string
+          const readableRole = roleLabels[roleDesignation] || roleDesignation
+          
           roleCounts[readableRole] = (roleCounts[readableRole] || 0) + 1
         })
 
@@ -74,11 +75,14 @@ export function ChartPieSimple() {
 
         setChartData(data)
 
-        const top = data.reduce(
-          (prev, curr) => (curr.count > prev.count ? curr : prev),
-          { role: 'None', count: 0 }
-        )
-        setTopRole(top.role)
+        if(data.length > 0) {
+          const top = data.reduce(
+            (prev, curr) => (curr.count > prev.count ? curr : prev),
+            { role: 'None', count: 0 }
+          )
+          setTopRole(top.role)
+        }
+
       } catch (error) {
         console.error('Error fetching role data:', error)
       } finally {
@@ -87,13 +91,19 @@ export function ChartPieSimple() {
     }
 
     fetchRoles()
-  }, [])
+  }, [roleLabels]) // roleLabels is stable, so this is fine
 
   const chartConfig: ChartConfig = {
     count: { label: 'Users' },
   }
   
-  // ... (rest of the file is unchanged) ...
+  // Dynamically add role colors to chartConfig
+  chartData.forEach((item) => {
+    chartConfig[item.role] = {
+      label: item.role,
+      color: item.fill,
+    }
+  })
 
   return (
     <Card className='flex flex-col'>
@@ -117,7 +127,9 @@ export function ChartPieSimple() {
             className='[&_.recharts-pie-label-text]:fill-foreground mx-auto aspect-square max-h-[250px] pb-0'
           >
             <PieChart>
-              <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+              <ChartTooltip
+                content={<ChartTooltipContent nameKey='role' hideLabel />}
+              />
               <Pie
                 data={chartData}
                 dataKey='count'
@@ -140,9 +152,9 @@ export function ChartPieSimple() {
             <div className='flex items-center gap-2 leading-none font-medium'>
               Most users are{' '}
               <span className='text-foreground font-semibold capitalize'>
-                {topRole || 'Unknown'}
+                {topRole || 'N/A'}
               </span>
-              <TrendingUp className='h-4 w-4 text-green-500' />
+              {topRole !== 'N/A' && <TrendingUp className='h-4 w-4 text-green-500' />}
             </div>
             <div className='text-muted-foreground leading-none'>
               Showing role distribution across all registered users

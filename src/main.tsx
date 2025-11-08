@@ -13,6 +13,8 @@ import { handleServerError } from '@/lib/handle-server-error'
 import { DirectionProvider } from './context/direction-provider'
 import { FontProvider } from './context/font-provider'
 import { ThemeProvider } from './context/theme-provider'
+// --- 1. IMPORT THE TOASTER ---
+import { Toaster } from '@/components/ui/sonner'
 import { routeTree } from './routeTree.gen'
 import './styles/index.css'
 
@@ -51,7 +53,9 @@ const queryClient = new QueryClient({
           // We can't use `router.navigate` here as it's not initialized yet
           // Instead, we'll redirect manually.
           const redirect = `${window.location.pathname}${window.location.search}`
-          window.location.href = `/sign-in?redirect=${encodeURIComponent(redirect)}`
+          window.location.href = `/sign-in?redirect=${encodeURIComponent(
+            redirect
+          )}`
         }
         if (error.response?.status === 500) {
           toast.error('Internal Server Error!')
@@ -88,6 +92,8 @@ if (!rootElement.innerHTML) {
             <DirectionProvider>
               {/* Render the router directly */}
               <RouterProvider router={router} />
+              {/* --- 2. ADD THE TOASTER COMPONENT HERE --- */}
+              <Toaster />
             </DirectionProvider>
           </FontProvider>
         </ThemeProvider>

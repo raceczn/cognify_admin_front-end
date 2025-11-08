@@ -1,6 +1,9 @@
 // src/pages/modules/components/modules-provider.tsx
 import React, { useState, useCallback, useEffect } from 'react'
-import { getModules, getAllSubjects } from '@/lib/content-hooks'
+// --- 1. IMPORT from correct hook file ---
+import { getModules } from '@/lib/content-hooks'
+import { getAllSubjects } from '@/lib/subjects-hooks'
+// --- END IMPORT FIX ---
 import useDialogState from '@/hooks/use-dialog-state'
 import { type Module } from '../data/schema'
 
@@ -48,8 +51,11 @@ export function ModulesProvider({ children }: { children: React.ReactNode }) {
   const loadSubjects = useCallback(async () => {
     try {
       setIsLoadingSubjects(true)
+      // --- 2. This function now correctly calls the hook ---
       const res = await getAllSubjects()
-      setSubjects(res || [])
+      // This response is paginated, so we get 'items'
+      setSubjects(res?.items || [])
+      // --- END FIX ---
     } catch (err) {
       console.error('Failed to load subjects:', err)
     } finally {

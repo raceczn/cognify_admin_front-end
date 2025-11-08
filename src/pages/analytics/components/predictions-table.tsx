@@ -21,14 +21,18 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { LongText } from '@/components/long-text' // Import LongText
 
-// src/pages/analytics/components/predictions-table.tsx
-
+// --- 1. FIX: Updated interface to match /analytics/global_predictions ---
+// This now matches the 'predictions_list' from analytics_service.py
 interface Prediction {
   student_id: string
+  first_name: string | null
+  last_name: string | null
   predicted_to_pass: boolean
-  pass_probability: number
+  overall_score: number // This is the field from the backend
 }
+// --- END FIX ---
 
 interface PredictionData {
   summary: {
@@ -127,9 +131,9 @@ export function PredictionsTable({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Student ID</TableHead>
+                <TableHead>Student</TableHead>
                 <TableHead>Prediction</TableHead>
-                <TableHead className='text-right'>Pass Probability</TableHead>
+                <TableHead className='text-right'>Overall Score</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -140,9 +144,20 @@ export function PredictionsTable({
                     onClick={() => handleRowClick(p.student_id)}
                     className='hover:bg-muted/60 cursor-pointer transition-all hover:shadow-sm'
                   >
-                    <TableCell className='font-medium'>
-                      {p.student_id}
+                    {/* --- 2. FIX: Display name and ID --- */}
+                    <TableCell>
+                      <div className='flex flex-col'>
+                        <span className='font-medium'>
+                          {`${p.first_name || ''} ${p.last_name || ''}`.trim() ||
+                            'Unknown User'}
+                        </span>
+                        <LongText className='text-muted-foreground w-48 text-xs'>
+                          {p.student_id}
+                        </LongText>
+                      </div>
                     </TableCell>
+                    {/* --- END FIX --- */}
+
                     <TableCell>
                       <Badge
                         variant='outline'
@@ -157,19 +172,23 @@ export function PredictionsTable({
                       </Badge>
                     </TableCell>
 
+                    {/* --- 3. FIX: Use overall_score and Progress component --- */}
                     <TableCell className='text-right'>
                       <div className='flex flex-col items-end gap-1'>
                         <span className='font-semibold'>
-                          {p.pass_probability.toFixed(2)}%
+                          {p.overall_score.toFixed(2)}%
                         </span>
                         <Progress
-                          value={p.pass_probability}
+                          value={p.overall_score}
                           className={`h-2 w-[120px] ${
-                            p.predicted_to_pass ? 'bg-green-100' : 'bg-red-100'
+                            p.predicted_to_pass
+                              ? 'bg-green-100'
+                              : 'bg-red-100'
                           }`}
                         />
                       </div>
                     </TableCell>
+                    {/* --- END FIX --- */}
                   </TableRow>
                 ))
               ) : (

@@ -14,14 +14,15 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+// --- 1. REMOVE UNUSED TABLE IMPORTS ---
+// import {
+//   Table,
+//   TableBody,
+//   TableCell,
+//   TableHead,
+//   TableHeader,
+//   TableRow,
+// } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -32,13 +33,18 @@ import {
   Target,
   Check,
   X,
+  AlertTriangle,
 } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
 import React from 'react'
+import { AppErrorBoundary } from '@/components/error-boundary'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+// --- 2. IMPORT THE NEW CHART COMPONENT ---
+import { StudentBloomChart } from '@/pages/analytics/components/student-bloom-chart'
 
-// --- 1. FIX: Updated interface to match backend response ---
+// (Interface and Fallback component remain the same)
 interface StudentAnalyticsData {
   student_id: string
   summary: {
@@ -46,7 +52,6 @@ interface StudentAnalyticsData {
     overall_score: number
     time_spent_sec: number
   }
-  // This is an object/dictionary, not an array
   performance_by_bloom: { [key: string]: number }
   prediction: {
     predicted_to_pass?: boolean
@@ -55,9 +60,30 @@ interface StudentAnalyticsData {
   ai_motivation?: string
   last_updated?: any
 }
-// --- END FIX ---
 
-// This is the component for the new page
+function StudentAnalyticsErrorFallback() {
+  return (
+    <div className='p-4'>
+      <Alert variant='destructive'>
+        <AlertTriangle className='h-4 w-4' />
+        <AlertTitle>Error Loading Student Report</AlertTitle>
+        <AlertDescription>
+          There was an error loading this student's analytics. The data
+          might be incomplete or a system error occurred.
+          <br />
+          <Button
+            variant='destructive'
+            className='mt-4'
+            onClick={() => window.location.reload()}
+          >
+            Refresh Page
+          </Button>
+        </AlertDescription>
+      </Alert>
+    </div>
+  )
+}
+
 function StudentAnalyticsPage() {
   const { studentId } = Route.useParams()
 
@@ -74,16 +100,15 @@ function StudentAnalyticsPage() {
   const hours = Math.floor(timeSpent / 3600)
   const minutes = Math.floor((timeSpent % 3600) / 60)
 
-  // --- 2. FIX: Helper to process performance_by_bloom object ---
+  // This logic is already correct and creates the data our chart needs
   const bloomPerformance = React.useMemo(() => {
     if (!analytics?.performance_by_bloom) return []
-    // Use Object.entries() to convert the object to an array
-    return Object.entries(analytics.performance_by_bloom).map(
-      ([level, score]) => ({
+    return Object.entries(analytics.performance_by_bloom)
+      .map(([level, score]) => ({
         bloom_level: level,
         score: score,
-      })
-    )
+      }))
+      .sort((a, b) => a.bloom_level.localeCompare(b.bloom_level)) // Sort for consistency
   }, [analytics?.performance_by_bloom])
 
   const strengths = bloomPerformance
@@ -92,20 +117,17 @@ function StudentAnalyticsPage() {
   const weaknesses = bloomPerformance
     .filter((p) => p.score < 70)
     .map((p) => p.bloom_level)
-  // --- END FIX ---
 
   const renderContent = () => {
     if (isLoading) {
       return (
         <div className='space-y-4'>
-          {/* Skeletons for summary cards */}
           <div className='grid grid-cols-1 gap-4 md:grid-cols-4'>
             <Skeleton className='h-32' />
             <Skeleton className='h-32' />
             <Skeleton className='h-32' />
             <Skeleton className='h-32' />
           </div>
-          {/* Skeleton for tables */}
           <div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
             <Skeleton className='h-64' />
             <Skeleton className='h-64' />
@@ -136,7 +158,7 @@ function StudentAnalyticsPage() {
 
     return (
       <div className='space-y-4'>
-        {/* 1. Summary Cards */}
+        {/* 1. Summary Cards (Unchanged) */}
         <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4'>
           <Card>
             <CardHeader className='flex-row items-center justify-between space-y-0 pb-2'>
@@ -187,7 +209,6 @@ function StudentAnalyticsPage() {
               </p>
             </CardContent>
           </Card>
-          {/* --- 3. NEW: Add AI Prediction Card --- */}
           <Card>
             <CardHeader className='flex-row items-center justify-between space-y-0 pb-2'>
               <CardTitle className='text-sm font-medium'>
@@ -215,10 +236,9 @@ function StudentAnalyticsPage() {
               </p>
             </CardContent>
           </Card>
-          {/* --- END NEW --- */}
         </div>
 
-        {/* 2. Strengths & Weaknesses */}
+        {/* 2. Strengths & Weaknesses / Chart */}
         <div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
           <Card>
             <CardHeader>
@@ -235,7 +255,6 @@ function StudentAnalyticsPage() {
                 <h4 className='font-semibold'>Strengths (Score {'>='} 80%)</h4>
                 <Separator className='my-2' />
                 <div className='flex flex-wrap gap-2'>
-                  {/* --- 4. FIX: Use derived strengths --- */}
                   {strengths.length > 0 ? (
                     strengths.map((strength) => (
                       <Badge
@@ -257,7 +276,6 @@ function StudentAnalyticsPage() {
                 <h4 className='font-semibold'>Weaknesses (Score {'<'} 70%)</h4>
                 <Separator className='my-2' />
                 <div className='flex flex-wrap gap-2'>
-                  {/* --- 5. FIX: Use derived weaknesses --- */}
                   {weaknesses.length > 0 ? (
                     weaknesses.map((weakness) => (
                       <Badge
@@ -278,47 +296,10 @@ function StudentAnalyticsPage() {
             </CardContent>
           </Card>
 
-          {/* 3. Performance by Topic (Bloom Level) */}
-          <Card>
-            <CardHeader>
-              {/* --- 6. FIX: Title changed to Bloom --- */}
-              <CardTitle>Performance by Bloom's Level</CardTitle>
-              <CardDescription>
-                Average score per Bloom's category.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Bloom's Level</TableHead>
-                    <TableHead className='text-right'>Score</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {/* --- 7. FIX: Render from bloomPerformance --- */}
-                  {bloomPerformance.length > 0 ? (
-                    bloomPerformance.map((item) => (
-                      <TableRow key={item.bloom_level}>
-                        <TableCell className='font-medium capitalize'>
-                          {item.bloom_level}
-                        </TableCell>
-                        <TableCell className='text-right'>
-                          {item.score.toFixed(2)}%
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={2} className='h-24 text-center'>
-                        No scores recorded.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          {/* --- 3. SWAP THE TABLE FOR THE CHART --- */}
+          <StudentBloomChart data={bloomPerformance} />
+          {/* --- END SWAP --- */}
+          
         </div>
       </div>
     )
@@ -345,18 +326,20 @@ function StudentAnalyticsPage() {
       </Header>
 
       <Main>
-        <div className='mb-4'>
-          <h2 className='text-xl font-bold tracking-tight'>
-            Student ID: {studentId}
-          </h2>
-          <p className='text-muted-foreground'>
-            Detailed performance and progress report.
-          </p>
-        </div>
-        <Separator className='my-4' />
-        <ScrollArea className='h-[calc(100vh-14rem)]'>
-          <div className='pr-4'>{renderContent()}</div>
-        </ScrollArea>
+        <AppErrorBoundary fallback={<StudentAnalyticsErrorFallback />}>
+          <div className='mb-4'>
+            <h2 className='text-xl font-bold tracking-tight'>
+              Student ID: {studentId}
+            </h2>
+            <p className='text-muted-foreground'>
+              Detailed performance and progress report.
+            </p>
+          </div>
+          <Separator className='my-4' />
+          <ScrollArea className='h-[calc(100vh-14rem)]'>
+            <div className='pr-4'>{renderContent()}</div>
+          </ScrollArea>
+        </AppErrorBoundary>
       </Main>
     </>
   )
