@@ -24,7 +24,6 @@ import { Route as authOtpRouteImport } from './routes/(auth)/otp'
 import { Route as authForgotPasswordRouteImport } from './routes/(auth)/forgot-password'
 import { Route as AuthenticatedSettingsRouteRouteImport } from './routes/_authenticated/settings/route'
 import { Route as AuthenticatedUsersIndexRouteImport } from './routes/_authenticated/users/index'
-import { Route as AuthenticatedSystemLogsIndexRouteImport } from './routes/_authenticated/system-logs/index'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings/index'
 import { Route as AuthenticatedReportsIndexRouteImport } from './routes/_authenticated/reports/index'
 import { Route as AuthenticatedHelpCenterIndexRouteImport } from './routes/_authenticated/help-center/index'
@@ -111,12 +110,6 @@ const AuthenticatedUsersIndexRoute = AuthenticatedUsersIndexRouteImport.update({
   path: '/users/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedSystemLogsIndexRoute =
-  AuthenticatedSystemLogsIndexRouteImport.update({
-    id: '/system-logs/',
-    path: '/system-logs/',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedSettingsIndexRoute =
   AuthenticatedSettingsIndexRouteImport.update({
     id: '/',
@@ -201,7 +194,6 @@ export interface FileRoutesByFullPath {
   '/help-center': typeof AuthenticatedHelpCenterIndexRoute
   '/reports': typeof AuthenticatedReportsIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
-  '/system-logs': typeof AuthenticatedSystemLogsIndexRoute
   '/users': typeof AuthenticatedUsersIndexRoute
   '/analytics/student/$studentId': typeof AuthenticatedAnalyticsStudentStudentIdRoute
 }
@@ -227,7 +219,6 @@ export interface FileRoutesByTo {
   '/help-center': typeof AuthenticatedHelpCenterIndexRoute
   '/reports': typeof AuthenticatedReportsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
-  '/system-logs': typeof AuthenticatedSystemLogsIndexRoute
   '/users': typeof AuthenticatedUsersIndexRoute
   '/analytics/student/$studentId': typeof AuthenticatedAnalyticsStudentStudentIdRoute
 }
@@ -256,7 +247,6 @@ export interface FileRoutesById {
   '/_authenticated/help-center/': typeof AuthenticatedHelpCenterIndexRoute
   '/_authenticated/reports/': typeof AuthenticatedReportsIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
-  '/_authenticated/system-logs/': typeof AuthenticatedSystemLogsIndexRoute
   '/_authenticated/users/': typeof AuthenticatedUsersIndexRoute
   '/_authenticated/analytics/student/$studentId': typeof AuthenticatedAnalyticsStudentStudentIdRoute
 }
@@ -285,7 +275,6 @@ export interface FileRouteTypes {
     | '/help-center'
     | '/reports'
     | '/settings/'
-    | '/system-logs'
     | '/users'
     | '/analytics/student/$studentId'
   fileRoutesByTo: FileRoutesByTo
@@ -311,7 +300,6 @@ export interface FileRouteTypes {
     | '/help-center'
     | '/reports'
     | '/settings'
-    | '/system-logs'
     | '/users'
     | '/analytics/student/$studentId'
   id:
@@ -339,7 +327,6 @@ export interface FileRouteTypes {
     | '/_authenticated/help-center/'
     | '/_authenticated/reports/'
     | '/_authenticated/settings/'
-    | '/_authenticated/system-logs/'
     | '/_authenticated/users/'
     | '/_authenticated/analytics/student/$studentId'
   fileRoutesById: FileRoutesById
@@ -464,13 +451,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUsersIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/system-logs/': {
-      id: '/_authenticated/system-logs/'
-      path: '/system-logs'
-      fullPath: '/system-logs'
-      preLoaderRoute: typeof AuthenticatedSystemLogsIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/settings/': {
       id: '/_authenticated/settings/'
       path: '/'
@@ -576,7 +556,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAnalyticsIndexRoute: typeof AuthenticatedAnalyticsIndexRoute
   AuthenticatedHelpCenterIndexRoute: typeof AuthenticatedHelpCenterIndexRoute
   AuthenticatedReportsIndexRoute: typeof AuthenticatedReportsIndexRoute
-  AuthenticatedSystemLogsIndexRoute: typeof AuthenticatedSystemLogsIndexRoute
   AuthenticatedUsersIndexRoute: typeof AuthenticatedUsersIndexRoute
   AuthenticatedAnalyticsStudentStudentIdRoute: typeof AuthenticatedAnalyticsStudentStudentIdRoute
 }
@@ -590,7 +569,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAnalyticsIndexRoute: AuthenticatedAnalyticsIndexRoute,
   AuthenticatedHelpCenterIndexRoute: AuthenticatedHelpCenterIndexRoute,
   AuthenticatedReportsIndexRoute: AuthenticatedReportsIndexRoute,
-  AuthenticatedSystemLogsIndexRoute: AuthenticatedSystemLogsIndexRoute,
   AuthenticatedUsersIndexRoute: AuthenticatedUsersIndexRoute,
   AuthenticatedAnalyticsStudentStudentIdRoute:
     AuthenticatedAnalyticsStudentStudentIdRoute,

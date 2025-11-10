@@ -1,11 +1,14 @@
 // src/pages/users/components/users-table.tsx
-import { useEffect, useMemo, useState } from 'react'
-import { getRouteApi } from '@tanstack/react-router' // Keep this for types, but we won't use the hooks
+import { useMemo, useState } from 'react'
+// import { getRouteApi } from '@tanstack/react-router'
+// Keep this for types, but we won't use the hooks
 import {
   type SortingState,
   type VisibilityState,
-  type ColumnFiltersState, // Import this
-  type PaginationState, // Import this
+  type ColumnFiltersState,
+  // Import this
+  type PaginationState,
+  // Import this
   flexRender,
   getCoreRowModel,
   getFacetedRowModel,
@@ -33,7 +36,7 @@ import { DataTableBulkActions } from './data-table-bulk-actions'
 import { usersColumns as columns } from './users-columns'
 
 // We can still use the route API type, but we won't use the hooks
-const route = getRouteApi('/_authenticated/users/')
+// const route = getRouteApi('/_authenticated/users/')
 
 declare module '@tanstack/react-table' {
   interface ColumnMeta<TData, TValue> {
@@ -46,10 +49,7 @@ type DataTableProps = {
   showDeleted?: boolean
 }
 
-export function UsersTable({
-  data,
-  showDeleted = false,
-}: DataTableProps) {
+export function UsersTable({ data, showDeleted = false }: DataTableProps) {
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [sorting, setSorting] = useState<SortingState>([])
@@ -138,10 +138,8 @@ export function UsersTable({
                     <TableHead
                       key={header.id}
                       colSpan={header.colSpan}
-                      className={cn(
-                        'bg-background group-hover/row:bg-muted group-data-[state=selected]/row:bg-muted',
-                        header.column.columnDef.meta?.className ?? ''
-                      )}
+                     
+                      className='bg-[#faf1e8]'
                     >
                       {header.isPlaceholder
                         ? null

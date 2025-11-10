@@ -18,7 +18,8 @@ import { TopNav } from '@/components/layout/top-nav'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { Overview } from './components/overview'
+import { RolePieChart } from './components/Role-piechart'
+import { UserGrowth } from './components/Usergrowth'
 
 export function Dashboard() {
   // --- 2. GET PERMISSIONS (This is fine) ---
@@ -56,10 +57,10 @@ export function Dashboard() {
           <Card>
             <CardHeader>
               <CardDescription>Total Registered Users</CardDescription>
-              <CardTitle className='text-3xl font-semibold'>1,245</CardTitle>
+              <CardTitle className='text-3xl font-semibold'>0</CardTitle>
               <CardAction>
                 <Badge variant='outline'>
-                  <IconTrendingUp className='size-4' /> +12%
+                  <IconTrendingUp className='size-4' /> 
                 </Badge>
               </CardAction>
             </CardHeader>
@@ -72,10 +73,10 @@ export function Dashboard() {
           <Card>
             <CardHeader>
               <CardDescription>Active Students</CardDescription>
-              <CardTitle className='text-3xl font-semibold'>980</CardTitle>
+              <CardTitle className='text-3xl font-semibold'>0</CardTitle>
               <CardAction>
                 <Badge variant='outline'>
-                  <IconTrendingUp className='size-4' /> +8%
+                  <IconTrendingUp className='size-4' /> 
                 </Badge>
               </CardAction>
             </CardHeader>
@@ -88,10 +89,10 @@ export function Dashboard() {
           <Card>
             <CardHeader>
               <CardDescription>Faculty Members</CardDescription>
-              <CardTitle className='text-3xl font-semibold'>45</CardTitle>
+              <CardTitle className='text-3xl font-semibold'>0</CardTitle>
               <CardAction>
                 <Badge variant='outline'>
-                  <IconTrendingUp className='size-4' /> +3%
+                  <IconTrendingUp className='size-4' /> 
                 </Badge>
               </CardAction>
             </CardHeader>
@@ -104,10 +105,10 @@ export function Dashboard() {
           <Card>
             <CardHeader>
               <CardDescription>Review Materials</CardDescription>
-              <CardTitle className='text-3xl font-semibold'>312</CardTitle>
+              <CardTitle className='text-3xl font-semibold'>0</CardTitle>
               <CardAction>
                 <Badge variant='outline'>
-                  <IconTrendingUp className='size-4' /> +15%
+                  <IconTrendingUp className='size-4' /> 
                 </Badge>
               </CardAction>
             </CardHeader>
@@ -121,7 +122,8 @@ export function Dashboard() {
         <div className='mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2'>
           {/* Overview (left, 50%) */}
 
-          <Overview />
+          <UserGrowth />
+          <RolePieChart/>
         </div>
       </Main>
     </>

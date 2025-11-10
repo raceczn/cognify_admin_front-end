@@ -4,8 +4,10 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   type SortingState,
   type VisibilityState,
-  type ColumnFiltersState, // Import this
-  type PaginationState, // Import this
+  type ColumnFiltersState,
+  // Import this
+  type PaginationState,
+  // Import this
   flexRender,
   getCoreRowModel,
   getFacetedRowModel,
@@ -111,7 +113,11 @@ export function ModulesTable({ data }: DataTableProps) {
               <TableRow key={headerGroup.id} className='group/row'>
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id} colSpan={header.colSpan}>
+                    <TableHead
+                      key={header.id}
+                      colSpan={header.colSpan}
+                      className='bg-[#faf1e8]' 
+                    >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -124,6 +130,7 @@ export function ModulesTable({ data }: DataTableProps) {
               </TableRow>
             ))}
           </TableHeader>
+
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (

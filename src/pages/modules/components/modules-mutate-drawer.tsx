@@ -67,7 +67,6 @@ export function ModulesMutateDrawer({
   open,
   onOpenChange,
   currentRow,
-  onSuccess,
 }: ModuleMutateDrawerProps) {
   const isEdit = !!currentRow
   const { subjects, isLoadingSubjects, loadModules } = useModules()

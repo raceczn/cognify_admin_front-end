@@ -37,7 +37,7 @@ type PaginatedUsersResponse = {
 }
 
 
-export function ChartPieSimple() {
+export function RolePieChart() {
   const [chartData, setChartData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [topRole, setTopRole] = useState<string>('')

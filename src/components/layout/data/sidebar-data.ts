@@ -2,7 +2,6 @@
 import {
   LayoutDashboard,
   Monitor,
-  ListTodo,
   HelpCircle,
   Bell,
   Package,
@@ -57,11 +56,7 @@ export const staticSidebarData: Omit<SidebarData, 'user'> = {
           icon: Library,
         },
         // --- END ---
-        {
-          title: 'System Logs',
-          url: '/system-logs',
-          icon: ListTodo,
-        },
+      
         {
           title: 'Reports & Feedback',
           url: '/reports',

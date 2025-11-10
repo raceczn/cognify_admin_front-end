@@ -3,7 +3,6 @@
 import * as React from "react"
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
 import { getAllProfiles } from "@/lib/profile-hooks"
-
 import {
   Card,
   CardContent,
@@ -33,7 +32,6 @@ type UserProfile = {
   [key: string]: any
 }
 
-// --- 1. Define the paginated response type ---
 type PaginatedUsersResponse = {
   items: UserProfile[]
   last_doc_id: string | null
@@ -51,7 +49,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function ChartAreaInteractive() {
+export function UserGrowth() {
   const [chartData, setChartData] = React.useState<ChartPoint[]>([])
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
@@ -60,18 +58,13 @@ export function ChartAreaInteractive() {
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        // --- 2. Get the full response object ---
         const response: PaginatedUsersResponse = await getAllProfiles()
-        
-        // --- 3. Use response.items ---
         const profiles: UserProfile[] = response.items || []
 
-        // ✅ Filter valid creation dates
         const validProfiles = profiles.filter(
           (p) => p.created_at && !isNaN(Date.parse(p.created_at))
         )
 
-        // ✅ Group by date (YYYY-MM-DD)
         const grouped = validProfiles.reduce<Record<string, number>>((acc, p) => {
           const date = new Date(p.created_at as string)
             .toISOString()
@@ -80,15 +73,12 @@ export function ChartAreaInteractive() {
           return acc
         }, {})
 
-        // ✅ Convert to chart format
         const formatted = Object.entries(grouped)
           .map(([date, count]) => ({
             date,
             users: Number(count),
           }))
-          .sort(
-            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-          )
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
 
         setChartData(formatted)
       } catch (err) {
@@ -106,27 +96,13 @@ export function ChartAreaInteractive() {
     if (!chartData.length) return []
 
     const daysToSubtract = parseInt(timeRange)
-    if (isNaN(daysToSubtract)) {
-      return chartData // Return all data if range is invalid
-    }
-    
+    if (isNaN(daysToSubtract)) return chartData
+
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - daysToSubtract)
-    
+
     return chartData.filter((item) => new Date(item.date) >= startDate)
   }, [chartData, timeRange])
-
-  if (loading) {
-    return (
-      <Card className="py-6 text-center text-sm text-muted-foreground">
-        Loading user data...
-      </Card>
-    )
-  }
-
-  if (error) {
-    return <Card className="py-6 text-center text-red-500">{error}</Card>
-  }
 
   return (
     <Card className="pt-0">
@@ -145,77 +121,79 @@ export function ChartAreaInteractive() {
             <SelectValue placeholder="Last 3 months" />
           </SelectTrigger>
           <SelectContent className="rounded-xl">
-            <SelectItem value="90" className="rounded-lg">
-              Last 3 months
-            </SelectItem>
-            <SelectItem value="30" className="rounded-lg">
-              Last 30 days
-            </SelectItem>
-            <SelectItem value="7" className="rounded-lg">
-              Last 7 days
-            </SelectItem>
+            <SelectItem value="90">Last 3 months</SelectItem>
+            <SelectItem value="30">Last 30 days</SelectItem>
+            <SelectItem value="7">Last 7 days</SelectItem>
           </SelectContent>
         </Select>
       </CardHeader>
 
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-        <ChartContainer
-          config={chartConfig}
-          className="aspect-auto h-[250px] w-full"
-        >
-          <AreaChart data={filteredData}>
-            <defs>
-              <linearGradient id="fillusers" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor="var(--color-users)"
-                  stopOpacity={0.8}
-                />
-                <stop
-                  offset="95%"
-                  stopColor="var(--color-users)"
-                  stopOpacity={0.1}
-                />
-              </linearGradient>
-            </defs>
+        {error ? (
+          <div className="text-center text-red-500 py-6">{error}</div>
+        ) : loading ? (
+          <div className="text-center text-sm text-muted-foreground py-6">
+            Loading user data...
+          </div>
+        ) : (
+          <ChartContainer
+            config={chartConfig}
+            className="aspect-auto h-[250px] w-full"
+          >
+            <AreaChart data={filteredData}>
+              <defs>
+                <linearGradient id="fillusers" x1="0" y1="0" x2="0" y2="1">
+                  <stop
+                    offset="5%"
+                    stopColor="var(--color-users)"
+                    stopOpacity={0.8}
+                  />
+                  <stop
+                    offset="95%"
+                    stopColor="var(--color-users)"
+                    stopOpacity={0.1}
+                  />
+                </linearGradient>
+              </defs>
 
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="date"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              minTickGap={32}
-              tickFormatter={(value) =>
-                new Date(value).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })
-              }
-            />
-            <ChartTooltip
-              cursor={false}
-              content={
-                <ChartTooltipContent
-                  labelFormatter={(value) =>
-                    new Date(value).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    })
-                  }
-                  indicator="dot"
-                />
-              }
-            />
-            <Area
-              dataKey="users"
-              type="natural"
-              fill="url(#fillusers)"
-              stroke="var(--color-users)"
-            />
-            <ChartLegend content={<ChartLegendContent />} />
-          </AreaChart>
-        </ChartContainer>
+              <CartesianGrid vertical={false} />
+              <XAxis
+                dataKey="date"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                minTickGap={32}
+                tickFormatter={(value) =>
+                  new Date(value).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })
+                }
+              />
+              <ChartTooltip
+                cursor={false}
+                content={
+                  <ChartTooltipContent
+                    labelFormatter={(value) =>
+                      new Date(value).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })
+                    }
+                    indicator="dot"
+                  />
+                }
+              />
+              <Area
+                dataKey="users"
+                type="natural"
+                fill="url(#fillusers)"
+                stroke="var(--color-users)"
+              />
+              <ChartLegend content={<ChartLegendContent />} />
+            </AreaChart>
+          </ChartContainer>
+        )}
       </CardContent>
     </Card>
   )

@@ -4,7 +4,7 @@ import { ModulesMutateDrawer } from './modules-mutate-drawer'
 import { ModuleDeleteDialog } from './modules-delete-dialog'
 
 export function ModulesDialogs() {
-  const { open, setOpen, currentRow, setCurrentRow, loadModules } = useModules()
+  const { open, setOpen, currentRow, loadModules } = useModules()
 
   return (
     <>

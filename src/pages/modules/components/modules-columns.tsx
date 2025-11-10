@@ -45,7 +45,7 @@ export const modulesColumns: ColumnDef<Module>[] = [
   {
     accessorKey: 'title',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Title' />
+      <DataTableColumnHeader column={column} title='Title'  />
     ),
     cell: ({ row }) => (
       <LongText className='max-w-xs'>{row.getValue('title')}</LongText>
@@ -54,7 +54,7 @@ export const modulesColumns: ColumnDef<Module>[] = [
   {
     accessorKey: 'subject_id',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Subject' />
+      <DataTableColumnHeader column={column} title='Core Subject' />
     ),
     cell: ({ row }) => (
       // --- FIX 1: Added whitespace-normal ---
