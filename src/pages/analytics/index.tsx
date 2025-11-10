@@ -23,9 +23,9 @@ import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { ChartRadarDefault } from './components/char-radar'
-import CoreSubjectsPage  from './components/core-sub'
-import { ChartRadialText } from './components/pie'
+import { BloomLevelChart } from './components/bloom-level-chart'
+import CoreSubjectsPage  from './components/core-subject'
+import { StudentStatus } from './components/students-status'
 import { PredictionsTable } from './components/predictions-table'
 
 // src/pages/analytics/index.tsx
@@ -183,8 +183,8 @@ export function Apps() {
             )}
 
             <div className='mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3'>
-              <ChartRadarDefault />
-              <ChartRadialText />
+              <BloomLevelChart />
+              <StudentStatus />
               <CoreSubjectsPage />
             </div>
 

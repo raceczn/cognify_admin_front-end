@@ -79,7 +79,7 @@ export function PredictionsTable({
         <CardHeader>
           <CardTitle className='flex items-center gap-2'>
             <TrendingUp className='text-primary h-5 w-5' />
-            AI Pass/Fail Predictions
+             Pass/Fail Predictions
           </CardTitle>
           <CardDescription>
             Running predictive model on all active students...
@@ -96,7 +96,7 @@ export function PredictionsTable({
     return (
       <Card className='border-border/50 border shadow-sm'>
         <CardHeader>
-          <CardTitle>AI Pass/Fail Predictions</CardTitle>
+          <CardTitle>Pass/Fail Predictions</CardTitle>
           <CardDescription>Could not load model data.</CardDescription>
         </CardHeader>
         <CardContent className='flex h-[220px] items-center justify-center'>
@@ -185,7 +185,7 @@ export function PredictionsTable({
         <div>
           <CardTitle className='flex items-center gap-2'>
             <TrendingUp className='text-primary h-5 w-5' />
-            AI Pass/Fail Predictions
+            Pass/Fail Predictions
           </CardTitle>
           <CardDescription>
             Click on a student row to view detailed analytics.

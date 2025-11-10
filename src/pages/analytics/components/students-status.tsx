@@ -20,25 +20,25 @@ import { ChartConfig, ChartContainer } from "@/components/ui/chart"
 export const description = "A radial chart with text"
 
 const chartData = [
-  { browser: "safari", visitors: 200, fill: "var(--color-safari)" },
+  { browser: "at_risk", pass: 13, fill: "var(--color-at_risk)" },
 ]
 
 const chartConfig = {
-  visitors: {
-    label: "Visitors",
+  pass: {
+    label: "pass",
   },
-  safari: {
-    label: "Safari",
+  at_risk: {
+    label: "at_risk",
     color: "var(--chart-2)",
   },
 } satisfies ChartConfig
 
-export function ChartRadialText() {
+export function StudentStatus() {
   return (
     <Card className="flex flex-col">
       <CardHeader className="items-center pb-0">
-        <CardTitle>Radial Chart - Text</CardTitle>
-        <CardDescription>January - June 2024</CardDescription>
+        <CardTitle>Students’ Status</CardTitle>
+        <CardDescription>No. of students on track or at risk</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
         <ChartContainer
@@ -59,7 +59,7 @@ export function ChartRadialText() {
               className="first:fill-muted last:fill-background"
               polarRadius={[86, 74]}
             />
-            <RadialBar dataKey="visitors" background cornerRadius={10} />
+            <RadialBar dataKey="pass" background cornerRadius={10} />
             <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
               <Label
                 content={({ viewBox }) => {
@@ -76,14 +76,14 @@ export function ChartRadialText() {
                           y={viewBox.cy}
                           className="fill-foreground text-4xl font-bold"
                         >
-                          {chartData[0].visitors.toLocaleString()}
+                          {chartData[0].pass.toLocaleString()}
                         </tspan>
                         <tspan
                           x={viewBox.cx}
                           y={(viewBox.cy || 0) + 24}
                           className="fill-muted-foreground"
                         >
-                          Visitors
+                          Likely to Pass
                         </tspan>
                       </text>
                     )
