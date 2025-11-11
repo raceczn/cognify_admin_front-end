@@ -37,6 +37,7 @@ const REFRESH_TOKEN_KEY = 'refresh_token'
 const USER_INFO_KEY = 'user_info'
 
 export interface AuthState {
+  [x: string]: any
   auth: {
     user: AuthUser | null
     accessToken: string

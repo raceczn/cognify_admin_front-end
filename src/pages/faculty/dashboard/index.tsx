@@ -3,7 +3,6 @@
 
 import { Users, UserCheck, UserX, Percent, AlertTriangle } from 'lucide-react'
 import { useGlobalPredictions } from '@/lib/analytics-hooks'
-import { usePermissions } from '@/hooks/use-permissions'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -56,8 +55,7 @@ function AnalyticsErrorFallback() {
   )
 }
 
-export function Apps() {
-  const { isAdmin } = usePermissions()
+export function FacultyAdmin() {
 
   const {
     data: predictionData,
@@ -84,12 +82,10 @@ export function Apps() {
           <div className='pr-6'>
             <div>
               <h1 className='text-2xl font-bold tracking-tight'>
-                {isAdmin ? 'Dashboard Analytics' : 'Faculty Dashboard'}
+                Faculty Dashboard
               </h1>
               <p className='text-muted-foreground'>
-                {isAdmin
-                  ? 'Monitor system activity, user growth, and AI-powered predictions.'
-                  : 'Monitor student performance, identify trends, and track learning outcomes efficiently.'}
+                Monitor student performance, identify trends, and track learning outcomes efficiently.
               </p>
             </div>
             <div className='my-4'></div>

@@ -1,4 +1,4 @@
-// src/routes/_authenticated.tsx
+// src/routes/route.tsx
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { AuthenticatedLayout } from '@/components/layout/authenticated-layout'
 import { useAuthStore } from '@/stores/auth-store'

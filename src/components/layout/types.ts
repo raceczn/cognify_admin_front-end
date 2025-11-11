@@ -1,3 +1,4 @@
+// src/components/layout/types.ts
 import { type LinkProps } from '@tanstack/react-router'
 
 type User = {
@@ -16,6 +17,7 @@ type BaseNavItem = {
   title: string
   badge?: string
   icon?: React.ElementType
+  allowedRoles?: string[] // Added for RBAC
 }
 
 type NavLink = BaseNavItem & {
@@ -24,7 +26,10 @@ type NavLink = BaseNavItem & {
 }
 
 type NavCollapsible = BaseNavItem & {
-  items: (BaseNavItem & { url: LinkProps['to'] | (string & {}) })[]
+  items: (BaseNavItem & { 
+    url: LinkProps['to'] | (string & {})
+    allowedRoles?: string[] // Added for RBAC on sub-items
+  })[]
   url?: never
 }
 
@@ -41,4 +46,4 @@ type SidebarData = {
   navGroups: NavGroup[]
 }
 
-export type { SidebarData, NavGroup, NavItem, NavCollapsible, NavLink }
+export type { SidebarData, NavGroup, NavItem, NavCollapsible, NavLink, User, Team, BaseNavItem }

@@ -10,11 +10,10 @@ import {
   Bell,
   Trash2,
 } from 'lucide-react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import {
-  getMotivation,
   setCustomMotivation,
   sendReminder,
   clearCustomMotivation,
@@ -295,7 +294,7 @@ function FeedbackForm({ studentId }: { studentId: string }) {
     isPending: isClearingMotivation,
   } = useMutation({
     mutationFn: () => clearCustomMotivation(studentId),
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast.success('Custom motivation cleared.')
       setMotivationText('') // Clear text area
       queryClient.invalidateQueries({ queryKey: ['motivation', studentId] })

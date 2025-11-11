@@ -1,5 +1,5 @@
 // src/pages/modules/components/modules-table.tsx
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 // import { getRouteApi } from '@tanstack/react-router' // Remove
 import {
   type SortingState,

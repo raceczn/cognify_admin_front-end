@@ -192,7 +192,7 @@ export function ModulesMutateDrawer({
           <form
             id='module-form'
             onSubmit={form.handleSubmit(onSubmit)}
-            className='flex-1 space-y-4 overflow-y-auto px-1'
+            className='flex-1 space-y-4 overflow-y-auto px-4'
           >
             <FormField
               control={form.control}

@@ -4,7 +4,7 @@ import { SubjectsMutateDrawer } from './subjects-mutate-drawer'
 // Delete dialog is intentionally omitted
 
 export function SubjectsDialogs() {
-  const { open, setOpen, currentRow, setCurrentRow, loadSubjects } = useSubjects()
+  const { open, setOpen, currentRow, loadSubjects } = useSubjects()
 
   return (
     <>
