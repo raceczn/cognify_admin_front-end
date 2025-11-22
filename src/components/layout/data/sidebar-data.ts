@@ -42,16 +42,16 @@ export const staticSidebarData: Omit<SidebarData, 'user'> = {
           allowedRoles: [ROLES.ADMIN], // Admin and Faculty
         },
         {
-          title: 'Analytics',
-          url: '/analytics',
-          icon: Package,
-          allowedRoles: [ROLES.ADMIN, ROLES.FACULTY_MEMBER], // Both roles
-        },
-        {
           title: 'User List',
           url: '/users',
           icon: Users,
           allowedRoles: [ROLES.ADMIN], // Admin only
+        },
+        {
+          title: 'Analytics',
+          url: '/analytics',
+          icon: Package,
+          allowedRoles: [ROLES.ADMIN, ROLES.FACULTY_MEMBER], // Both roles
         },
         {
           title: 'Modules',
