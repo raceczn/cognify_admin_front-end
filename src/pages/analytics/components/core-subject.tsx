@@ -26,16 +26,16 @@ const SimpleBarList: React.FC<SimpleBarListProps> = ({
   valueFormatter = (n) => n.toString(),
 }) => {
   return (
-    <div className='space-y-2'>
+    <div className='space-y-4'>
       {items.map((item) => (
         <div key={item.name}>
-          <div className='mb-1 flex justify-between'>
+          <div className='mb-1 flex justify-between text-sm font-medium'>
             <span>{item.name}</span>
             <span>{valueFormatter(item.value)}</span>
           </div>
-          <div className='h-6 w-full rounded bg-gray-200'>
+          <div className='h-3 w-full rounded-full bg-secondary'>
             <div
-              className={`${barClass} h-6 rounded`}
+              className={`${barClass} h-3 rounded-full transition-all duration-500 ease-in-out`}
               style={{ width: `${item.value}%` }}
             />
           </div>
@@ -47,20 +47,21 @@ const SimpleBarList: React.FC<SimpleBarListProps> = ({
 
 export default function CoreSubjectsPage() {
   return (
-    <Card className='w-full'>
+    // --- FIX: Full height ---
+    <Card className='w-full h-full flex flex-col'>
       <CardHeader>
         <CardTitle>Core Subjects</CardTitle>
-        <CardDescription>Students' knowledge in each subject.</CardDescription>
+        <CardDescription>Class performance by subject</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1">
         <SimpleBarList
           items={[
             { name: 'Psychological Assessment', value: 74 },
             { name: 'Abnormal Psychology', value: 22 },
-            { name: 'Developmental Psychology', value: 4 },
-            { name: 'Industrial/Organizational Psychology', value: 4 },
+            { name: 'Developmental Psychology', value: 65 },
+            { name: 'Industrial/Org Psychology', value: 48 },
           ]}
-          barClass='bg-muted-foreground'
+          barClass='bg-primary'
           valueFormatter={(n) => `${n}%`}
         />
       </CardContent>
