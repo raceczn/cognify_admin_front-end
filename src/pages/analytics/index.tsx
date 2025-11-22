@@ -1,4 +1,3 @@
-// src/pages/analytics/index.tsx
 'use client'
 
 import { Users, UserCheck, UserX, Percent, AlertTriangle } from 'lucide-react'
@@ -29,10 +28,6 @@ import CoreSubjectsPage from './components/core-subject'
 import { PredictionsTable } from './components/predictions-table'
 import { StudentStatus } from './components/students-status'
 
-// src/pages/analytics/index.tsx
-
-// src/pages/analytics/index.tsx
-
 function AnalyticsErrorFallback() {
   return (
     <div className='p-4'>
@@ -40,8 +35,7 @@ function AnalyticsErrorFallback() {
         <AlertTriangle className='h-4 w-4' />
         <AlertTitle>Error Loading Analytics</AlertTitle>
         <AlertDescription>
-          There was an error loading the main analytics dashboard. This might be
-          a temporary issue.
+          There was an error loading the main analytics dashboard.
           <br />
           <Button
             variant='destructive'
@@ -56,6 +50,7 @@ function AnalyticsErrorFallback() {
   )
 }
 
+// --- FIX: EXPORT NAME MUST BE 'Apps' (Not FacultyAdmin) ---
 export function Apps() {
   const { isAdmin } = usePermissions()
 
@@ -79,7 +74,6 @@ export function Apps() {
       </Header>
 
       <Main>
-        {/* --- 3. WRAP YOUR MAIN CONTENT WITH THE BOUNDARY --- */}
         <AppErrorBoundary fallback={<AnalyticsErrorFallback />}>
           <div className='pr-6'>
             <div>
@@ -94,7 +88,6 @@ export function Apps() {
             </div>
             <div className='my-4'></div>
 
-            {/* This existing logic is already good for handling loading/error states */}
             {isLoadingPredictions ? (
               <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4'>
                 <Skeleton className='h-28' />
@@ -120,12 +113,11 @@ export function Apps() {
                     Active students analyzed
                   </CardFooter>
                 </Card>
-                {/* ... other summary cards ... */}
                 <Card>
                   <CardHeader>
                     <CardDescription>Predicted Pass Rate</CardDescription>
                     <CardTitle className='text-3xl font-semibold'>
-                      {summary.predicted_pass_rate.toFixed(2)}%
+                      {(summary.predicted_pass_rate || 0).toFixed(2)}%
                     </CardTitle>
                     <CardAction>
                       <Badge variant='outline'>
@@ -184,7 +176,8 @@ export function Apps() {
 
             <div className='mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3'>
               <BloomLevelChart />
-              <StudentStatus />
+              {/* --- FIX: Pass summary prop --- */}
+              <StudentStatus summary={summary} />
               <CoreSubjectsPage />
             </div>
 

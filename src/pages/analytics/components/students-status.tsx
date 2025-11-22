@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import {
   Label,
@@ -6,7 +6,7 @@ import {
   PolarRadiusAxis,
   RadialBar,
   RadialBarChart,
-} from "recharts"
+} from 'recharts'
 
 import {
   Card,
@@ -14,36 +14,53 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { ChartConfig, ChartContainer } from "@/components/ui/chart"
+} from '@/components/ui/card'
+import { ChartConfig, ChartContainer } from '@/components/ui/chart'
 
-export const description = "A radial chart with text"
+// --- FIX: Define Interface for Props ---
+interface SummaryData {
+  total_students_predicted: number
+  count_predicted_to_pass: number
+  count_predicted_to_fail: number
+  predicted_pass_rate: number
+}
 
-const chartData = [
-  { browser: "at_risk", pass: 13, fill: "var(--color-at_risk)" },
-]
+interface StudentStatusProps {
+  summary: SummaryData | undefined
+}
 
 const chartConfig = {
   pass: {
-    label: "pass",
+    label: 'Pass',
   },
-  at_risk: {
-    label: "at_risk",
-    color: "var(--chart-2)",
+  fail: {
+    label: 'At Risk',
+    color: 'var(--chart-2)',
   },
 } satisfies ChartConfig
 
-export function StudentStatus() {
+export function StudentStatus({ summary }: StudentStatusProps) {
+  // --- FIX: Use Prop Data ---
+  const passCount = summary?.count_predicted_to_pass || 0
+  
+  const chartData = [
+    {
+      browser: 'status',
+      pass: passCount,
+      fill: 'hsl(var(--chart-2))',
+    },
+  ]
+
   return (
-    <Card className="flex flex-col">
-      <CardHeader className="items-center pb-0">
+    <Card className='flex h-full flex-col'>
+      <CardHeader className='items-center pb-0'>
         <CardTitle>Students’ Status</CardTitle>
-        <CardDescription>No. of students on track or at risk</CardDescription>
+        <CardDescription>Students currently on track</CardDescription>
       </CardHeader>
-      <CardContent className="flex-1 pb-0">
+      <CardContent className='flex-1 pb-0'>
         <ChartContainer
           config={chartConfig}
-          className="mx-auto aspect-square max-h-[250px]"
+          className='mx-auto aspect-square max-h-[250px]'
         >
           <RadialBarChart
             data={chartData}
@@ -53,35 +70,40 @@ export function StudentStatus() {
             outerRadius={110}
           >
             <PolarGrid
-              gridType="circle"
+              gridType='circle'
               radialLines={false}
-              stroke="none"
-              className="first:fill-muted last:fill-background"
+              stroke='none'
+              className='first:fill-muted last:fill-background'
               polarRadius={[86, 74]}
             />
-            <RadialBar dataKey="pass" background cornerRadius={10} />
+            <RadialBar
+              dataKey='pass'
+              background
+              cornerRadius={10}
+              fill='hsl(var(--chart-2))'
+            />
             <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
               <Label
                 content={({ viewBox }) => {
-                  if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                  if (viewBox && 'cx' in viewBox && 'cy' in viewBox) {
                     return (
                       <text
                         x={viewBox.cx}
                         y={viewBox.cy}
-                        textAnchor="middle"
-                        dominantBaseline="middle"
+                        textAnchor='middle'
+                        dominantBaseline='middle'
                       >
                         <tspan
                           x={viewBox.cx}
                           y={viewBox.cy}
-                          className="fill-foreground text-4xl font-bold"
+                          className='fill-foreground text-4xl font-bold'
                         >
-                          {chartData[0].pass.toLocaleString()}
+                          {passCount.toLocaleString()}
                         </tspan>
                         <tspan
                           x={viewBox.cx}
                           y={(viewBox.cy || 0) + 24}
-                          className="fill-muted-foreground"
+                          className='fill-muted-foreground'
                         >
                           Likely to Pass
                         </tspan>
@@ -94,7 +116,6 @@ export function StudentStatus() {
           </RadialBarChart>
         </ChartContainer>
       </CardContent>
-      
     </Card>
   )
 }
