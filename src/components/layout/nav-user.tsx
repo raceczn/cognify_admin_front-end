@@ -5,9 +5,7 @@ import {
   BadgeCheck,
   Bell,
   ChevronsUpDown,
-  CreditCard,
   LogOut,
-  Sparkles,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import useDialogState from '@/hooks/use-dialog-state'
@@ -125,12 +123,7 @@ export function NavUser() {
               </DropdownMenuLabel>
 
               <DropdownMenuSeparator />
-              <DropdownMenuGroup>
-                <DropdownMenuItem>
-                  <Sparkles />
-                  Upgrade to Pro
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
+              
 
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
@@ -140,12 +133,7 @@ export function NavUser() {
                     Account
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to='/settings'>
-                    <CreditCard />
-                    Billing
-                  </Link>
-                </DropdownMenuItem>
+                
                 <DropdownMenuItem asChild>
                   <Link to='/settings/notifications'>
                     <Bell />

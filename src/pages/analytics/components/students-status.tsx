@@ -20,7 +20,7 @@ import { ChartConfig, ChartContainer } from "@/components/ui/chart"
 export const description = "A radial chart with text"
 
 const chartData = [
-  { browser: "at_risk", pass: 13, fill: "var(--color-at_risk)" },
+  { browser: "at_risk", pass: 16, fill: "var(--color-at_risk)" },
 ]
 
 const chartConfig = {

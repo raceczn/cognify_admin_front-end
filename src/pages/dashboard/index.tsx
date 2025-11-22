@@ -57,7 +57,7 @@ export function Dashboard() {
           <Card>
             <CardHeader>
               <CardDescription>Total Registered Users</CardDescription>
-              <CardTitle className='text-3xl font-semibold'>0</CardTitle>
+              <CardTitle className='text-3xl font-semibold'>18</CardTitle>
               <CardAction>
                 <Badge variant='outline'>
                   <IconTrendingUp className='size-4' /> 
@@ -73,7 +73,7 @@ export function Dashboard() {
           <Card>
             <CardHeader>
               <CardDescription>Active Students</CardDescription>
-              <CardTitle className='text-3xl font-semibold'>0</CardTitle>
+              <CardTitle className='text-3xl font-semibold'>16</CardTitle>
               <CardAction>
                 <Badge variant='outline'>
                   <IconTrendingUp className='size-4' /> 
@@ -89,7 +89,7 @@ export function Dashboard() {
           <Card>
             <CardHeader>
               <CardDescription>Faculty Members</CardDescription>
-              <CardTitle className='text-3xl font-semibold'>0</CardTitle>
+              <CardTitle className='text-3xl font-semibold'>1</CardTitle>
               <CardAction>
                 <Badge variant='outline'>
                   <IconTrendingUp className='size-4' /> 
@@ -104,8 +104,8 @@ export function Dashboard() {
           {/* Review Materials */}
           <Card>
             <CardHeader>
-              <CardDescription>Review Materials</CardDescription>
-              <CardTitle className='text-3xl font-semibold'>0</CardTitle>
+              <CardDescription>Admin Users</CardDescription>
+              <CardTitle className='text-3xl font-semibold'>1</CardTitle>
               <CardAction>
                 <Badge variant='outline'>
                   <IconTrendingUp className='size-4' /> 

@@ -66,9 +66,9 @@ export const staticSidebarData: Omit<SidebarData, 'user'> = {
           allowedRoles: [ROLES.ADMIN], // Admin only
         },
         {
-          title: 'Reports & Feedback',
+          title: 'Feedback',
           url: '/reports',
-          badge: '3',
+          // badge: '3',
           icon: MessagesSquare,
           allowedRoles: [ROLES.ADMIN], // Admin only
         },
