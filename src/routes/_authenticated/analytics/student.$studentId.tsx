@@ -296,8 +296,8 @@ function StudentAnalyticsPage() {
             </CardContent>
           </Card>
 
-          {/* --- 3. SWAP THE TABLE FOR THE CHART --- */}
-          <StudentBloomChart data={bloomPerformance} />
+            {/* --- 3. SWAP THE TABLE FOR THE CHART --- */}
+          <StudentBloomChart data={analytics.performance_by_bloom} />
           {/* --- END SWAP --- */}
           
         </div>

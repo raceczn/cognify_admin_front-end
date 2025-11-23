@@ -25,10 +25,10 @@ function UsersContent() {
   const [showDeleted, setShowDeleted] = useState(false)
 
   // Filter logic: show all users, but filter by role if needed
-  const filteredUsers = users.filter((user) => {
-    return true // For now, show all users
-  })
-
+  const filteredUsers = users.filter((_user) => {
+  return true // For now, show all users
+  // TODO: Add filtering logic here later
+})
   return (
     <>
       <Header fixed>

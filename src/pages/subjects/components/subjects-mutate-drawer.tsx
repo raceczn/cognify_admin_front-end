@@ -1,4 +1,3 @@
-// src/pages/subjects/components/subjects-mutate-drawer.tsx
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -35,12 +34,11 @@ type SubjectMutateDrawerProps = {
   onSuccess?: () => void
 }
 
-// Form schema for create/edit
+// Form schema for create/edit - explicitly type pqf_level
 const formSchema = z.object({
   subject_id: z.string().min(1, 'Subject ID is required.'),
   subject_name: z.string().min(1, 'Subject name is required.'),
-  pqf_level: z.coerce.number().optional().nullable(),
-  // active_tos_id is omitted for simplicity
+  pqf_level: z.union([z.number(), z.null()]).optional(),
 })
 
 type SubjectForm = z.infer<typeof formSchema>
@@ -49,7 +47,6 @@ export function SubjectsMutateDrawer({
   open,
   onOpenChange,
   currentRow,
-  onSuccess,
 }: SubjectMutateDrawerProps) {
   const isEdit = !!currentRow
   const { loadSubjects } = useSubjects()
@@ -92,7 +89,6 @@ export function SubjectsMutateDrawer({
         await createSubject(payload)
         toast.success(`Subject "${data.subject_name}" has been created.`)
       }
-
       form.reset()
       onOpenChange(false)
       loadSubjects() // Refresh the table
@@ -112,9 +108,11 @@ export function SubjectsMutateDrawer({
         }
       }}
     >
-      <SheetContent className='flex flex-col sm:max-w-lg'>
-        <SheetHeader className='text-start'>
-          <SheetTitle>{isEdit ? 'Edit Subject' : 'Add New Subject'}</SheetTitle>
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>
+            {isEdit ? 'Edit Subject' : 'Add New Subject'}
+          </SheetTitle>
           <SheetDescription>
             {isEdit
               ? 'Update the subject details.'
@@ -125,19 +123,18 @@ export function SubjectsMutateDrawer({
 
         <Form {...form}>
           <form
-            id='subject-form'
             onSubmit={form.handleSubmit(onSubmit)}
-            className='flex-1 space-y-4 overflow-y-auto px-1'
+            className="space-y-4 py-4"
           >
             <FormField
               control={form.control}
-              name='subject_id'
+              name="subject_id"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Subject ID</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder='e.g., subj_psych_101'
+                      placeholder="e.g., MATH101"
                       {...field}
                       disabled={isEdit}
                     />
@@ -146,35 +143,29 @@ export function SubjectsMutateDrawer({
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
-              name='subject_name'
+              name="subject_name"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Subject Name</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder='e.g., Introduction to Psychology'
-                      {...field}
-                    />
+                    <Input placeholder="e.g., Mathematics" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
-              name='pqf_level'
+              name="pqf_level"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>PQF Level (Optional)</FormLabel>
                   <FormControl>
                     <Input
-                      type='number'
-                      placeholder='e.g., 7'
-                      {...field}
+                      type="number"
+                      placeholder="e.g., 5"
                       value={field.value ?? ''}
                       onChange={(e) => {
                         const val = e.target.value
@@ -186,27 +177,28 @@ export function SubjectsMutateDrawer({
                 </FormItem>
               )}
             />
+
+            <SheetFooter>
+              <SheetClose asChild>
+                <Button type="button" variant="outline">
+                  Close
+                </Button>
+              </SheetClose>
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : isEdit ? (
+                  'Save Changes'
+                ) : (
+                  'Create Subject'
+                )}
+              </Button>
+            </SheetFooter>
           </form>
         </Form>
-
-        <SheetFooter className='gap-2'>
-          <SheetClose asChild>
-            <Button variant='outline'>Close</Button>
-          </SheetClose>
-          <Button
-            form='subject-form'
-            type='submit'
-            disabled={form.formState.isSubmitting}
-          >
-            {form.formState.isSubmitting ? (
-              <Loader2 className='animate-spin' />
-            ) : isEdit ? (
-              'Save Changes'
-            ) : (
-              'Create Subject'
-            )}
-          </Button>
-        </SheetFooter>
       </SheetContent>
     </Sheet>
   )
