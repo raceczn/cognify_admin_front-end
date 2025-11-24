@@ -26,6 +26,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { cn } from '@/lib/utils' // Import cn for class merging
+
 // Import types
 import { QuestionEditor } from './QuestionEditor'
 
@@ -54,6 +56,24 @@ const ASSESSMENT_PURPOSES: AssessmentPurpose[] = [
 // Sentinel value to represent a cleared selection in the Select component
 const CLEAR_VALUE = 'clear-selection'
 // --- SIMULATED DATA FOR DROPDOWNS ---
+
+// Helper function to get the color class for the purpose dot
+const getPurposeDotColor = (purpose: AssessmentPurpose): string => {
+  switch (purpose) {
+    case 'Practice_Exam':
+      return 'bg-[#63A361]' // Green
+    case 'Post-Test':
+      return 'bg-[#8CA9FF]' // Blue
+    case 'Pre-Test':
+      return 'bg-[#FFA239]' // Orange
+    case 'Diagnostic':
+      return 'bg-[#D34E4E]' // Red
+    case 'Quiz':
+      return 'bg-gray-400' // Gray
+    default:
+      return 'bg-gray-500' // Default color (shouldn't happen with AssessmentPurpose)
+  }
+}
 
 // --- COMPONENT: AssessmentEditor (Replaces FeedbackForm) ---
 export function AssessmentEditor({
@@ -93,9 +113,9 @@ export function AssessmentEditor({
       options:
         type === 'multiple_choice'
           ? [
-            { id: 'op1', text: 'Option 1', is_correct: true },
-            { id: 'op2', text: 'Option 2', is_correct: false },
-          ]
+              { id: 'op1', text: 'Option 1', is_correct: true },
+              { id: 'op2', text: 'Option 2', is_correct: false },
+            ]
           : [], // Handle other types if they were added (e.g., short_answer)
     }
     setAssessment((prev) => ({
@@ -183,8 +203,27 @@ export function AssessmentEditor({
                 </SelectTrigger>
                 <SelectContent>
                   {ASSESSMENT_PURPOSES.map((purpose) => (
-                    <SelectItem key={purpose} value={purpose}>
-                      {purpose.replace('_', ' ')}
+                    <SelectItem 
+                      key={purpose} 
+                      value={purpose}
+                      className="flex items-center" // Ensure SelectItem is a flex container
+                    >
+                      {/* --- MODIFIED CODE START (SelectItem Content) --- */}
+                      <div className="flex items-center">
+                        {/* Colored Dot */}
+                        <span
+                          className={cn(
+                            'w-2 h-2 rounded-full mr-2 flex-shrink-0',
+                            getPurposeDotColor(purpose)
+                          )}
+                          aria-hidden="true"
+                        />
+                        {/* Label */}
+                        <span className="truncate">
+                          {purpose.replace('_', ' ')}
+                        </span>
+                      </div>
+                      {/* --- MODIFIED CODE END (SelectItem Content) --- */}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -281,7 +320,7 @@ export function AssessmentEditor({
           <div className='mt-6 flex justify-end'> 
             <Button
               onClick={() => handleAddQuestion('multiple_choice')}
-              className='bg-[#EDFFF0] text-blue-900 border border-blue-900 hover:bg-gray-100'            >
+              className='bg-[#EDFFF0] text-blue-900 border border-blue-900 hover:bg-gray-100'        >
               Add New Question
             </Button>
           </div>

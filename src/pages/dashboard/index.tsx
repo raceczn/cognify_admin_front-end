@@ -42,6 +42,22 @@ type DashboardStats = {
   adminUsers: number
 }
 
+// ⚠️ Add the CSS keyframes for the pulse animation here.
+// In a real application, you would ideally add this to your global CSS file.
+const PulseDotsStyles = () => (
+  <style>
+    {`
+      @keyframes pulse-dots {
+        0%, 100% { opacity: 0.3; }
+        50% { opacity: 1; }
+      }
+      .animate-pulse-dots {
+        animation: pulse-dots 1.5s ease-in-out infinite;
+      }
+    `}
+  </style>
+)
+
 export function Dashboard() {
   const { isAdmin } = usePermissions()
   const [stats, setStats] = useState<DashboardStats>({
@@ -66,7 +82,7 @@ export function Dashboard() {
 
         profiles.forEach((profile) => {
           const roleDesignation = profile.role || ''
-          
+
           // Match against role designations from your roles data
           if (roleDesignation === 'student') {
             studentCount++
@@ -95,6 +111,7 @@ export function Dashboard() {
 
   return (
     <>
+      <PulseDotsStyles /> {/* Render the temporary CSS styles */}
       {/* ===== Top Heading ===== */}
       <Header>
         <TopNav links={getTopNav()} />
@@ -122,7 +139,7 @@ export function Dashboard() {
               <CardDescription>Total Registered Users</CardDescription>
               <CardTitle className='text-3xl font-semibold'>
                 {loading ? (
-                  <span className='text-muted-foreground'>...</span>
+                  <span className='text-muted-foreground animate-pulse-dots'>...</span>
                 ) : (
                   stats.totalUsers
                 )}
@@ -144,7 +161,7 @@ export function Dashboard() {
               <CardDescription>Active Students</CardDescription>
               <CardTitle className='text-3xl font-semibold'>
                 {loading ? (
-                  <span className='text-muted-foreground'>...</span>
+                  <span className='text-muted-foreground animate-pulse-dots'>...</span>
                 ) : (
                   stats.activeStudents
                 )}
@@ -166,7 +183,7 @@ export function Dashboard() {
               <CardDescription>Faculty Members</CardDescription>
               <CardTitle className='text-3xl font-semibold'>
                 {loading ? (
-                  <span className='text-muted-foreground'>...</span>
+                  <span className='text-muted-foreground animate-pulse-dots'>...</span>
                 ) : (
                   stats.facultyMembers
                 )}
@@ -188,7 +205,7 @@ export function Dashboard() {
               <CardDescription>Admin Users</CardDescription>
               <CardTitle className='text-3xl font-semibold'>
                 {loading ? (
-                  <span className='text-muted-foreground'>...</span>
+                  <span className='text-muted-foreground animate-pulse-dots'>...</span>
                 ) : (
                   stats.adminUsers
                 )}
