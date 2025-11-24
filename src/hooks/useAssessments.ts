@@ -40,7 +40,6 @@ export function useAssessments() {
         id: Math.random().toString(36).substring(2, 9),
         title: 'New Untitled Assessment',
         description: 'Edit the details and add questions.',
-        status: 'Draft',
         // --- FIX: Add the missing 'purpose' field ---
         purpose: 'Quiz', // Setting a sensible default purpose for a new assessment
         // ------------------------------------------

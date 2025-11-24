@@ -4,9 +4,9 @@ import {
   Assessment,
   Question,
   QuestionType,
+  AssessmentPurpose, // Import the new type
 } from '@/pages/assessments/data/assessment'
 import { Pencil, ListOrdered } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -42,6 +42,15 @@ interface AssessmentEditorProps {
 const SUBJECT_IDS = ['subj-math', 'subj-sci', 'subj-hist']
 const MODULE_IDS = ['mod-calc1', 'mod-phys1', 'mod-ww2']
 
+// FIX: New simulated data for the Purpose dropdown
+const ASSESSMENT_PURPOSES: AssessmentPurpose[] = [
+  'Pre-Test',
+  'Quiz',
+  'Post-Test',
+  'Practice_Exam',
+  'Diagnostic',
+]
+
 // Sentinel value to represent a cleared selection in the Select component
 const CLEAR_VALUE = 'clear-selection'
 // --- SIMULATED DATA FOR DROPDOWNS ---
@@ -61,15 +70,16 @@ export function AssessmentEditor({
 
   const handleUpdateDetails = (
     field: keyof Assessment,
-    // FIX: Updated value type to include the sentinel CLEAR_VALUE string
-    value: string | 'Draft' | 'Published' | undefined
+    // FIX: Updated value type to include the sentinel CLEAR_VALUE string AND the new AssessmentPurpose type
+    value: string | 'Draft' | 'Published' | AssessmentPurpose | undefined
   ) => {
     // FIX: Coerce the sentinel string back to 'undefined' for the Assessment type.
     const finalValue = value === CLEAR_VALUE ? undefined : value
 
     setAssessment((prev) => ({
       ...prev,
-      [field]: finalValue,
+      // FIX: Add a type assertion to satisfy the Assessment key constraint on the field value
+      [field]: finalValue as any,
       last_modified: new Date().toISOString().substring(0, 10),
     }))
   }
@@ -130,14 +140,6 @@ export function AssessmentEditor({
             <CardTitle className='flex items-center gap-2'>
               <Pencil size={18} /> Assessment Details
             </CardTitle>
-            <Badge
-              variant={
-                assessment.status === 'Published' ? 'default' : 'secondary'
-              }
-              className='text-sm'
-            >
-              {assessment.status}
-            </Badge>
           </div>
           <CardDescription>
             Edit the core information of the assessment.
@@ -164,26 +166,32 @@ export function AssessmentEditor({
               rows={2}
             />
           </div>
+
+          {/* FIX: Combined Purpose, Subject, and Module Dropdowns */}
           <div className='flex gap-4'>
-            {/* Status Dropdown */}
+            {/* Purpose Dropdown (now 1/3 width) */}
             <div className='w-1/3 space-y-2'>
-              <Label htmlFor='assessment-status'>Status</Label>
+              <Label htmlFor='assessment-purpose'>Purpose</Label>
               <Select
-                value={assessment.status}
-                onValueChange={(value: 'Draft' | 'Published') =>
-                  handleUpdateDetails('status', value)
+                value={assessment.purpose}
+                onValueChange={(value: AssessmentPurpose) =>
+                  handleUpdateDetails('purpose', value)
                 }
               >
-                <SelectTrigger id='assessment-status'>
-                  <SelectValue placeholder='Select Status' />
+                <SelectTrigger id='assessment-purpose'>
+                  <SelectValue placeholder='Select Purpose' />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value='Draft'>Draft</SelectItem>
-                  <SelectItem value='Published'>Published</SelectItem>
+                  {ASSESSMENT_PURPOSES.map((purpose) => (
+                    <SelectItem key={purpose} value={purpose}>
+                      {purpose.replace('_', ' ')}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
-            {/* Subject ID Dropdown */}
+
+            {/* Subject ID Dropdown (now 1/3 width) */}
             <div className='w-1/3 space-y-2'>
               <Label htmlFor='assessment-subject-id'>Subject</Label>
               <Select
@@ -198,7 +206,7 @@ export function AssessmentEditor({
                 </SelectTrigger>
                 <SelectContent>
                   {/* FIX: Use the CLEAR_VALUE sentinel string instead of "" or {undefined} */}
-                  <SelectItem value={CLEAR_VALUE}> 
+                  <SelectItem value={CLEAR_VALUE}>
                     Select Subject
                   </SelectItem>
                   {SUBJECT_IDS.map((id) => (
@@ -209,7 +217,7 @@ export function AssessmentEditor({
                 </SelectContent>
               </Select>
             </div>
-            {/* Module ID Dropdown */}
+            {/* Module ID Dropdown (now 1/3 width) */}
             <div className='w-1/3 space-y-2'>
               <Label htmlFor='assessment-module-id'>Module</Label>
               <Select
@@ -236,6 +244,7 @@ export function AssessmentEditor({
               </Select>
             </div>
           </div>
+
         </CardContent>
         <CardFooter className='text-muted-foreground flex justify-between text-sm'>
           <span>Total Questions: {assessment.questions.length}</span>

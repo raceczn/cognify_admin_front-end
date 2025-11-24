@@ -33,8 +33,6 @@ export interface Assessment {
   description: string
   subject_id?: string
   module_id?: string
-  status: 'Draft' | 'Published'
-  
   /** New Field */
   purpose: AssessmentPurpose 
   
@@ -51,7 +49,6 @@ export const mockAssessments: Assessment[] = [
     description: 'An introductory test on the basic models and types of human memory.',
     subject_id: 'SUBJ_PSYCH',
     module_id: 'MOD_COG101',
-    status: 'Published',
     purpose: 'Post-Test', // Added purpose
     created_at: '2025-10-15',
     last_modified: '2025-11-20',
@@ -88,7 +85,6 @@ export const mockAssessments: Assessment[] = [
     description: 'Assessment on Freudian psychoanalysis and basic trait theories.',
     subject_id: 'SUBJ_PSYCH',
     module_id: 'MOD_PERS202',
-    status: 'Draft',
     purpose: 'Quiz', // Added purpose
     created_at: '2025-11-01',
     last_modified: '2025-11-24',
@@ -115,7 +111,6 @@ export const mockAssessments: Assessment[] = [
     description: 'Covers fundamental psychometric properties required for sound psychological measurement.',
     subject_id: 'SUBJ_PSYC_ASSESS',
     module_id: 'MOD_PSYCHOMETRICS101',
-    status: 'Published',
     purpose: 'Diagnostic',
     created_at: '2025-11-24',
     last_modified: '2025-11-24',
@@ -153,7 +148,6 @@ export const mockAssessments: Assessment[] = [
     description: 'Focuses on classic need-based and process theories in the workplace.',
     subject_id: 'SUBJ_IO_PSYCH',
     module_id: 'MOD_MOTIVATION302',
-    status: 'Published',
     purpose: 'Pre-Test',
     created_at: '2025-11-24',
     last_modified: '2025-11-24',
@@ -191,7 +185,6 @@ export const mockAssessments: Assessment[] = [
     description: 'Examines key concepts from Jean Piaget\'s stages of cognitive development.',
     subject_id: 'SUBJ_DEV_PSYCH',
     module_id: 'MOD_COG_DEV205',
-    status: 'Draft',
     purpose: 'Quiz',
     created_at: '2025-11-24',
     last_modified: '2025-11-24',
@@ -229,7 +222,6 @@ export const mockAssessments: Assessment[] = [
     description: 'A brief assessment on the diagnostic criteria and features of Generalized Anxiety Disorder (GAD).',
     subject_id: 'SUBJ_ABNORMAL_PSYCH',
     module_id: 'MOD_ANXIETY301',
-    status: 'Published',
     purpose: 'Practice_Exam',
     created_at: '2025-11-24',
     last_modified: '2025-11-24',
