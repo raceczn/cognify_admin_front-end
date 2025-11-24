@@ -139,7 +139,7 @@ export function UsersTable({ data, showDeleted = false }: DataTableProps) {
                       key={header.id}
                       colSpan={header.colSpan}
                      
-                      className='bg-[#faf1e8]'
+                      className='bg-[#faf1e8] dark:bg-gray-800'
                     >
                       {header.isPlaceholder
                         ? null

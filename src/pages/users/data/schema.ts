@@ -10,18 +10,18 @@ export type UserStatus = z.infer<typeof userStatusSchema>
 
 const userSchema = z.object({
   id: z.string(),
-  first_name: z.string().nullable(), // Allow null
+  first_name: z.string().nullable(),
   middle_name: z.string().nullable(),
-  last_name: z.string().nullable(), // Allow null
-  username: z.string(), // This is likely just the email
+  last_name: z.string().nullable(), 
+  user_name: z.string(), 
   email: z.string(),
-  nickname: z.string().nullable(), // Allow null
-  status: userStatusSchema.catch('offline'), // Default to offline if status is weird
+  nickname: z.string().nullable(),
+  status: userStatusSchema.catch('offline'), 
   role_id: z.string(),
   role: z.string(),
   created_at: z.coerce.date(),
   deleted: z.boolean(),
-  deleted_at: z.coerce.date().nullable().optional(), // --- FIX: Add deleted_at ---
+  deleted_at: z.coerce.date().nullable().optional(), 
 })
 export type User = z.infer<typeof userSchema>
 

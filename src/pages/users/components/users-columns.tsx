@@ -1,15 +1,17 @@
+// or your toast library
 import { type ColumnDef } from '@tanstack/react-table'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+
 import { DataTableColumnHeader } from '@/components/data-table'
 import { LongText } from '@/components/long-text'
-import { callTypes, roles } from '../data/data'
+import { callTypes } from '../data/data'
 import { type User } from '../data/schema'
+import { RoleSelectCell } from './RoleSelectCell'
 import { DataTableRowActions } from './data-table-row-actions'
 
 export const usersColumns: ColumnDef<User>[] = [
-  // ... (select, username, full_name, nickname, email, status columns are unchanged) ...
   {
     id: 'select',
     header: ({ table }) => (
@@ -53,14 +55,22 @@ export const usersColumns: ColumnDef<User>[] = [
     },
     enableHiding: false,
   },
-
   {
-    accessorKey: 'username',
+    accessorKey: 'email',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Username' />
+      <DataTableColumnHeader column={column} title='Email' />
     ),
     cell: ({ row }) => (
-      <div className='w-fit text-nowrap'>{row.getValue('username')}</div>
+      <div className='w-fit text-nowrap'>{row.getValue('email')}</div>
+    ),
+  },
+  {
+    accessorKey: 'user_name',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='User_name' />
+    ),
+    cell: ({ row }) => (
+      <div className='w-fit text-nowrap'>{row.getValue('user_name')}</div>
     ),
   },
   {
@@ -77,16 +87,6 @@ export const usersColumns: ColumnDef<User>[] = [
         </LongText>
       )
     },
-  },
-
-  {
-    accessorKey: 'email',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Email' />
-    ),
-    cell: ({ row }) => (
-      <div className='w-fit text-nowrap'>{row.getValue('email')}</div>
-    ),
   },
   {
     accessorKey: 'status',
@@ -111,31 +111,13 @@ export const usersColumns: ColumnDef<User>[] = [
     enableSorting: false,
   },
   {
-    // --- 1. FIX: Change accessorKey to 'role_id' ---
     accessorKey: 'role_id',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Role' />
     ),
-    cell: ({ row }) => {
-      // --- 2. Keep using 'row.original.role' (the string) for display ---
-      const { role } = row.original
-      const userType = roles.find(({ designation }) => designation === role)
-
-      if (!userType) return null
-
-      return (
-        <div className='flex items-center gap-x-2'>
-          {userType.icon && (
-            <userType.icon size={16} className='text-muted-foreground' />
-          )}
-          <span className='text-sm capitalize'>{userType.label}</span>
-        </div>
-      )
-    },
-    filterFn: (row, id, value) => {
-      // --- 3. This filter now correctly compares the role_id ---
-      return value.includes(row.getValue(id))
-    },
+    cell: ({ row }) => (
+      <RoleSelectCell userId={row.original.id} role_id={row.original.role_id} currentUser={row.original} />
+    ),
     enableSorting: false,
     enableHiding: false,
   },

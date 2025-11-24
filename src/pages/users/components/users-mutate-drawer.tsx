@@ -162,7 +162,7 @@ export function UsersMutateDrawer({
           status: 'offline', // Default status
           created_at: new Date(response.created_at),
           deleted: false,
-          username: response.email, // Use email as username
+          user_name: response.email, // Use email as username
           deleted_at: null, // Init as null
         }
 

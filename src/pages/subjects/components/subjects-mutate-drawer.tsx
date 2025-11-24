@@ -108,8 +108,8 @@ export function SubjectsMutateDrawer({
         }
       }}
     >
-      <SheetContent>
-        <SheetHeader>
+        <SheetContent className='flex flex-col sm:max-w-lg'>
+        <SheetHeader className='text-start'>
           <SheetTitle>
             {isEdit ? 'Edit Subject' : 'Add New Subject'}
           </SheetTitle>
@@ -124,7 +124,7 @@ export function SubjectsMutateDrawer({
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-4 py-4"
+            className='flex-1 space-y-4 overflow-y-auto px-4'
           >
             <FormField
               control={form.control}
