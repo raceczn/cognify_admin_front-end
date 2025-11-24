@@ -13,6 +13,7 @@ import {
   MessagesSquare,
   Command,
   BookOpen,
+  Clipboard,
   Library,
 } from 'lucide-react'
 import { type SidebarData } from '../types'
@@ -57,6 +58,13 @@ export const staticSidebarData: Omit<SidebarData, 'user'> = {
           title: 'Materials',
           url: '/modules',
           icon: BookOpen,
+          allowedRoles: [ROLES.ADMIN, ROLES.FACULTY_MEMBER], // Both roles
+
+        },
+        {
+          title: 'Assessments',
+          url: '/assessments',
+          icon: Clipboard,
           allowedRoles: [ROLES.ADMIN, ROLES.FACULTY_MEMBER], // Both roles
         },
         {

@@ -176,7 +176,7 @@ export function Reports() {
           {selectedUser ? (
             <div
               className={cn(
-                'bg-background absolute inset-0 start-full z-50 hidden w-full flex-1 flex-col border shadow-xs sm:static sm:z-auto sm:flex sm:rounded-md',
+                'bg-background absolute inset-0 start-full z-50 hidden w-full flex-1 flex-col border shadow-xs sm:static sm:z-auto sm:flex sm:rounded-md overflow-auto ',
                 mobileSelectedUser && 'start-0 flex'
               )}
             >

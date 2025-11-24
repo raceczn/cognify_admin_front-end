@@ -100,8 +100,9 @@ export function ModulesTable({ data }: DataTableProps) {
         filters={[
           {
             columnId: 'subject_id',
-            title: 'Subject',
+            title: 'Core Subject',
             options: subjectOptions,
+            
           },
         ]}
       />

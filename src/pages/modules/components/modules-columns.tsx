@@ -67,15 +67,32 @@ export const modulesColumns: ColumnDef<Module>[] = [
     },
   },
   {
-    accessorKey: 'bloom_level',
-    header: 'Bloom Level',
-    cell: ({ row }) => (
-      // --- FIX 2: Added whitespace-normal ---
-      <Badge variant='outline' className='whitespace-normal'>
-        {row.getValue('bloom_level')}
+  accessorKey: 'bloom_level',
+  header: 'Bloom Level',
+  cell: ({ row }) => {
+    const level = row.getValue('bloom_level') as string;
+
+    // Map bloom levels to colors
+    const bloomColors: Record<string, string> = {
+      'remembering': 'bg-blue-500',
+      'understanding': 'bg-green-500',
+      'applying': 'bg-yellow-500',
+      'analyzing': 'bg-orange-500',
+      'evaluating': 'bg-purple-500',
+      'creating': 'bg-pink-500',
+    };
+
+    const dotColor = bloomColors[level] || 'bg-gray-400';
+
+    return (
+      <Badge variant='outline' className='whitespace-normal flex items-center gap-2'>
+        <span className={`w-2 h-2 rounded-full ${dotColor}`} />
+        {level}
       </Badge>
-    ),
+    );
   },
+},
+
   {
     id: 'ai_status',
     header: 'AI Content',
