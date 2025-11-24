@@ -54,23 +54,23 @@ export const staticSidebarData: Omit<SidebarData, 'user'> = {
           allowedRoles: [ROLES.ADMIN, ROLES.FACULTY_MEMBER], // Both roles
         },
         {
-          title: 'Modules',
+          title: 'Materials',
           url: '/modules',
           icon: BookOpen,
-          allowedRoles: [ROLES.ADMIN], // Admin only
+          allowedRoles: [ROLES.ADMIN, ROLES.FACULTY_MEMBER], // Both roles
         },
         {
           title: 'Subjects',
           url: '/subjects',
           icon: Library,
-          allowedRoles: [ROLES.ADMIN], // Admin only
+          allowedRoles: [ROLES.ADMIN, ROLES.FACULTY_MEMBER], // Both roles
         },
         {
           title: 'Feedback',
           url: '/reports',
           // badge: '3',
           icon: MessagesSquare,
-          allowedRoles: [ROLES.ADMIN], // Admin only
+          allowedRoles: [ROLES.ADMIN, ROLES.FACULTY_MEMBER], // Both roles
         },
       ],
     },

@@ -179,11 +179,11 @@ export function ModulesMutateDrawer({
     >
       <SheetContent className='flex flex-col sm:max-w-lg'>
         <SheetHeader className='text-start'>
-          <SheetTitle>{isEdit ? 'Edit Module' : 'Add New Module'}</SheetTitle>
+          <SheetTitle>{isEdit ? 'Edit Material' : 'Add New Material'}</SheetTitle>
           <SheetDescription>
             {isEdit
-              ? 'Update the module details.'
-              : 'Add a new module to the system.'}{' '}
+              ? 'Update the material details.'
+              : 'Add a new material to the system.'}{' '}
             Click save when done.
           </SheetDescription>
         </SheetHeader>
@@ -199,7 +199,7 @@ export function ModulesMutateDrawer({
               name='title'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Module Title</FormLabel>
+                  <FormLabel>Title</FormLabel>
                   <FormControl>
                     <Input
                       placeholder='e.g., Introduction to Theories'

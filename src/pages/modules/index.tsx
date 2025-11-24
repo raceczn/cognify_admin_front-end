@@ -40,7 +40,7 @@ function ModulesContent() {
         <div className='mb-2 flex flex-wrap items-center justify-between space-y-2'>
           <div>
             <h2 className='text-2xl font-bold tracking-tight'>
-              Module Management
+              Content Management
             </h2>
             <p className='text-muted-foreground'>
               Manage course modules and generate AI content.
