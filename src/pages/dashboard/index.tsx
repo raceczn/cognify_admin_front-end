@@ -1,5 +1,5 @@
 // src/pages/dashboard/index.tsx
-// --- 1. REMOVED ALL UNUSED AUTH-RELATED IMPORTS ---
+import { useEffect, useState } from 'react'
 import { IconTrendingUp } from '@tabler/icons-react'
 import { usePermissions } from '@/hooks/use-permissions'
 import { Badge } from '@/components/ui/badge'
@@ -20,16 +20,79 @@ import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { RolePieChart } from './components/Role-piechart'
 import { UserGrowth } from './components/Usergrowth'
+import { getAllProfiles } from '@/lib/profile-hooks'
+
+// --- Types ---
+type UserProfile = {
+  id: string
+  role_id: string
+  role?: string
+  [key: string]: any
+}
+
+type PaginatedUsersResponse = {
+  items: UserProfile[]
+  last_doc_id: string | null
+}
+
+type DashboardStats = {
+  totalUsers: number
+  activeStudents: number
+  facultyMembers: number
+  adminUsers: number
+}
 
 export function Dashboard() {
-  // --- 2. GET PERMISSIONS (This is fine) ---
   const { isAdmin } = usePermissions()
+  const [stats, setStats] = useState<DashboardStats>({
+    totalUsers: 0,
+    activeStudents: 0,
+    facultyMembers: 0,
+    adminUsers: 0,
+  })
+  const [loading, setLoading] = useState(true)
 
-  // --- 3. REMOVED THE REDUNDANT `useEffect` AUTH GUARD ---
-  // Your `src/routes/__root.tsx` file already handles this!
+  // Fetch and calculate stats
+  useEffect(() => {
+    async function fetchDashboardStats() {
+      try {
+        const response: PaginatedUsersResponse = await getAllProfiles()
+        const profiles: UserProfile[] = response.items || []
 
-  // --- 4. YOUR ORIGINAL DASHBOARD JSX ---
-  // This will only render if the user is NOT a student
+        // Count users by role
+        let studentCount = 0
+        let facultyCount = 0
+        let adminCount = 0
+
+        profiles.forEach((profile) => {
+          const roleDesignation = profile.role || ''
+          
+          // Match against role designations from your roles data
+          if (roleDesignation === 'student') {
+            studentCount++
+          } else if (roleDesignation === 'faculty_member') {
+            facultyCount++
+          } else if (roleDesignation === 'admin') {
+            adminCount++
+          }
+        })
+
+        setStats({
+          totalUsers: profiles.length,
+          activeStudents: studentCount,
+          facultyMembers: facultyCount,
+          adminUsers: adminCount,
+        })
+      } catch (error) {
+        console.error('Error fetching dashboard stats:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDashboardStats()
+  }, [])
+
   return (
     <>
       {/* ===== Top Heading ===== */}
@@ -57,15 +120,21 @@ export function Dashboard() {
           <Card>
             <CardHeader>
               <CardDescription>Total Registered Users</CardDescription>
-              <CardTitle className='text-3xl font-semibold'>18</CardTitle>
+              <CardTitle className='text-3xl font-semibold'>
+                {loading ? (
+                  <span className='text-muted-foreground'>...</span>
+                ) : (
+                  stats.totalUsers
+                )}
+              </CardTitle>
               <CardAction>
                 <Badge variant='outline'>
-                  <IconTrendingUp className='size-4' /> 
+                  <IconTrendingUp className='size-4' />
                 </Badge>
               </CardAction>
             </CardHeader>
             <CardFooter className='text-muted-foreground text-sm'>
-              This month’s total users
+              All registered users in the system
             </CardFooter>
           </Card>
 
@@ -73,73 +142,88 @@ export function Dashboard() {
           <Card>
             <CardHeader>
               <CardDescription>Active Students</CardDescription>
-              <CardTitle className='text-3xl font-semibold'>16</CardTitle>
+              <CardTitle className='text-3xl font-semibold'>
+                {loading ? (
+                  <span className='text-muted-foreground'>...</span>
+                ) : (
+                  stats.activeStudents
+                )}
+              </CardTitle>
               <CardAction>
                 <Badge variant='outline'>
-                  <IconTrendingUp className='size-4' /> 
+                  <IconTrendingUp className='size-4' />
                 </Badge>
               </CardAction>
             </CardHeader>
             <CardFooter className='text-muted-foreground text-sm'>
-              Students currently reviewing
+              Students currently registered
             </CardFooter>
           </Card>
 
-          {/* Faculty Mentors */}
+          {/* Faculty Members */}
           <Card>
             <CardHeader>
               <CardDescription>Faculty Members</CardDescription>
-              <CardTitle className='text-3xl font-semibold'>1</CardTitle>
+              <CardTitle className='text-3xl font-semibold'>
+                {loading ? (
+                  <span className='text-muted-foreground'>...</span>
+                ) : (
+                  stats.facultyMembers
+                )}
+              </CardTitle>
               <CardAction>
                 <Badge variant='outline'>
-                  <IconTrendingUp className='size-4' /> 
+                  <IconTrendingUp className='size-4' />
                 </Badge>
               </CardAction>
             </CardHeader>
             <CardFooter className='text-muted-foreground text-sm'>
-              Mentors currently active
+              Faculty members in the system
             </CardFooter>
           </Card>
 
-          {/* Review Materials */}
+          {/* Admin Users */}
           <Card>
             <CardHeader>
               <CardDescription>Admin Users</CardDescription>
-              <CardTitle className='text-3xl font-semibold'>1</CardTitle>
+              <CardTitle className='text-3xl font-semibold'>
+                {loading ? (
+                  <span className='text-muted-foreground'>...</span>
+                ) : (
+                  stats.adminUsers
+                )}
+              </CardTitle>
               <CardAction>
                 <Badge variant='outline'>
-                  <IconTrendingUp className='size-4' /> 
+                  <IconTrendingUp className='size-4' />
                 </Badge>
               </CardAction>
             </CardHeader>
             <CardFooter className='text-muted-foreground text-sm'>
-              Uploaded this month
+              Administrators with full access
             </CardFooter>
           </Card>
         </div>
 
         {/* ===== Charts ===== */}
         <div className='mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2'>
-          {/* Overview (left, 50%) */}
-
           <UserGrowth />
-          <RolePieChart/>
+          <RolePieChart />
         </div>
       </Main>
     </>
   )
 }
 
-// --- 5. YOUR UPDATED topNav ---
 const getTopNav = () => [
   {
     title: 'Overview',
-    href: '/', // Changed from 'dashboard/overview' to '/'
+    href: '/',
     isActive: true,
     disabled: false,
   },
   {
-    title: 'Users', // 'Students' and 'All Users' are confusing. Just 'Users'
+    title: 'Users',
     href: '/users',
     isActive: false,
     disabled: false,
@@ -157,4 +241,3 @@ const getTopNav = () => [
     disabled: false,
   },
 ]
-

@@ -57,3 +57,4 @@ export async function purgeProfile(uid: string) {
   const res = await api.post(`/profiles/${uid}/purge`)
   return res.data // Returns a confirmation object
 }
+

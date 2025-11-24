@@ -93,9 +93,9 @@ export function AssessmentEditor({
       options:
         type === 'multiple_choice'
           ? [
-              { id: 'op1', text: 'Option 1', is_correct: true },
-              { id: 'op2', text: 'Option 2', is_correct: false },
-            ]
+            { id: 'op1', text: 'Option 1', is_correct: true },
+            { id: 'op2', text: 'Option 2', is_correct: false },
+          ]
           : [], // Handle other types if they were added (e.g., short_answer)
     }
     setAssessment((prev) => ({
@@ -278,10 +278,10 @@ export function AssessmentEditor({
               />
             ))}
           </div>
-          {/* Add Question Button */}
-          <div className='mt-6'>
-            {/* Replace Select with Button and directly call the handler */}
-            <Button onClick={() => handleAddQuestion('multiple_choice')}>
+          <div className='mt-6 flex justify-end'> 
+            <Button
+              onClick={() => handleAddQuestion('multiple_choice')}
+              className='bg-[#EDFFF0] text-blue-900 border border-blue-900 hover:bg-gray-100'            >
               Add New Question
             </Button>
           </div>
