@@ -1,12 +1,13 @@
 // src/pages/users/components/users-mutate-drawer.tsx
 'use client'
 
+import { useEffect } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-// --- FIX: Import the correct hook ---
-import { createProfile, updateProfile } from '@/lib/profile-hooks'
+import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { createProfile, updateProfile } from '@/lib/profile-hooks'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -31,8 +32,8 @@ import { SelectDropdown } from '@/components/select-dropdown'
 import { roles } from '../data/data'
 import { type User } from '../data/schema'
 import { useUsers } from './users-provider'
-import { useEffect } from 'react'
-import { Loader2 } from 'lucide-react'
+
+// src/pages/users/components/users-mutate-drawer.tsx
 
 type UserMutateDrawerProps = {
   open: boolean
@@ -46,6 +47,7 @@ const formSchema = z
     first_name: z.string().optional(),
     last_name: z.string().optional(),
     nickname: z.string().optional(),
+    user_name: z.string().min(1, 'Username is required'),
     email: z.string().email('Invalid email'),
     password: z.string().transform((pwd) => pwd.trim()),
     confirmPassword: z.string().transform((pwd) => pwd.trim()),
@@ -55,12 +57,18 @@ const formSchema = z
   .refine(
     ({ isEdit, password }) =>
       isEdit && !password ? true : password.length >= 8,
-    { message: 'Password must be at least 8 characters', path: ['password'] }
+    {
+      message: 'Password must be at least 8 characters',
+      path: ['password'],
+    }
   )
   .refine(
     ({ isEdit, password, confirmPassword }) =>
       isEdit && !password ? true : password === confirmPassword,
-    { message: "Passwords don't match", path: ['confirmPassword'] }
+    {
+      message: "Passwords don't match",
+      path: ['confirmPassword'],
+    }
   )
 
 type UserForm = z.infer<typeof formSchema>
@@ -80,6 +88,7 @@ export function UsersMutateDrawer({
       first_name: '',
       last_name: '',
       nickname: '',
+      user_name: '',
       email: '',
       password: '',
       confirmPassword: '',
@@ -96,6 +105,7 @@ export function UsersMutateDrawer({
           first_name: currentRow.first_name || '',
           last_name: currentRow.last_name || '',
           nickname: currentRow.nickname || '',
+          user_name: currentRow.user_name || '',
           email: currentRow.email,
           password: '',
           confirmPassword: '',
@@ -107,6 +117,7 @@ export function UsersMutateDrawer({
           first_name: '',
           last_name: '',
           nickname: '',
+          user_name: '',
           email: '',
           password: '',
           confirmPassword: '',
@@ -123,23 +134,25 @@ export function UsersMutateDrawer({
         first_name: data.first_name,
         last_name: data.last_name,
         nickname: data.nickname,
+        user_name: data.user_name,
         email: data.email,
         password: data.password,
         role_id: data.role_id,
-        // --- FIX: Removed the 'student_id' field ---
       }
 
       if (isEdit && currentRow?.id) {
         // UPDATE
         const updatePayload = { ...payload }
         delete (updatePayload as any).password // Don't send password on edit
-        
+
         const response = await updateProfile(currentRow.id, updatePayload)
 
         const updatedUser: User = {
           ...currentRow,
           ...response,
-          role: roles.find(r => r.value === response.role_id)?.designation || 'unknown',
+          role:
+            roles.find((r) => r.value === response.role_id)?.designation ||
+            'unknown',
         }
 
         updateLocalUsers(updatedUser, 'edit')
@@ -156,14 +169,16 @@ export function UsersMutateDrawer({
           middle_name: response.middle_name || null,
           last_name: response.last_name || '',
           nickname: response.nickname || '',
+          user_name: response.user_name || '',
           email: response.email,
           role_id: response.role_id,
-          role: roles.find(r => r.value === response.role_id)?.designation || 'unknown',
-          status: 'offline', // Default status
+          role:
+            roles.find((r) => r.value === response.role_id)?.designation ||
+            'unknown',
+          status: 'offline',
           created_at: new Date(response.created_at),
           deleted: false,
-          user_name: response.email, // Use email as username
-          deleted_at: null, // Init as null
+          deleted_at: null,
         }
 
         updateLocalUsers(newUser, 'add')
@@ -191,144 +206,169 @@ export function UsersMutateDrawer({
         }
       }}
     >
-      <SheetContent className='flex flex-col'>
-        <SheetHeader className='text-start'>
+      <SheetContent className='flex flex-col gap-6 sm:max-w-md'>
+        <SheetHeader className='text-left'>
           <SheetTitle>{isEdit ? 'Edit User' : 'Add New User'}</SheetTitle>
           <SheetDescription>
             {isEdit
               ? 'Update the user by providing necessary info.'
-              : 'Add a new user by providing necessary info.'}{' '}
-            
+              : 'Add a new user by providing necessary info.'}
           </SheetDescription>
         </SheetHeader>
-
         <Form {...form}>
           <form
-            id='user-form'
             onSubmit={form.handleSubmit(onSubmit)}
             className='flex-1 space-y-4 overflow-y-auto px-4'
           >
-            <FormField
-              control={form.control}
-              name='first_name'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>First Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder='User first name' {...field} value={field.value || ''} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className='flex-1 space-y-4 overflow-y-auto px-1'>
+              <FormField
+                control={form.control}
+                name='first_name'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>First Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder='Enter first name' {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='last_name'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Last Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder='Enter last name' {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='nickname'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nickname</FormLabel>
+                    <FormControl>
+                      <Input placeholder='Enter nickname' {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='user_name'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Username</FormLabel>
+                    <FormControl>
+                      <Input placeholder='Enter username' {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='email'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input
+                        type='email'
+                        placeholder='Enter email address'
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='role_id'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Role</FormLabel>
 
-            <FormField
-              control={form.control}
-              name='last_name'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Last Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder='User last name' {...field} value={field.value || ''} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormControl>
+                      <SelectDropdown
+                        defaultValue={field.value}
+                        onValueChange={field.onChange}
+                        placeholder='Select a role'
+                        items={roles.map(({ label, value }) => ({
+                          label,
 
-            <FormField
-              control={form.control}
-              name='email'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input placeholder='User email address' {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                          value,
+                        }))}
+                        isControlled={true}
+                      />
+                    </FormControl>
 
-            <FormField
-              control={form.control}
-              name='role_id'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Role</FormLabel>
-                  <FormControl>
-                    <SelectDropdown
-                      defaultValue={field.value}
-                      onValueChange={field.onChange}
-                      placeholder='Select a role'
-                      items={roles.map(({ label, value }) => ({
-                        label,
-                        value,
-                      }))}
-                      isControlled={true}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {!isEdit && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name='password'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <PasswordInput placeholder='••••••••' {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name='confirmPassword'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Confirm Password</FormLabel>
+                        <FormControl>
+                          <PasswordInput placeholder='••••••••' {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
               )}
-            />
-
-            {!isEdit && (
-              <>
-                <FormField
-                  control={form.control}
-                  name='password'
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <PasswordInput
-                          placeholder='Enter password (min 8 chars)'
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name='confirmPassword'
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Confirm Password</FormLabel>
-                      <FormControl>
-                        <PasswordInput
-                          placeholder='Confirm password'
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </>
-            )}
+            </div>
+            <SheetFooter className='gap-2 pt-4'>
+              <Button
+                type='submit'
+                disabled={form.formState.isSubmitting}
+                className='flex-1'
+              >
+                {form.formState.isSubmitting ? (
+                  <Loader2 className='h-4 w-4 animate-spin' />
+                ) : isEdit ? (
+                  'Save Changes'
+                ) : (
+                  'Create User'
+                )}
+              </Button>
+              <SheetClose asChild>
+                <Button type='button' variant='outline' className='flex-1'>
+                  Close
+                </Button>
+              </SheetClose>
+            </SheetFooter>
           </form>
         </Form>
-
-        <SheetFooter className='gap-2'>
-          <Button 
-            form='user-form' 
-            type='submit' 
-            disabled={form.formState.isSubmitting}
-          >
-            {form.formState.isSubmitting 
-              ? <Loader2 className="animate-spin" /> 
-              : isEdit ? 'Save Changes' : 'Create User'
-            }
-          </Button>
-          <SheetClose asChild>
-            <Button variant='outline'>Close</Button>
-          </SheetClose>
-        </SheetFooter>
       </SheetContent>
     </Sheet>
   )
 }
-
