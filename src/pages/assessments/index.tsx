@@ -12,46 +12,38 @@ import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { Badge } from '@/components/ui/badge'
 
-// Import Separated Components and Hook
 import { useAssessments } from '@/hooks/useAssessments'
 import { AssessmentList } from '@/pages/assessments/components/AssessmentList'
 import { AssessmentEditor } from '@/pages/assessments/components/AssessmentEditor'
 import { Assessment } from './data/assessment'
 
-
-// --- COMPONENT: Assessments (Main Layout) ---
 export function Assessments() {
   const {
     search,
     setSearch,
-    assessments, // Filtered list
+    assessments,
     selectedAssessment,
     handleSelectAssessment,
     handleUpdateAssessment,
     handleNewAssessment,
   } = useAssessments()
   
-  // Mobile state management for showing/hiding the editor panel
   const [mobileSelectedAssessment, setMobileSelectedAssessment] = useState(false)
   
   const handleSelectAssessmentWithMobile = (assessment: Assessment) => {
     handleSelectAssessment(assessment)
-    setMobileSelectedAssessment(true) // Open editor on mobile
+    setMobileSelectedAssessment(true)
   }
-
   
   const handleCloseMobileEditor = () => {
     setMobileSelectedAssessment(false)
-    // Optional: Also clear selectedAssessment if you want the list to reset
-    // handleSelectAssessment(null) 
   }
 
-  // Use the selectedAssessment state from the hook
+  // Ensure we only consider it selected if the object is not null
   const isAssessmentSelected = selectedAssessment !== null
   
   return (
     <>
-      {/* ===== Top Heading (Header) ===== */}
       <Header>
         <Search />
         <div className='ms-auto flex items-center space-x-4'>
@@ -63,10 +55,9 @@ export function Assessments() {
 
       <Main fixed>
         <section className='flex h-full gap-6'>
-          {/* Left Side (Assessment List) */}
           <div className={cn(
             'flex w-full flex-col gap-2 sm:w-64 lg:w-80 2xl:w-96',
-            mobileSelectedAssessment && 'hidden sm:flex' // Hide list on mobile if editor is open
+            mobileSelectedAssessment && 'hidden sm:flex'
           )}>
             <div className='bg-background sticky top-0 z-10 -mx-4 px-4 pb-3 shadow-md sm:static sm:z-auto sm:mx-0 sm:p-0 sm:shadow-none'>
               <div className='flex items-center justify-between py-2'>
@@ -94,22 +85,21 @@ export function Assessments() {
             </div>
 
             <AssessmentList
-                assessments={assessments} // Filtered list from hook
+                assessments={assessments}
                 selectedAssessment={selectedAssessment}
-                onSelectAssessment={handleSelectAssessmentWithMobile} // Use mobile wrapper
+                onSelectAssessment={handleSelectAssessmentWithMobile}
                 onNewAssessment={handleNewAssessment}
             />
           </div>
 
-          {/* Right Side (Assessment Editor Panel) */}
-          {isAssessmentSelected ? (
+          {/* Editor Panel */}
+          {isAssessmentSelected && selectedAssessment ? (
             <div
               className={cn(
                 'bg-background absolute inset-0 start-full z-50 hidden w-full flex-1 flex-col border shadow-xs sm:static sm:z-auto sm:flex sm:rounded-md overflow-auto',
                 mobileSelectedAssessment && 'start-0 flex'
               )}
             >
-              {/* Top Part - Assessment Title Bar */}
               <div className='bg-card mb-1 flex flex-none justify-between p-4 shadow-lg sm:rounded-t-md'>
                 <div className='flex gap-3 items-center'>
                   <Button
@@ -129,10 +119,9 @@ export function Assessments() {
                 </div>
               </div>
 
-              {/* Assessment Editor Content */}
               <ScrollArea className='flex-1'>
-                {/* Key prop ensures AssessmentEditor remounts and resets internal state when switching assessments */}
                 <AssessmentEditor 
+                    // KEY FIX: Force remount when ID changes to reset state
                     key={selectedAssessment.id} 
                     assessment={selectedAssessment} 
                     onUpdateAssessment={handleUpdateAssessment}
@@ -143,7 +132,7 @@ export function Assessments() {
             <div
               className={cn(
                 'bg-card absolute inset-0 start-full z-50 hidden w-full flex-1 flex-col justify-center rounded-md border shadow-xs sm:static sm:z-auto sm:flex',
-                !mobileSelectedAssessment && 'flex' // Ensure it shows if no assessment is selected, on desktop
+                !mobileSelectedAssessment && 'flex'
               )}
             >
               <div className='flex flex-col items-center space-y-6'>

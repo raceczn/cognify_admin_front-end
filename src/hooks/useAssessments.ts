@@ -1,69 +1,79 @@
-// src/hooks/useAssessments.ts
 import { useState, useMemo } from 'react'
-import { Assessment, mockAssessments } from '@/pages/assessments/data/assessment'
+import { Assessment, AssessmentPurpose } from '@/pages/assessments/data/assessment'
+import { useAssessmentsQuery, useCreateAssessmentMutation, useUpdateAssessmentMutation } from '@/lib/assessment-hooks'
+import { toast } from 'sonner'
 
 export function useAssessments() {
   const [search, setSearch] = useState('')
-  const [assessments, setAssessments] = useState<Assessment[]>(mockAssessments)
   const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null)
+
+  // 1. Fetch data from Backend
+  const { data: assessments = [], isLoading, isError } = useAssessmentsQuery()
   
-  // Memoize filtered list for AssessmentList
+  // 2. Mutations
+  const createMutation = useCreateAssessmentMutation()
+  const updateMutation = useUpdateAssessmentMutation()
+
+  // 3. Filter Logic
   const filteredAssessments = useMemo(() => {
     const term = search.trim().toLowerCase()
     if (!term) return assessments
+    
     return assessments.filter(
-      (assessment) =>
-        assessment.title.toLowerCase().includes(term) ||
-        assessment.description.toLowerCase().includes(term)
+      // FIX: Explicitly type 'assessment' here to resolve the error
+      (assessment: Assessment) =>
+        (assessment.title || '').toLowerCase().includes(term) ||
+        (assessment.description || '').toLowerCase().includes(term)
     )
   }, [search, assessments])
 
-  // Handle assessment selection
   const handleSelectAssessment = (assessment: Assessment) => {
     setSelectedAssessment(assessment)
   }
 
-  // Handle saving changes to an assessment
-  const handleUpdateAssessment = (updatedAssessment: Assessment) => {
-    setAssessments(prev => 
-        prev.map(a => a.id === updatedAssessment.id ? updatedAssessment : a)
-    )
-    // Update the selected assessment's reference to the new one
-    setSelectedAssessment(updatedAssessment) 
-    // In a real app, this would trigger a mutation/API call
-    // toast.success(`Assessment "${updatedAssessment.title}" saved successfully!`)
+  const handleUpdateAssessment = async (updatedAssessment: Assessment) => {
+    try {
+      await updateMutation.mutateAsync({ 
+        id: updatedAssessment.id, 
+        data: updatedAssessment 
+      })
+      setSelectedAssessment(updatedAssessment)
+      toast.success("Assessment saved successfully")
+    } catch (error) {
+      console.error(error)
+      toast.error("Failed to save assessment")
+    }
   }
 
-  // Handle creating a new assessment
-  const handleNewAssessment = () => {
-    const newAssessment: Assessment = {
-        id: Math.random().toString(36).substring(2, 9),
+  const handleNewAssessment = async () => {
+    const newDraft: Partial<Assessment> = {
         title: 'New Untitled Assessment',
         description: 'Edit the details and add questions.',
-        // --- FIX: Add the missing 'purpose' field ---
-        purpose: 'Quiz', // Setting a sensible default purpose for a new assessment
-        // ------------------------------------------
+        purpose: 'Quiz' as AssessmentPurpose,
         questions: [],
-        created_at: new Date().toISOString().substring(0, 10),
-        last_modified: new Date().toISOString().substring(0, 10),
+        // Backend handles ID and timestamps creation
     }
-    setAssessments(prev => [newAssessment, ...prev])
-    setSelectedAssessment(newAssessment)
+    
+    try {
+      const created = await createMutation.mutateAsync(newDraft)
+      setSelectedAssessment(created)
+      toast.success("New assessment created")
+    } catch (error) {
+      console.error(error)
+      toast.error("Failed to create assessment")
+    }
   }
-
-  // Effect to sync selectedAssessment state on updates to the main list
-  // Note: This pattern is usually handled by `handleUpdateAssessment` but 
-  // keeping it here helps if updates are made externally to the list.
-  // For simplicity with the local state, we rely on the updates in handleUpdateAssessment.
 
   return {
     search,
     setSearch,
     assessments: filteredAssessments,
-    allAssessments: assessments, // Full list for internal use if needed
+    allAssessments: assessments,
     selectedAssessment,
     handleSelectAssessment,
     handleUpdateAssessment,
     handleNewAssessment,
+    isLoading,
+    isError
   }
 }

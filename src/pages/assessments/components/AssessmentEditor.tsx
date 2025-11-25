@@ -1,12 +1,12 @@
-// src/components/AssessmentEditor.tsx
 import { useState, useEffect } from 'react'
 import {
   Assessment,
   Question,
   QuestionType,
-  AssessmentPurpose, // Import the new type
+  AssessmentPurpose,
+  Option,
 } from '@/pages/assessments/data/assessment'
-import { Pencil, ListOrdered } from 'lucide-react'
+import { Pencil, ListOrdered, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -26,25 +26,17 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { cn } from '@/lib/utils' // Import cn for class merging
-
-// Import types
+import { cn } from '@/lib/utils'
 import { QuestionEditor } from './QuestionEditor'
 
-// Import the new QuestionEditor
-
-// --- COMPONENT PROPS TYPES ---
 interface AssessmentEditorProps {
-  assessment: Assessment
+  assessment: Assessment | null | undefined
   onUpdateAssessment: (assessment: Assessment) => void
 }
 
-// --- SIMULATED DATA FOR DROPDOWNS ---
-// In a real application, this would come from an API
-const SUBJECT_IDS = ['subj-math', 'subj-sci', 'subj-hist']
-const MODULE_IDS = ['mod-calc1', 'mod-phys1', 'mod-ww2']
+const SUBJECT_IDS = ['SUBJ_PSYCH', 'SUBJ_DEV_PSYCH', 'SUBJ_ABNORMAL_PSYCH', 'SUBJ_IO_PSYCH', 'SUBJ_PSYC_ASSESS']
+const MODULE_IDS = ['MOD_COG101', 'MOD_PERS202', 'MOD_MOTIVATION302']
 
-// FIX: New simulated data for the Purpose dropdown
 const ASSESSMENT_PURPOSES: AssessmentPurpose[] = [
   'Pre-Test',
   'Quiz',
@@ -53,107 +45,149 @@ const ASSESSMENT_PURPOSES: AssessmentPurpose[] = [
   'Diagnostic',
 ]
 
-// Sentinel value to represent a cleared selection in the Select component
 const CLEAR_VALUE = 'clear-selection'
-// --- SIMULATED DATA FOR DROPDOWNS ---
 
-// Helper function to get the color class for the purpose dot
 const getPurposeDotColor = (purpose: AssessmentPurpose): string => {
   switch (purpose) {
-    case 'Practice_Exam':
-      return 'bg-[#63A361]' // Green
-    case 'Post-Test':
-      return 'bg-[#8CA9FF]' // Blue
-    case 'Pre-Test':
-      return 'bg-[#FFA239]' // Orange
-    case 'Diagnostic':
-      return 'bg-[#D34E4E]' // Red
-    case 'Quiz':
-      return 'bg-gray-400' // Gray
-    default:
-      return 'bg-gray-500' // Default color (shouldn't happen with AssessmentPurpose)
+    case 'Practice_Exam': return 'bg-[#63A361]'
+    case 'Post-Test': return 'bg-[#8CA9FF]'
+    case 'Pre-Test': return 'bg-[#FFA239]'
+    case 'Diagnostic': return 'bg-[#D34E4E]'
+    case 'Quiz': return 'bg-gray-400'
+    default: return 'bg-gray-500'
   }
 }
 
-// --- COMPONENT: AssessmentEditor (Replaces FeedbackForm) ---
 export function AssessmentEditor({
   assessment: initialAssessment,
   onUpdateAssessment,
 }: AssessmentEditorProps) {
-  // Use a unique key on the parent in index.tsx to force re-mount and re-initialization
-  const [assessment, setAssessment] = useState(initialAssessment)
+  const [assessment, setAssessment] = useState<Assessment | null | undefined>(initialAssessment)
 
-  // Sync internal state when the selected assessment prop changes
   useEffect(() => {
-    setAssessment(initialAssessment)
+    if (initialAssessment) {
+      // --- READ: Convert Backend Strings to Frontend Objects ---
+      const normalizedQuestions = (initialAssessment.questions || []).map((q: any) => {
+        
+        let normalizedOptions: Option[] = [];
+
+        // Convert string[] options (from backend) to Option[] objects
+        if (Array.isArray(q.options) && q.options.length > 0) {
+          if (typeof q.options[0] === 'string') {
+            normalizedOptions = q.options.map((optText: string, idx: number) => ({
+              id: `opt-${q.question_id}-${idx}`, 
+              text: optText,
+              // Check if this option matches the correct answer string
+              is_correct: optText === q.answer 
+            }));
+          } else {
+            normalizedOptions = q.options; // Already normalized
+          }
+        }
+
+        return {
+          ...q,
+          question_id: q.question_id || q.id || Math.random().toString(36).substring(2, 9),
+          text: q.text || q.question || '', // Map 'question' to 'text'
+          type: q.type || 'multiple_choice',
+          points: q.points || 1,
+          options: normalizedOptions
+        };
+      });
+
+      setAssessment({ ...initialAssessment, questions: normalizedQuestions });
+    } else {
+      setAssessment(initialAssessment);
+    }
   }, [initialAssessment])
+
+  // --- WRITE: Convert Frontend Objects back to Backend Strings ---
+  const handleSave = () => {
+    if (!assessment) return;
+
+    const payloadQuestions = (assessment.questions || []).map((q) => {
+      // Find the object marked as correct
+      const correctOpt = q.options.find((opt) => opt.is_correct);
+      
+      return {
+        ...q,
+        // Map 'text' back to 'question' for backend
+        question: q.text, 
+        // Extract just the text strings for the options array
+        options: q.options.map((opt) => opt.text),
+        // Set the answer field to the text of the correct option
+        answer: correctOpt ? correctOpt.text : '',
+        // Ensure we keep backend-specific fields if they exist
+        topic_title: (q as any).topic_title,
+        bloom_level: (q as any).bloom_level,
+      }
+    });
+
+    const payload = {
+      ...assessment,
+      questions: payloadQuestions,
+      updated_at: new Date().toISOString(),
+    };
+
+    // Cast to any to bypass strict type check since we are modifying the structure for the API
+    onUpdateAssessment(payload as any);
+  }
+
+  if (!assessment) {
+    return (
+      <div className="flex h-full items-center justify-center text-muted-foreground">
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        <span>Loading assessment...</span>
+      </div>
+    )
+  }
 
   const handleUpdateDetails = (
     field: keyof Assessment,
-    // FIX: Updated value type to include the sentinel CLEAR_VALUE string AND the new AssessmentPurpose type
-    value: string | 'Draft' | 'Published' | AssessmentPurpose | undefined
+    value: string | AssessmentPurpose | undefined
   ) => {
-    // FIX: Coerce the sentinel string back to 'undefined' for the Assessment type.
     const finalValue = value === CLEAR_VALUE ? undefined : value
-
-    setAssessment((prev) => ({
-      ...prev,
-      // FIX: Add a type assertion to satisfy the Assessment key constraint on the field value
-      [field]: finalValue as any,
-      last_modified: new Date().toISOString().substring(0, 10),
-    }))
+    setAssessment((prev) => prev ? { ...prev, [field]: finalValue } : prev)
   }
 
   const handleAddQuestion = (type: QuestionType) => {
     const newQuestion: Question = {
-      id: Math.random().toString(36).substring(2, 9),
+      question_id: Math.random().toString(36).substring(2, 9),
       type: type,
       text: `[New ${type.replace('_', ' ')}]`,
-      points: 5,
-      options:
-        type === 'multiple_choice'
-          ? [
-              { id: 'op1', text: 'Option 1', is_correct: true },
-              { id: 'op2', text: 'Option 2', is_correct: false },
-            ]
-          : [], // Handle other types if they were added (e.g., short_answer)
+      points: 1,
+      options: [
+        { id: 'op1', text: 'Option 1', is_correct: true },
+        { id: 'op2', text: 'Option 2', is_correct: false },
+      ],
     }
-    setAssessment((prev) => ({
-      ...prev,
-      questions: [...prev.questions, newQuestion],
-      last_modified: new Date().toISOString().substring(0, 10),
-    }))
+    setAssessment((prev) => prev ? { ...prev, questions: [...(prev.questions || []), newQuestion] } : prev)
   }
 
   const handleUpdateQuestion = (updatedQuestion: Question) => {
-    const newQuestions = assessment.questions.map((q) =>
-      q.id === updatedQuestion.id ? updatedQuestion : q
-    )
-    setAssessment((prev) => ({
-      ...prev,
-      questions: newQuestions,
-      last_modified: new Date().toISOString().substring(0, 10),
-    }))
+    setAssessment((prev) => {
+      if (!prev) return prev
+      const newQuestions = (prev.questions || []).map((q) =>
+        q.question_id === updatedQuestion.question_id ? updatedQuestion : q
+      )
+      return { ...prev, questions: newQuestions }
+    })
   }
 
-  const handleDeleteQuestion = (questionId: string) => {
-    setAssessment((prev) => ({
-      ...prev,
-      questions: prev.questions.filter((q) => q.id !== questionId),
-      last_modified: new Date().toISOString().substring(0, 10),
-    }))
+  const handleDeleteQuestion = (qId: string) => {
+    setAssessment((prev) => {
+      if (!prev) return prev
+      return { ...prev, questions: (prev.questions || []).filter((q) => q.question_id !== qId) }
+    })
   }
 
-  const totalPoints = assessment.questions.reduce((sum, q) => sum + q.points, 0)
-
-  // Helper function to safely get the controlled value for Select
-  // If assessment.subject_id/module_id is undefined, we convert it to the CLEAR_VALUE sentinel string.
-  const getSelectValue = (value: string | undefined): string =>
-    value === undefined ? CLEAR_VALUE : value
+  const questions = assessment.questions || []
+  const totalPoints = questions.reduce((sum, q) => sum + (q.points || 0), 0)
+  const getSelectValue = (value: string | undefined): string => value === undefined ? CLEAR_VALUE : value
 
   return (
     <div className='space-y-6 p-4'>
-      {/* Assessment Details Card */}
+      {/* --- Assessment Details Card --- */}
       <Card>
         <CardHeader>
           <div className='flex items-center justify-between'>
@@ -161,178 +195,89 @@ export function AssessmentEditor({
               <Pencil size={18} /> Assessment Details
             </CardTitle>
           </div>
-          <CardDescription>
-            Edit the core information of the assessment.
-          </CardDescription>
+          <CardDescription>Edit the core information.</CardDescription>
         </CardHeader>
         <CardContent className='space-y-4'>
-          {/* ... Title, Description, Status Inputs (using handleUpdateDetails) ... */}
           <div className='space-y-2'>
-            <Label htmlFor='assessment-title'>Title</Label>
-            <Input
-              id='assessment-title'
-              value={assessment.title}
-              onChange={(e) => handleUpdateDetails('title', e.target.value)}
-            />
+            <Label htmlFor='title'>Title</Label>
+            <Input id='title' value={assessment.title || ''} onChange={(e) => handleUpdateDetails('title', e.target.value)} />
           </div>
           <div className='space-y-2'>
-            <Label htmlFor='assessment-description'>Description</Label>
-            <Textarea
-              id='assessment-description'
-              value={assessment.description}
-              onChange={(e) =>
-                handleUpdateDetails('description', e.target.value)
-              }
-              rows={2}
-            />
+            <Label htmlFor='desc'>Description</Label>
+            <Textarea id='desc' value={assessment.description || ''} onChange={(e) => handleUpdateDetails('description', e.target.value)} rows={2} />
           </div>
-
-          {/* FIX: Combined Purpose, Subject, and Module Dropdowns */}
           <div className='flex gap-4'>
-            {/* Purpose Dropdown (now 1/3 width) */}
             <div className='w-1/3 space-y-2'>
-              <Label htmlFor='assessment-purpose'>Purpose</Label>
-              <Select
-                value={assessment.purpose}
-                onValueChange={(value: AssessmentPurpose) =>
-                  handleUpdateDetails('purpose', value)
-                }
-              >
-                <SelectTrigger id='assessment-purpose'>
-                  <SelectValue placeholder='Select Purpose' />
-                </SelectTrigger>
+              <Label>Purpose</Label>
+              <Select value={assessment.purpose} onValueChange={(v: AssessmentPurpose) => handleUpdateDetails('purpose', v)}>
+                <SelectTrigger><SelectValue placeholder='Select' /></SelectTrigger>
                 <SelectContent>
-                  {ASSESSMENT_PURPOSES.map((purpose) => (
-                    <SelectItem 
-                      key={purpose} 
-                      value={purpose}
-                      className="flex items-center" // Ensure SelectItem is a flex container
-                    >
-                      {/* --- MODIFIED CODE START (SelectItem Content) --- */}
+                  {ASSESSMENT_PURPOSES.map((p) => (
+                    <SelectItem key={p} value={p} className="flex items-center">
                       <div className="flex items-center">
-                        {/* Colored Dot */}
-                        <span
-                          className={cn(
-                            'w-2 h-2 rounded-full mr-2 flex-shrink-0',
-                            getPurposeDotColor(purpose)
-                          )}
-                          aria-hidden="true"
-                        />
-                        {/* Label */}
-                        <span className="truncate">
-                          {purpose.replace('_', ' ')}
-                        </span>
+                        <span className={cn('w-2 h-2 rounded-full mr-2', getPurposeDotColor(p))} />
+                        <span>{p.replace('_', ' ')}</span>
                       </div>
-                      {/* --- MODIFIED CODE END (SelectItem Content) --- */}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-
-            {/* Subject ID Dropdown (now 1/3 width) */}
             <div className='w-1/3 space-y-2'>
-              <Label htmlFor='assessment-subject-id'>Subject</Label>
-              <Select
-                // FIX: Use helper function to convert undefined state to the sentinel string
-                value={getSelectValue(assessment.subject_id)}
-                onValueChange={(value) =>
-                  handleUpdateDetails('subject_id', value)
-                }
-              >
-                <SelectTrigger id='assessment-subject-id'>
-                  <SelectValue placeholder='Select Subject' />
-                </SelectTrigger>
+              <Label>Subject</Label>
+              <Select value={getSelectValue(assessment.subject_id)} onValueChange={(v) => handleUpdateDetails('subject_id', v)}>
+                <SelectTrigger><SelectValue placeholder='Select' /></SelectTrigger>
                 <SelectContent>
-                  {/* FIX: Use the CLEAR_VALUE sentinel string instead of "" or {undefined} */}
-                  <SelectItem value={CLEAR_VALUE}>
-                    Select Subject
-                  </SelectItem>
-                  {SUBJECT_IDS.map((id) => (
-                    <SelectItem key={id} value={id}>
-                      {id}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value={CLEAR_VALUE}>Select Subject</SelectItem>
+                  {SUBJECT_IDS.map((id) => <SelectItem key={id} value={id}>{id}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-            {/* Module ID Dropdown (now 1/3 width) */}
             <div className='w-1/3 space-y-2'>
-              <Label htmlFor='assessment-module-id'>Module</Label>
-              <Select
-                // FIX: Use helper function to convert undefined state to the sentinel string
-                value={getSelectValue(assessment.module_id)}
-                onValueChange={(value) =>
-                  handleUpdateDetails('module_id', value)
-                }
-              >
-                <SelectTrigger id='assessment-module-id'>
-                  <SelectValue placeholder='Select Module' />
-                </SelectTrigger>
+              <Label>Module</Label>
+              <Select value={getSelectValue(assessment.module_id)} onValueChange={(v) => handleUpdateDetails('module_id', v)}>
+                <SelectTrigger><SelectValue placeholder='Select' /></SelectTrigger>
                 <SelectContent>
-                  {/* FIX: Use the CLEAR_VALUE sentinel string instead of "" or {undefined} */}
-                  <SelectItem value={CLEAR_VALUE}>
-                    Select Module
-                  </SelectItem>
-                  {MODULE_IDS.map((id) => (
-                    <SelectItem key={id} value={id}>
-                      {id}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value={CLEAR_VALUE}>Select Module</SelectItem>
+                  {MODULE_IDS.map((id) => <SelectItem key={id} value={id}>{id}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
           </div>
-
         </CardContent>
         <CardFooter className='text-muted-foreground flex justify-between text-sm'>
-          <span>Total Questions: {assessment.questions.length}</span>
+          <span>Total Questions: {questions.length}</span>
           <span>Total Points: {totalPoints}</span>
         </CardFooter>
       </Card>
 
-      {/* Question Management Card */}
+      {/* --- Questions Card --- */}
       <Card>
         <CardHeader>
-          <CardTitle className='flex items-center gap-2'>
-            <ListOrdered size={18} /> Questions
-          </CardTitle>
-          <CardDescription>
-            Add and manage the questions for this assessment.
-          </CardDescription>
+          <CardTitle className='flex items-center gap-2'><ListOrdered size={18} /> Questions</CardTitle>
         </CardHeader>
         <CardContent>
           <div className='space-y-4'>
-            {assessment.questions.length === 0 && (
-              <p className='text-muted-foreground text-center italic'>
-                No questions in this assessment. Add one below!
-              </p>
-            )}
-            {assessment.questions.map((question: Question) => (
+            {questions.length === 0 && <p className='text-muted-foreground text-center italic'>No questions added yet.</p>}
+            {questions.map((question: Question) => (
               <QuestionEditor
-                key={question.id}
+                key={question.question_id}
                 question={question}
                 onUpdate={handleUpdateQuestion}
-                onDelete={() => handleDeleteQuestion(question.id)}
+                onDelete={() => handleDeleteQuestion(question.question_id)}
               />
             ))}
           </div>
           <div className='mt-6 flex justify-end'> 
-            <Button
-              onClick={() => handleAddQuestion('multiple_choice')}
-              className='bg-[#EDFFF0] text-blue-900 border border-blue-900 hover:bg-gray-100'        >
+            <Button onClick={() => handleAddQuestion('multiple_choice')} className='bg-[#EDFFF0] text-blue-900 border border-blue-900 hover:bg-gray-100'>
               Add New Question
             </Button>
           </div>
         </CardContent>
         <CardFooter className='flex flex-col gap-2'>
           <div className='w-full pt-4'>
-            <Button
-              onClick={() => onUpdateAssessment(assessment)}
-              className='w-full'
-            >
-              Save Changes
-            </Button>
+            {/* Use handleSave instead of direct onUpdateAssessment */}
+            <Button onClick={handleSave} className='w-full'>Save Changes</Button>
           </div>
         </CardFooter>
       </Card>

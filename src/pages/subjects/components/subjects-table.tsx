@@ -1,13 +1,9 @@
-// src/pages/subjects/components/subjects-table.tsx
-import {  useState } from 'react'
-// import { getRouteApi } from '@tanstack/react-router' // Remove
+import { useState } from 'react'
 import {
   type SortingState,
   type VisibilityState,
   type ColumnFiltersState,
-  // Import this
   type PaginationState,
-  // Import this
   flexRender,
   getCoreRowModel,
   getFacetedRowModel,
@@ -17,8 +13,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-// --- REMOVE useTableUrlState ---
-// import { type NavigateFn, useTableUrlState } from '@/hooks/use-table-url-state'
+
 import {
   Table,
   TableBody,
@@ -31,43 +26,33 @@ import { DataTablePagination, DataTableToolbar } from '@/components/data-table'
 import { type Subject } from '../data/schema'
 import { subjectsColumns as columns } from './subjects-columns'
 
-// const route = getRouteApi('/_authenticated/subjects') // Remove
-
 type DataTableProps = {
   data: Subject[]
-  // --- REMOVE search and navigate ---
-  // search: Record<string, unknown>
-  // navigate: NavigateFn
 }
 
 export function SubjectsTable({ data }: DataTableProps) {
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [sorting, setSorting] = useState<SortingState>([])
-
-  // --- REVERT PAGINATION & FILTERS TO LOCAL STATE ---
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 10,
   })
-  // --- END REVERT ---
-
-  // --- REMOVE useTableUrlState hook ---
 
   const table = useReactTable({
     data,
     columns,
     state: {
       sorting,
-      pagination, // Use local state
+      pagination,
       rowSelection,
-      columnFilters, // Use local state
+      columnFilters,
       columnVisibility,
     },
-    enableRowSelection: false,
-    onPaginationChange: setPagination, // Use local state setter
-    onColumnFiltersChange: setColumnFilters, // Use local state setter
+    enableRowSelection: true,
+    onPaginationChange: setPagination,
+    onColumnFiltersChange: setColumnFilters,
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
@@ -79,16 +64,14 @@ export function SubjectsTable({ data }: DataTableProps) {
     getFacetedUniqueValues: getFacetedUniqueValues(),
   })
 
-  // --- REMOVE the ensurePageInRange useEffect ---
-
   return (
     <div className='space-y-4'>
       <DataTableToolbar
         table={table}
         searchPlaceholder='Filter by name...'
-        searchKey='subject_name'
+        searchKey='name' 
+        /* FIXED: Changed 'subject_name' to 'name' to match schema */
       />
-      {/* ... (rest of table JSX is unchanged) ... */}
       <div className='overflow-hidden rounded-md border'>
         <Table>
           <TableHeader>
@@ -99,7 +82,7 @@ export function SubjectsTable({ data }: DataTableProps) {
                     <TableHead
                       key={header.id}
                       colSpan={header.colSpan}
-                      className='bg-[#faf1e8]  dark:bg-gray-800'
+                      className='bg-muted/50'
                     >
                       {header.isPlaceholder
                         ? null
@@ -133,7 +116,7 @@ export function SubjectsTable({ data }: DataTableProps) {
                   colSpan={columns.length}
                   className='h-24 text-center'
                 >
-                  No results.
+                  No subjects found.
                 </TableCell>
               </TableRow>
             )}

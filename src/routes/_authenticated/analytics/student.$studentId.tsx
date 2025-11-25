@@ -1,5 +1,4 @@
-// src/routes/_authenticated/analytics/student.$studentId.tsx
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, getRouteApi } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { getStudentAnalytics } from '@/lib/analytics-hooks'
 import { Header } from '@/components/layout/header'
@@ -14,15 +13,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-// --- 1. REMOVE UNUSED TABLE IMPORTS ---
-// import {
-//   Table,
-//   TableBody,
-//   TableCell,
-//   TableHead,
-//   TableHeader,
-//   TableRow,
-// } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -41,10 +31,10 @@ import { Skeleton } from '@/components/ui/skeleton'
 import React from 'react'
 import { AppErrorBoundary } from '@/components/error-boundary'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-// --- 2. IMPORT THE NEW CHART COMPONENT ---
 import { StudentBloomChart } from '@/pages/analytics/components/student-bloom-chart'
 
-// (Interface and Fallback component remain the same)
+const routeApi = getRouteApi('/_authenticated/analytics/student/$studentId')
+
 interface StudentAnalyticsData {
   student_id: string
   summary: {
@@ -85,7 +75,7 @@ function StudentAnalyticsErrorFallback() {
 }
 
 function StudentAnalyticsPage() {
-  const { studentId } = Route.useParams()
+  const { studentId } = routeApi.useParams()
 
   const {
     data: analytics,
@@ -96,11 +86,11 @@ function StudentAnalyticsPage() {
     queryFn: () => getStudentAnalytics(studentId),
   })
 
-  const timeSpent = analytics?.summary.time_spent_sec || 0
+  // Safe access for time calculation
+  const timeSpent = analytics?.summary?.time_spent_sec || 0
   const hours = Math.floor(timeSpent / 3600)
   const minutes = Math.floor((timeSpent % 3600) / 60)
 
-  // This logic is already correct and creates the data our chart needs
   const bloomPerformance = React.useMemo(() => {
     if (!analytics?.performance_by_bloom) return []
     return Object.entries(analytics.performance_by_bloom)
@@ -108,7 +98,7 @@ function StudentAnalyticsPage() {
         bloom_level: level,
         score: score,
       }))
-      .sort((a, b) => a.bloom_level.localeCompare(b.bloom_level)) // Sort for consistency
+      .sort((a, b) => a.bloom_level.localeCompare(b.bloom_level))
   }, [analytics?.performance_by_bloom])
 
   const strengths = bloomPerformance
@@ -146,7 +136,8 @@ function StudentAnalyticsPage() {
       )
     }
 
-    if (!analytics || analytics.summary.total_activities === 0) {
+    // Check for minimal required data structure
+    if (!analytics || !analytics.summary) {
       return (
         <Card className='flex min-h-64 items-center justify-center'>
           <p className='text-muted-foreground'>
@@ -158,7 +149,6 @@ function StudentAnalyticsPage() {
 
     return (
       <div className='space-y-4'>
-        {/* 1. Summary Cards (Unchanged) */}
         <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4'>
           <Card>
             <CardHeader className='flex-row items-center justify-between space-y-0 pb-2'>
@@ -169,7 +159,8 @@ function StudentAnalyticsPage() {
             </CardHeader>
             <CardContent>
               <div className='text-2xl font-bold'>
-                {analytics.summary.overall_score.toFixed(2)}%
+                {/* FIX: Safe access and fallback before calling toFixed */}
+                {(analytics.summary.overall_score ?? 0).toFixed(2)}%
               </div>
               <p className='text-xs text-muted-foreground'>
                 Average of all activities
@@ -202,7 +193,7 @@ function StudentAnalyticsPage() {
             </CardHeader>
             <CardContent>
               <div className='text-2xl font-bold'>
-                {analytics.summary.total_activities}
+                {analytics.summary.total_activities ?? 0}
               </div>
               <p className='text-xs text-muted-foreground'>
                 Total quizzes and modules
@@ -231,14 +222,14 @@ function StudentAnalyticsPage() {
                 {analytics.prediction?.predicted_to_pass ? 'Pass' : 'At-Risk'}
               </div>
               <p className='text-xs text-muted-foreground'>
-                {analytics.prediction?.pass_probability?.toFixed(2) || '0.00'}%
+                {/* FIX: Safe access and fallback for probability */}
+                {(analytics.prediction?.pass_probability ?? 0).toFixed(2)}%
                 Pass Probability
               </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* 2. Strengths & Weaknesses / Chart */}
         <div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
           <Card>
             <CardHeader>
@@ -296,10 +287,7 @@ function StudentAnalyticsPage() {
             </CardContent>
           </Card>
 
-            {/* --- 3. SWAP THE TABLE FOR THE CHART --- */}
           <StudentBloomChart data={analytics.performance_by_bloom} />
-          {/* --- END SWAP --- */}
-          
         </div>
       </div>
     )
