@@ -128,7 +128,12 @@ export function ModulesMutateDrawer({
     setIsUploading(true)
     toast.loading('Uploading file...')
     try {
-      const res = await uploadModuleFile(file)
+      const subjectId = form.getValues('subject_id')
+      if (!subjectId) {
+        toast.error('Please select a subject before uploading the file.')
+        return
+      }
+      const res = await uploadModuleFile(file, subjectId)
       form.setValue('material_url', res.file_url, { shouldValidate: true })
       toast.success('File uploaded successfully!')
     } catch (err) {

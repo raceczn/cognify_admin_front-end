@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { type Table } from '@tanstack/react-table'
 import { AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
-import { deleteProfile } from '@/lib/profile-hooks'
+import { deactivateUser } from '@/lib/profile-hooks'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -40,18 +40,20 @@ export function UsersMultiDeleteDialog<TData>({
     const selectedUsers = selectedRows.map((row) => row.original as User)
     const promises = selectedUsers.map(async (user) => {
       try {
-        // Call delete API
-        const response = await deleteProfile(user.id)
+        // Call deactivate API (soft delete)
+        const response = await deactivateUser(user.id)
 
-        // Transform and update local state
-        const updatedUser: User = {
-          ...user,
-          deleted: true,
-          deleted_at: new Date().toISOString(),
-          ...(response || {}),
-        }
-        updateLocalUsers(updatedUser, 'edit')
-        return updatedUser
+        // Merge response first, then adjust fields without duplicating keys
+        const base: User = { ...user, ...(response as any) }
+        base.deleted = true
+        base.deleted_at =
+          base.deleted_at ??
+          (response.deleted_at
+            ? new Date(response.deleted_at as any)
+            : new Date())
+
+        updateLocalUsers(base, 'edit')
+        return base
       } catch (error) {
         console.error(`Error deleting user ${user.id}:`, error)
         throw error

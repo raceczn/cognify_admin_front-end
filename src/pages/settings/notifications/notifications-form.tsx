@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link } from '@tanstack/react-router'
-import { showSubmittedData } from '@/lib/show-submitted-data'
+import { getCookie, setCookie } from '@/lib/cookies'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -16,6 +16,8 @@ import {
 } from '@/components/ui/form'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Switch } from '@/components/ui/switch'
+
+const NOTIFICATIONS_COOKIE = 'notifications_settings'
 
 const notificationsFormSchema = z.object({
   type: z.enum(['all', 'mentions', 'none'], {
@@ -33,13 +35,35 @@ const notificationsFormSchema = z.object({
 
 type NotificationsFormValues = z.infer<typeof notificationsFormSchema>
 
-// This can come from your database or API.
-const defaultValues: Partial<NotificationsFormValues> = {
-  communication_emails: false,
-  marketing_emails: false,
-  social_emails: true,
-  security_emails: true,
+function getInitialNotifications(): Partial<NotificationsFormValues> {
+  const raw = getCookie(NOTIFICATIONS_COOKIE)
+  if (!raw) {
+    return {
+      type: 'all',
+      mobile: false,
+      communication_emails: false,
+      social_emails: true,
+      marketing_emails: false,
+      security_emails: true,
+    }
+  }
+  try {
+    const parsed = JSON.parse(raw)
+    return parsed || {}
+  } catch {
+    return {
+      type: 'all',
+      mobile: false,
+      communication_emails: false,
+      social_emails: true,
+      marketing_emails: false,
+      security_emails: true,
+    }
+  }
 }
+
+const defaultValues: Partial<NotificationsFormValues> =
+  getInitialNotifications()
 
 export function NotificationsForm() {
   const form = useForm<NotificationsFormValues>({
@@ -47,52 +71,56 @@ export function NotificationsForm() {
     defaultValues,
   })
 
+  function onSubmit(data: NotificationsFormValues) {
+    setCookie(NOTIFICATIONS_COOKIE, JSON.stringify(data))
+  }
+
   return (
     <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit((data) => showSubmittedData(data))}
-        className='space-y-8'
-      >
-        <FormField
-          control={form.control}
-          name='type'
-          render={({ field }) => (
-            <FormItem className='relative space-y-3'>
-              <FormLabel>Notify me about...</FormLabel>
-              <FormControl>
-                <RadioGroup
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  className='flex flex-col gap-2'
-                >
-                  <FormItem className='flex items-center'>
-                    <FormControl>
-                      <RadioGroupItem value='all' />
-                    </FormControl>
-                    <FormLabel className='font-normal'>
-                      All new messages
-                    </FormLabel>
-                  </FormItem>
-                  <FormItem className='flex items-center'>
-                    <FormControl>
-                      <RadioGroupItem value='mentions' />
-                    </FormControl>
-                    <FormLabel className='font-normal'>
-                      Direct messages and mentions
-                    </FormLabel>
-                  </FormItem>
-                  <FormItem className='flex items-center'>
-                    <FormControl>
-                      <RadioGroupItem value='none' />
-                    </FormControl>
-                    <FormLabel className='font-normal'>Nothing</FormLabel>
-                  </FormItem>
-                </RadioGroup>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-8'>
+        <div>
+          <FormField
+            control={form.control}
+            name='type'
+            render={({ field }) => (
+              <FormItem className='space-y-3'>
+                <FormLabel>Notify me about...</FormLabel>
+                <FormControl>
+                  <RadioGroup
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    className='grid grid-cols-1 gap-4 sm:grid-cols-3'
+                  >
+                    <FormItem className='flex items-center'>
+                      <FormControl>
+                        <RadioGroupItem value='all' />
+                      </FormControl>
+                      <FormLabel className='font-normal'>
+                        All new messages
+                      </FormLabel>
+                    </FormItem>
+                    <FormItem className='flex items-center'>
+                      <FormControl>
+                        <RadioGroupItem value='mentions' />
+                      </FormControl>
+                      <FormLabel className='font-normal'>
+                        Mentions only
+                      </FormLabel>
+                    </FormItem>
+                    <FormItem className='flex items-center'>
+                      <FormControl>
+                        <RadioGroupItem value='none' />
+                      </FormControl>
+                      <FormLabel className='font-normal'>Nothing</FormLabel>
+                    </FormItem>
+                  </RadioGroup>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
         <div className='relative'>
           <h3 className='mb-4 text-lg font-medium'>Email Notifications</h3>
           <div className='space-y-4'>
@@ -184,6 +212,7 @@ export function NotificationsForm() {
             />
           </div>
         </div>
+
         <FormField
           control={form.control}
           name='mobile'
@@ -213,6 +242,7 @@ export function NotificationsForm() {
             </FormItem>
           )}
         />
+
         <Button type='submit'>Update notifications</Button>
       </form>
     </Form>

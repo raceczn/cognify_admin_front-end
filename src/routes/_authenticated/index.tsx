@@ -1,7 +1,7 @@
 // src/routes/_authenticated/index.tsx
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { useAuthStore } from '@/stores/auth-store'
 import { Dashboard } from '@/pages/dashboard'
+import { useAuthStore } from '@/stores/auth-store'
 
 export const Route = createFileRoute('/_authenticated/')({
   beforeLoad: async () => {
@@ -17,7 +17,7 @@ export const Route = createFileRoute('/_authenticated/')({
 
     // Role-based redirect
     if (user.role_id === 'vhVbVsvMKiogI6rNLS7n') {
-      // Faculty role - remove trailing slash
+      // Redirect faculty to the URL path generated for the route
       throw redirect({ to: '/faculty/dashboard' })
     }
   },

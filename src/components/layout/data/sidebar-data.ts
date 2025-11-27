@@ -40,7 +40,7 @@ export const staticSidebarData: Omit<SidebarData, 'user'> = {
           title: 'Dashboard',
           url: '/',
           icon: LayoutDashboard,
-          allowedRoles: [ROLES.ADMIN], // Admin and Faculty
+          allowedRoles: [ROLES.ADMIN, ROLES.FACULTY_MEMBER],
         },
         {
           title: 'User List',
@@ -146,12 +146,11 @@ export function getFilteredSidebarData(userRoleId: string) {
             return item.allowedRoles.includes(userRoleId)
           })
           .map((item) => {
-            // Special case: faculty sees Analytics as Dashboard
-            if (userRoleId === ROLES.FACULTY_MEMBER && item.title === 'Analytics') {
+            // Direct faculty to their dashboard path
+            if (userRoleId === ROLES.FACULTY_MEMBER && item.title === 'Dashboard') {
               return {
                 ...item,
-                title: 'Dashboard',
-                icon: LayoutDashboard,
+                url: '/faculty/dashboard',
               }
             }
 

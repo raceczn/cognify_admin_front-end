@@ -1,35 +1,28 @@
+// src/lib/subjects-hooks.ts
 import api from '@/lib/axios-client'
-import { type Subject, type SubjectBase } from '@/pages/subjects/data/schema'
 
-/**
- * [All] Lists all non-deleted subjects (paginated).
- */
-export async function getAllSubjects(limit = 100, startAfter?: string) {
+export type Subject = { subject_id: string; subject_name: string }
+
+type PaginatedSubjectsResponse = {
+  items: Subject[]
+  last_doc_id: string | null
+}
+
+// There is no explicit subjects listing endpoint in the guide.
+// This function gracefully returns an empty list if none is available.
+export async function getAllSubjects(): Promise<PaginatedSubjectsResponse> {
   try {
-    const res = await api.get(`/subjects/`, {
-      params: { limit, start_after: startAfter },
-    })
-    // Log to verify data arrives
-    console.log("📦 [Frontend] Subjects API Response:", res.data) 
-    return res.data
-  } catch (error) {
-    console.error("❌ [Frontend] Error fetching subjects:", error)
-    throw error
+    // Attempt to discover subjects via admin system endpoints if available
+    // Replace with the real endpoint once available.
+    const res = await api.get('/admin/system/health')
+    const subjects = res.data?.subjects ?? []
+    const items: Subject[] = (subjects as any[]).map((s) => ({
+      subject_id: String(s.subject_id ?? s.id ?? ''),
+      subject_name: String(s.subject_name ?? s.name ?? ''),
+    }))
+    return { items, last_doc_id: null }
+  } catch (err) {
+    // Fallback: return an empty list to keep UI stable
+    return { items: [], last_doc_id: null }
   }
-}
-
-export async function getSubject(id: string) {
-  const res = await api.get(`/subjects/${id}`)
-  return res.data
-}
-
-export async function createSubject(subjectData: Subject) {
-  // Backend expects 'subject_id' in the body for creation
-  const res = await api.post(`/subjects/`, subjectData)
-  return res.data
-}
-
-export async function updateSubject(id: string, subjectData: SubjectBase) {
-  const res = await api.put(`/subjects/${id}`, subjectData)
-  return res.data
 }

@@ -1,48 +1,48 @@
 // src/lib/auth-hooks.ts
+import { sendPasswordResetEmail } from 'firebase/auth'
+import { toast } from 'sonner'
 import api, { setAccessToken } from '@/lib/axios-client'
 import { auth } from '@/lib/firebase-config'
-import { sendPasswordResetEmail } from 'firebase/auth';
-import { toast } from 'sonner' // Import toast
 
 // =============== AUTH =================
 
-// Login (sets HTTP-only cookie for refresh token + returns idToken)
-export async function login(data: { email: string; password: string }) {
-  // This just calls the API and returns the data.
-  // No state logic here! The form component handles it.
-  const res = await api.post('/auth/login', data, { withCredentials: true })
-  return res.data 
+// Sign Up
+export async function signup(payload: {
+  email: string
+  password: string
+  first_name?: string
+  last_name?: string
+}) {
+  const res = await api.post('/auth/signup', payload)
+  return res.data
 }
 
-// Refresh (cookie is auto-sent, backend returns new tokens)
+// Login (backend sets refresh cookie; returns access token and uid)
+export async function login(payload: { email: string; password: string }) {
+  const res = await api.post('/auth/login', payload, { withCredentials: true })
+  return res.data
+}
+
+// Refresh (backend reads refresh cookie; returns new access token)
 export async function refresh() {
-  // This is called by the axios interceptor, which handles state.
   const res = await api.post('/auth/refresh', {}, { withCredentials: true })
   return res.data
 }
 
-// Logout (clears HTTP-only cookie + in-memory token)
+// Logout (clears server-side refresh cookie; clear local access token)
 export async function logout() {
-  // We only clear the local 'accessToken' variable.
-  // The UI (SignOutDialog) is responsible for clearing the store.
   await api.post('/auth/logout', {}, { withCredentials: true })
   setAccessToken(null)
 }
 
-// --- REMOVE THE OLD 'profile' FUNCTION ---
-// We will use the dedicated profile-hooks.ts file instead.
-
+// Password reset via Firebase (client-side)
 export async function requestPasswordReset(email: string) {
   try {
-    // This uses the *client-side* Firebase SDK
-    await sendPasswordResetEmail(auth, email);
-    toast.success("Password reset email sent! Check your inbox.");
+    await sendPasswordResetEmail(auth, email)
+    toast.success('Password reset email sent! Check your inbox.')
   } catch (error: any) {
-    console.error("Password reset error:", error.code);
-    if (error.code === "auth/user-not-found") {
-      toast.error("No account found with that email.");
-    } else {
-      toast.error("Failed to send reset email. Please try again.");
-    }
+    const message = error?.message || 'Failed to send reset email'
+    toast.error(message)
+    throw error
   }
 }

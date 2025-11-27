@@ -4,14 +4,18 @@
 import { useState } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
-import { deleteProfile } from '@/lib/profile-hooks'
+import { deactivateUser } from '@/lib/profile-hooks'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { roles } from '../data/data'
 import { type User } from '../data/schema'
 import { useUsers } from './users-provider'
-import { roles } from '../data/data' // --- 1. Import roles ---
+
+// src/pages/users/components/users-delete-dialog.tsx
+
+// --- 1. Import roles ---
 
 type UserDeleteDialogProps = {
   open: boolean
@@ -31,24 +35,28 @@ export function UsersDeleteDialog({
   const handleDelete = async () => {
     // --- 2. FIX: Check against 'email' ---
     if (value.trim() !== currentRow.email) {
-      toast.error("The email you entered does not match.")
+      toast.error('The email you entered does not match.')
       return
     }
-    
+
     setIsLoading(true)
     try {
       // 1. Call the soft-delete API
-      const response = await deleteProfile(currentRow.id)
+      const response = await deactivateUser(currentRow.id)
 
       // 2. Update local state immediately
       // --- 3. FIX: Spread 'response' directly, not 'response.profile' ---
       const updatedUser: User = {
         ...currentRow,
-        ...response, // Spread the returned UserProfileModel
-        deleted: response.deleted,
-        deleted_at: response.deleted_at || new Date().toISOString(),
+        ...response, // Spread the returned UserProfile
+        deleted: Boolean(response.deleted),
+        deleted_at: response.deleted_at
+          ? new Date(response.deleted_at)
+          : new Date(),
         // Ensure 'role' designation is populated for the local state
-        role: roles.find(r => r.value === response.role_id)?.designation || 'unknown',
+        role:
+          roles.find((r) => r.value === response.role_id)?.designation ||
+          'unknown',
       }
       updateLocalUsers(updatedUser, 'edit') // 'edit' to update status
 
@@ -88,14 +96,20 @@ export function UsersDeleteDialog({
         <div className='space-y-4'>
           <p className='mb-2'>
             Are you sure you want to delete{' '}
-            <span className='font-bold'>{`${currentRow.first_name} ${currentRow.last_name}`}</span>?
+            <span className='font-bold'>{`${currentRow.first_name} ${currentRow.last_name}`}</span>
+            ?
             <br />
-            This action will perform a soft-delete. The user can be restored later.
+            This action will perform a soft-delete. The user can be restored
+            later.
           </p>
 
           {/* --- 5. FIX: Ask for email, not username/name --- */}
           <Label className='my-2'>
-            Type the user's email <span className='font-bold text-destructive'>{currentRow.email}</span> to confirm:
+            Type the user's email{' '}
+            <span className='text-destructive font-bold'>
+              {currentRow.email}
+            </span>{' '}
+            to confirm:
             <Input
               value={value}
               onChange={(e) => setValue(e.target.value)}
@@ -106,7 +120,8 @@ export function UsersDeleteDialog({
           <Alert variant='destructive'>
             <AlertTitle>Warning!</AlertTitle>
             <AlertDescription>
-              This will disable the user's account and remove them from active lists.
+              This will disable the user's account and remove them from active
+              lists.
             </AlertDescription>
           </Alert>
         </div>

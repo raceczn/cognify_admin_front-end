@@ -1,97 +1,95 @@
 // src/lib/axios-client.ts
-import axios, { AxiosError } from "axios";
-// --- FIX: Import the store AND the cookie setter ---
-import { useAuthStore } from "@/stores/auth-store";
-import { setCookie } from "./cookies";
+import axios, { AxiosError } from 'axios'
+import { useAuthStore } from '@/stores/auth-store'
+import { setCookie } from './cookies'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
-const REFRESH_TOKEN_KEY = 'refresh_token'; // Key for the cookie
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
-let accessToken: string | null = null;
+let accessToken: string | null = null
 
 export const setAccessToken = (token: string | null) => {
-  accessToken = token;
-};
-export const getAccessToken = () => accessToken;
+  accessToken = token
+}
 
-export const getRefreshToken = () => useAuthStore.getState().auth.refreshToken;
+export const getAccessToken = () => accessToken
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
   headers: {
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json',
   },
-});
+})
 
+// Attach bearer token if we have one
 api.interceptors.request.use(
   (config) => {
-    let token = accessToken;
-    if (!token) {
-      token = useAuthStore.getState().auth.accessToken;
-      if (token) setAccessToken(token);
-    }
-    
+    const token = accessToken || useAuthStore.getState().auth.accessToken
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      config.headers = config.headers ?? {}
+      ;(config.headers as any).Authorization = `Bearer ${token}`
     }
-    return config;
+    return config
   },
   (error) => Promise.reject(error)
-);
+)
 
+// Attempt token refresh on 401s (except for login/refresh requests)
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config as any;
+    const originalRequest: any = error.config
 
     if (
       error.response?.status === 401 &&
+      originalRequest &&
       !originalRequest._retry &&
-      originalRequest.url &&
-      !originalRequest.url.includes("/auth/refresh") &&
-      !originalRequest.url.includes("/auth/login")
+      !String(originalRequest.url || '').includes('/auth/refresh') &&
+      !String(originalRequest.url || '').includes('/auth/login')
     ) {
-      originalRequest._retry = true;
+      originalRequest._retry = true
 
       try {
-        const { refreshToken } = useAuthStore.getState().auth;
-        const refreshBody = refreshToken ? { refresh_token: refreshToken } : {};
-        
+        const { refreshToken } = useAuthStore.getState().auth
+        const body = refreshToken ? { refresh_token: refreshToken } : {}
+
         const refreshResponse = await axios.post(
           `${API_BASE_URL}/auth/refresh`,
-          refreshBody,
-          { withCredentials: true }
-        );
+          body,
+          {
+            withCredentials: true,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        )
 
-        const newAccessToken = (refreshResponse.data as any)?.token;
-        const newRefreshToken = (refreshResponse.data as any)?.refresh_token;
+        const newAccessToken = (refreshResponse.data as any)?.token
+        const newRefreshToken = (refreshResponse.data as any)?.refresh_token
 
         if (newAccessToken) {
-          // --- FIX: Call the correct store actions ---
-          const { auth } = useAuthStore.getState();
-          auth.setAccessToken(newAccessToken); // This updates the store & local var
+          // Update store and local token
+          useAuthStore.getState().auth.setAccessToken(newAccessToken)
 
           if (newRefreshToken) {
-             // We must update the store AND the cookie
-             useAuthStore.setState((state) => ({
-               auth: { ...state.auth, refreshToken: newRefreshToken },
-             }));
-             setCookie(REFRESH_TOKEN_KEY, JSON.stringify(newRefreshToken));
+            useAuthStore.setState((state) => ({
+              auth: { ...state.auth, refreshToken: newRefreshToken },
+            }))
+            setCookie('refresh_token', JSON.stringify(newRefreshToken))
           }
-          // --- End Fix ---
 
-          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-          return api(originalRequest);
+          originalRequest.headers = originalRequest.headers ?? {}
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`
+          return api(originalRequest)
         }
-      } catch (refreshError) {
-        console.warn("Refresh token expired or invalid. Logging out.");
-        useAuthStore.getState().auth.reset();
+      } catch (refreshErr) {
+        try {
+          useAuthStore.getState().auth.reset()
+        } catch {}
+        return Promise.reject(refreshErr)
       }
     }
 
-    return Promise.reject(error);
+    return Promise.reject(error)
   }
-);
+)
 
-export default api;
+export default api

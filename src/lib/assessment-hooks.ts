@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import api from '@/lib/axios-client'
-import { Assessment } from '@/pages/assessments/data/assessment'
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 // --- Query Keys ---
 export const assessmentKeys = {
@@ -68,22 +67,3 @@ export function useUpdateAssessmentMutation() {
       const res = await api.put(`/assessments/${id}`, data)
       return res.data
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: assessmentKeys.lists() })
-      queryClient.invalidateQueries({ queryKey: assessmentKeys.detail(data.id) })
-    },
-  })
-}
-
-// 5. Delete Assessment
-export function useDeleteAssessmentMutation() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: async (id: string) => {
-      await api.delete(`/assessments/${id}`)
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: assessmentKeys.lists() })
-    },
-  })
-}

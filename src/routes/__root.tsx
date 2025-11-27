@@ -9,7 +9,7 @@ import { roles } from '@/pages/users/data/data'
 import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
-import { getProfile } from '@/lib/profile-hooks'
+import { getMyProfile } from '@/lib/profile-hooks'
 
 // import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 
@@ -61,13 +61,28 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
     )?.value
     const adminRoleId = roles.find((r) => r.designation === 'admin')?.value
 
+    // Prefer role_id from store; if missing, load current user profile
     let userRole = auth.user.role_id || auth.user.profile?.role_id
 
     if (!userRole) {
       try {
-        const fullProfile = await getProfile(auth.user.uid)
-        auth.setUser(fullProfile)
-        userRole = fullProfile.role_id || fullProfile.profile?.role_id
+        const profile = await getMyProfile()
+        const currentUser = auth.user
+
+        if (currentUser) {
+          // Persist role_id derived from backend profile
+          auth.setUser({
+            ...currentUser,
+            role_id: profile.role_id || currentUser.role_id,
+            email: profile.email || currentUser.email,
+            profile: {
+              ...currentUser.profile,
+              ...profile,
+            },
+          })
+        }
+
+        userRole = profile.role_id
       } catch (err) {
         toast.error('Session expired. Please log in again.')
         auth.reset()
@@ -76,11 +91,11 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
     }
 
     // Check if the user has a valid role (either admin or faculty)
-    if (userRole === studentRoleId) {
+    if (userRole && userRole === studentRoleId) {
       toast.error('Access Denied: Student accounts cannot access this app.')
       auth.reset()
       throw redirect({ to: '/sign-in', replace: true })
-    } else if (userRole !== adminRoleId && userRole !== facultyRoleId) {
+    } else if (!userRole || (userRole !== adminRoleId && userRole !== facultyRoleId)) {
       toast.error(
         'Access Denied: You must be a faculty member or admin to access this app.'
       )
