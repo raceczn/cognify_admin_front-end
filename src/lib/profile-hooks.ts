@@ -53,13 +53,8 @@ const normalizeProfile = (p: any): UserProfile => ({
 export async function getMyProfile(): Promise<UserProfile> {
   const res = await api.get('/profiles/me')
   const payload = res.data
-
-  // Backend shape example:
-  // { role: 'admin', data: { profile: { ... }, system_statistics: { ... } } }
   const role = (payload?.role as UserRole) ?? undefined
   const data = payload?.data?.profile ?? payload?.profile ?? payload
-
-  // Normalize only the profile fields; attach role designation if present
   return normalizeProfile({ ...data, role })
 }
 
@@ -120,12 +115,30 @@ export async function searchUsers(params: {
 }
 
 // ===== Admin / Statistics =====
+// [FIX] Added new optimized stats endpoint
+export async function getSystemUserStatistics(): Promise<{
+  total_subjects: number
+  total_modules: number
+  pending_modules: number
+  total_assessments: number
+  pending_assessments: number
+  pending_questions: number
+  total_users: number
+  by_role: Record<string, number>
+  verified_users: number
+  pending_verification: number
+  active_users: number
+}> {
+  const res = await api.get('/admin/users/statistics')
+  return res.data
+}
+
 export async function adminSystemOverview(): Promise<any> {
   const res = await api.get('/profiles/admin/system-overview')
   return res.data
 }
 
-// Convenience wrapper used by Dashboard to get a combined list
+// Convenience wrapper used by Users List
 export async function getAllProfiles(
   skip = 0,
   limit = 100
@@ -165,11 +178,9 @@ export async function createProfile(payload: {
   user_name?: string
   role_id: string
 }): Promise<UserProfile> {
-  // Use signup endpoint to create the account, then fetch profile
   const res = await api.post('/auth/signup', payload)
   const uid = res.data?.uid ?? res.data?.id ?? res.data?.user_id
   if (!uid) {
-    // If backend returns the full profile directly
     return normalizeProfile(res.data)
   }
   const profile = await getProfile(String(uid))
@@ -190,4 +201,9 @@ export async function deactivateUser(
   })
   const data = res.data?.profile ?? res.data
   return normalizeProfile(data)
+}
+
+export async function getUserGrowthStats(): Promise<{ date: string; new_users: number; total_users: number }[]> {
+  const res = await api.get('/admin/users/growth')
+  return res.data
 }

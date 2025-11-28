@@ -92,4 +92,52 @@ api.interceptors.response.use(
   }
 )
 
+// Check permission endpoint after auth responses (login/refresh)
+api.interceptors.response.use(
+  async (response) => {
+    try {
+      const url = String(response.config?.url || '')
+
+      // Only run permission check after login or refresh responses
+      if (url.includes('/auth/login') || url.includes('/auth/refresh')) {
+        // Call permission endpoint without a designation to receive role_designation,
+        // or you can pass { designation: 'some_role' } to check specific permission.
+        const permissionResponse = await axios.post(
+          `${API_BASE_URL}/auth/permission`,
+          {
+            designation: ["admin", "faculty_member"]
+          },
+          {
+            withCredentials: true,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        )
+
+        const data = (permissionResponse.data as any) || {}
+
+        // If backend returned explicit has_permission boolean, act on it
+        if (typeof data.has_permission === 'boolean') {
+          if (data.has_permission) {
+            // user allowed — redirect to main page
+            window.location.href = '/'
+          } else {
+            throw new Error('Failed to check permissions')
+          }
+        } else if (data.role_designation) {
+          // store role designation in auth store for later use
+          useAuthStore.setState((state) => ({
+            auth: { ...state.auth, roleDesignation: data.role_designation },
+          }))
+        }
+      }
+    } catch (err) {
+      // swallow permission-check errors (optional: log)
+      console.error('Permission check error:', err)
+    }
+
+    return response
+  },
+  (error) => Promise.reject(error)
+)
+
 export default api

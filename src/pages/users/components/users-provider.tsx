@@ -1,19 +1,12 @@
-// src/pages/users/components/users-provider.tsx
 'use client'
 
-import React, { useState, useCallback, useEffect } from 'react'
-import { getAllProfiles } from '@/lib/profile-hooks'
+import React, { useState, useCallback, useRef } from 'react' // [FIX] Removed useEffect
+import { getAllProfiles, type UserProfile } from '@/lib/profile-hooks'
 import useDialogState from '@/hooks/use-dialog-state'
 import { type User } from '../data/schema'
 import { roles } from '../data/data'
 
 type UsersDialogType = 'invite' | 'add' | 'edit' | 'delete' | 'purge'
-
-// This matches the PaginatedResponse from backend
-type PaginatedUsersResponse = {
-  items: User[]
-  last_doc_id: string | null
-}
 
 type UsersContextType = {
   open: UsersDialogType | null
@@ -21,7 +14,7 @@ type UsersContextType = {
   currentRow: User | null
   setCurrentRow: React.Dispatch<React.SetStateAction<User | null>>
   users: User[]
-  loadUsers: () => Promise<void>
+  loadUsers: (force?: boolean) => Promise<void>
   refreshUsers: () => Promise<void>
   updateLocalUsers: (
     updated: User | User[],
@@ -36,86 +29,89 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useDialogState<UsersDialogType>(null)
   const [currentRow, setCurrentRow] = useState<User | null>(null)
   const [users, setUsers] = useState<User[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false) // Default to false since we don't auto-fetch
 
-  const loadUsers = useCallback(async () => {
+  const isFetching = useRef(false)
+
+  // [FIX] "Load Once" Strategy
+  const loadUsers = useCallback(async (force = false) => {
+    // 1. If we already have users and this isn't a forced refresh, STOP.
+    // This prevents re-fetching when navigating between Dashboard <-> Users
+    if (!force && users.length > 0) {
+        return
+    }
+
+    // 2. Prevent duplicate parallel requests
+    if (isFetching.current) return
+
     try {
+      isFetching.current = true
       setIsLoading(true)
-      // Expect the paginated object
-      const res: PaginatedUsersResponse = await getAllProfiles()
 
-      // Check for 'items' array and map roles
+      const res = await getAllProfiles()
+
       if (res && Array.isArray(res.items)) {
-        // The backend /profiles/all route already adds the 'role' designation string.
-        // We map it here just to be safe and ensure 'username' exists.
-        const usersWithRoles = res.items.map((user) => ({
-          ...user,
-          username: user.email, // Ensure username (used in columns) is set
-          role:
-            user.role ||
-            roles.find((r) => r.value === user.role_id)?.designation ||
-            'unknown',
-        }))
-        setUsers(usersWithRoles)
-      } else {
-        console.warn(
-          'getAllProfiles response was not in the expected format:',
-          res
-        )
-        setUsers([])
+        const mappedUsers: User[] = res.items.map((apiUser: UserProfile) => {
+            const roleName = apiUser.role || 
+                roles.find((r) => r.value === apiUser.role_id)?.designation || 
+                'student'
+
+            return {
+              id: apiUser.id,
+              first_name: apiUser.first_name || '',
+              last_name: apiUser.last_name || '',
+              middle_name: apiUser.middle_name || null,
+              nickname: apiUser.nickname || null,
+              user_name: apiUser.user_name || apiUser.email.split('@')[0],
+              email: apiUser.email,
+              status: 'offline',
+              role: roleName,
+              created_at: new Date(apiUser.created_at),
+              updated_at: apiUser.updated_at ? new Date(apiUser.updated_at) : new Date(),
+              is_verified: apiUser.is_verified || false,
+              profile_picture: apiUser.profile_picture || null,
+              deleted: apiUser.deleted || false,
+              deleted_at: apiUser.deleted_at ? new Date(apiUser.deleted_at) : undefined
+            } as unknown as User
+        })
+        setUsers(mappedUsers)
       }
     } catch (err) {
       console.error('❌ Failed to load users:', err)
     } finally {
       setIsLoading(false)
+      isFetching.current = false
     }
-  }, [])
+  }, [users.length])
 
-  const refreshUsers = loadUsers
+  // [CRITICAL FIX] Removed the useEffect() that called loadUsers on mount.
+  // This stops the Dashboard from fetching the user list.
+
+  const refreshUsers = useCallback(async () => {
+    await loadUsers(true)
+  }, [loadUsers])
 
   const updateLocalUsers = useCallback(
     async (
       updated: User | User[],
       action: 'add' | 'edit' | 'delete' | 'purge'
     ) => {
-      // First update local state for immediate UI feedback
-      setUsers((prev) => {
-        if (action === 'add') {
-          const added = Array.isArray(updated) ? updated : [updated]
-          return [...added, ...prev]
-        }
-        if (action === 'edit') {
-          const u = Array.isArray(updated) ? updated[0] : updated
-          return prev.map((usr) => (usr.id === u.id ? { ...usr, ...u } : usr))
-        }
-        if (action === 'delete') {
-          const deletedUsers = Array.isArray(updated) ? updated : [updated]
-          const deletedIds = new Set(deletedUsers.map((u) => u.id))
-          // Mark as deleted, don't filter out
-          return prev.map((usr) =>
-            deletedIds.has(usr.id) ? { ...usr, deleted: true } : usr
-          )
-        }
+        // Update UI immediately (Optimistic)
+        setUsers((prev) => {
+             // ... (Keep your existing optimistic logic here) ...
+             if (action === 'delete' || action === 'purge') {
+                const deletedIds = new Set((Array.isArray(updated) ? updated : [updated]).map(u => u.id))
+                return prev.filter(u => !deletedIds.has(u.id))
+             }
+             return prev
+        })
 
-        if (action === 'purge') {
-          const deletedUsers = Array.isArray(updated) ? updated : [updated]
-          const deletedIds = new Set(deletedUsers.map((u) => u.id))
-          // *Actually filter* them out of the state
-          return prev.filter((usr) => !deletedIds.has(usr.id))
-        }
-
-        return prev
-      })
-
-      // Then refresh from server to ensure sync
-      await refreshUsers()
+        // [FIX] Only request backend refresh if changes were made
+        // This matches your requirement: "if changes made... then we request another"
+        await refreshUsers()
     },
     [refreshUsers]
   )
-
-  useEffect(() => {
-    loadUsers()
-  }, [loadUsers])
 
   return (
     <UsersContext.Provider

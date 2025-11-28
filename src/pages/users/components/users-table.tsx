@@ -1,26 +1,17 @@
-// src/pages/users/components/users-table.tsx
-import { useMemo, useState } from 'react'
-// import { getRouteApi } from '@tanstack/react-router'
-// Keep this for types, but we won't use the hooks
+import * as React from 'react'
 import {
-  type SortingState,
-  type VisibilityState,
-  type ColumnFiltersState,
-  // Import this
-  type PaginationState,
-  // Import this
+  ColumnDef,
   flexRender,
   getCoreRowModel,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
+  SortingState,
+  ColumnFiltersState,
+  VisibilityState,
 } from '@tanstack/react-table'
-import { cn } from '@/lib/utils'
-// --- REMOVE useTableUrlState ---
-// import { type NavigateFn, useTableUrlState } from '@/hooks/use-table-url-state'
+
 import {
   Table,
   TableBody,
@@ -29,118 +20,99 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { DataTablePagination, DataTableToolbar } from '@/components/data-table'
-import { roles as roleDefinitions } from '../data/data'
-import { type User } from '../data/schema'
-import { DataTableBulkActions } from './data-table-bulk-actions'
-import { usersColumns as columns } from './users-columns'
 
-// We can still use the route API type, but we won't use the hooks
-// const route = getRouteApi('/_authenticated/users/')
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { IconAdjustmentsHorizontal } from '@tabler/icons-react'
 
-declare module '@tanstack/react-table' {
-  interface ColumnMeta<TData, TValue> {
-    className: string
-  }
+interface DataTableProps<TData, TValue> {
+  columns: ColumnDef<TData, TValue>[]
+  data: TData[]
+  loading?: boolean
 }
 
-type DataTableProps = {
-  data: User[]
-  showDeleted?: boolean
-}
-
-export function UsersTable({ data, showDeleted = false }: DataTableProps) {
-  const [rowSelection, setRowSelection] = useState({})
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
-  const [sorting, setSorting] = useState<SortingState>([])
-
-  // --- REVERT PAGINATION & FILTERS TO LOCAL STATE ---
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 10,
-  })
-  // --- END REVERT ---
-
-  // Filter out deleted users unless explicitly shown
-  const filteredData = useMemo(() => {
-    if (showDeleted) return data
-    return data.filter((user) => !user.deleted)
-  }, [data, showDeleted])
-
-  // --- REMOVE useTableUrlState hook ---
-
-  const roleOptions = useMemo(() => {
-    return roleDefinitions.map((role) => ({
-      label: role.label,
-      value: role.value,
-    }))
-  }, [])
+export function DataTable<TData, TValue>({
+  columns,
+  data,
+  loading = false,
+}: DataTableProps<TData, TValue>) {
+  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
+  const [rowSelection, setRowSelection] = React.useState({})
 
   const table = useReactTable({
-    data: filteredData,
+    data,
     columns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    onSortingChange: setSorting,
+    getSortedRowModel: getSortedRowModel(),
+    onColumnFiltersChange: setColumnFilters,
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    onRowSelectionChange: setRowSelection,
     state: {
       sorting,
-      pagination, // Use local state
-      rowSelection,
-      columnFilters, // Use local state
+      columnFilters,
       columnVisibility,
+      rowSelection,
     },
-    enableRowSelection: true,
-    onPaginationChange: setPagination, // Use local state setter
-    onColumnFiltersChange: setColumnFilters, // Use local state setter
-    onRowSelectionChange: setRowSelection,
-    onSortingChange: setSorting,
-    onColumnVisibilityChange: setColumnVisibility,
-    getPaginationRowModel: getPaginationRowModel(),
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
   })
 
-  // --- REMOVE the ensurePageInRange useEffect ---
-  // The table will auto-reset the page index by default now
-
   return (
-    <div className='space-y-4 max-sm:has-[div[role="toolbar"]]:mb-16'>
-      <DataTableToolbar
-        table={table}
-        searchPlaceholder='Filter by email...'
-        searchKey='email'
-        filters={[
-          {
-            columnId: 'status',
-            title: 'Status',
-            options: [
-              { label: 'Online', value: 'online' },
-              { label: 'Offline', value: 'offline' },
-              { label: 'Busy', value: 'busy' },
-            ],
-          },
-          {
-            columnId: 'role_id',
-            title: 'Role',
-            options: roleOptions,
-          },
-        ]}
-      />
-      {/* ... (rest of table JSX is unchanged) ... */}
-      <div className='overflow-hidden rounded-md border'>
+    <div className='w-full space-y-4'>
+      <div className='flex items-center justify-between'>
+        <div className='flex flex-1 items-center space-x-2'>
+          <Input
+            placeholder='Filter by email...'
+            value={(table.getColumn('email')?.getFilterValue() as string) ?? ''}
+            onChange={(event) =>
+              table.getColumn('email')?.setFilterValue(event.target.value)
+            }
+            className='h-8 w-[150px] lg:w-[250px]'
+          />
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant='outline' size='sm' className='ml-auto hidden h-8 lg:flex'>
+              <IconAdjustmentsHorizontal className='mr-2 h-4 w-4' />
+              View
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align='end' className='w-[150px]'>
+            {table
+              .getAllColumns()
+              .filter((column) => typeof column.accessorFn !== 'undefined' && column.getCanHide())
+              .map((column) => {
+                return (
+                  <DropdownMenuCheckboxItem
+                    key={column.id}
+                    className='capitalize'
+                    checked={column.getIsVisible()}
+                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                  >
+                    {column.id}
+                  </DropdownMenuCheckboxItem>
+                )
+              })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      <div className='rounded-md border'>
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className='group/row'>
+              <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead
-                      key={header.id}
-                      colSpan={header.colSpan}
-                     
-                      className='bg-[#faf1e8] dark:bg-gray-800'
-                    >
+                    <TableHead key={header.id}>
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -154,35 +126,28 @@ export function UsersTable({ data, showDeleted = false }: DataTableProps) {
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={columns.length} className='h-24 text-center'>
+                  Loading data...
+                </TableCell>
+              </TableRow>
+            ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
-                  className='group/row'
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      key={cell.id}
-                      className={cn(
-                        'bg-background group-hover/row:bg-muted group-data-[state=selected]/row:bg-muted',
-                        cell.column.columnDef.meta?.className ?? ''
-                      )}
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className='h-24 text-center'
-                >
+                <TableCell colSpan={columns.length} className='h-24 text-center'>
                   No results.
                 </TableCell>
               </TableRow>
@@ -190,8 +155,30 @@ export function UsersTable({ data, showDeleted = false }: DataTableProps) {
           </TableBody>
         </Table>
       </div>
-      <DataTablePagination table={table} />
-      <DataTableBulkActions table={table} />
+      <div className='flex items-center justify-end space-x-2 py-4'>
+        <div className='flex-1 text-sm text-muted-foreground'>
+          {table.getFilteredSelectedRowModel().rows.length} of{' '}
+          {table.getFilteredRowModel().rows.length} row(s) selected.
+        </div>
+        <div className='space-x-2'>
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            Previous
+          </Button>
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            Next
+          </Button>
+        </div>
+      </div>
     </div>
   )
 }

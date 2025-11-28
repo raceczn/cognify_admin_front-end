@@ -8,34 +8,34 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { AuthLayout } from '../auth-layout'
-import { UserAuthForm } from './components/user-auth-form'
+import { SignUpForm } from './components/sign-up-form'
 
-export function SignIn() {
+export function SignUp() {
   const navigate = useNavigate()
-  const { redirect } = useSearch({ from: '/(auth)/sign-in' })
+  const { redirect } = useSearch({ from: '/(auth)/sign-up' })
 
   return (
     <AuthLayout>
       <Card className='gap-4'>
         <CardHeader>
-          <CardTitle className='text-lg tracking-tight'>Sign in</CardTitle>
+          <CardTitle className='text-lg tracking-tight'>Sign Up</CardTitle>
           <CardDescription>
-            Enter your email and password below to <br />
-            log into your account
+            Enter your information below to <br />
+            create your account
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <UserAuthForm redirectTo={redirect} navigate={navigate} />
+          <SignUpForm navigate={navigate} />
         </CardContent>
         <CardFooter className='flex justify-center'>
           <p className='text-muted-foreground text-center text-sm'>
-            Don’t have an account?{' '}
+            Already have an account?{' '}
             <Link
-              to='/sign-up'
+              to='/sign-in'
               search={redirect ? { redirect } : undefined}
               className='hover:text-primary ml-1 font-medium underline underline-offset-4'
             >
-              Sign up
+              Sign in
             </Link>
           </p>
         </CardFooter>

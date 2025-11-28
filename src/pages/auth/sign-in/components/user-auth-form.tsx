@@ -1,4 +1,3 @@
-// src/pages/auth/sign-in/components/user-auth-form.tsx
 import { useState } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
@@ -9,7 +8,6 @@ import { Loader2, LogIn } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
 import { login } from '@/lib/auth-hooks'
-// --- 1. IMPORT getMyProfile ---
 import { getMyProfile } from '@/lib/profile-hooks'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -29,8 +27,7 @@ const formSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 })
 
-// --- 2. UPDATE TYPES (from auth-store) ---
-// This is the full profile we will FETCH
+// Types for Auth Store
 interface Profile {
   id: string
   first_name?: string
@@ -47,16 +44,13 @@ interface Profile {
   deleted: boolean
 }
 
-// This is the shape of the *standard* Firebase token
 interface DecodedToken {
-  sub: string // The User ID (Firebase UID)
+  sub: string
   email: string
   exp: number
   iat: number
-  // No profile, no role_id here!
 }
 
-// This is the final object for our Zustand store
 interface AuthUser {
   uid: string
   email: string
@@ -64,7 +58,6 @@ interface AuthUser {
   profile: Profile
   exp: number
 }
-// --- END TYPE FIXES ---
 
 interface UserAuthFormProps extends React.HTMLAttributes<HTMLFormElement> {
   redirectTo?: string
@@ -90,32 +83,24 @@ export function UserAuthForm({
     setIsLoading(true)
 
     try {
-      // ---------------------------------
-      // 👇 --- 3. THIS IS THE CORRECT LOGIN LOGIC --- 👇
-      // ---------------------------------
-
-      // Step 1: Log in and get the token response
-      // This response is { token, refresh_token, message }
+      // Step 1: Login
       const loginResult = await login({
         email: data.email,
         password: data.password,
       })
 
       if (loginResult && loginResult.token) {
-        // Step 2: Decode the token *only* to get the UID (sub)
+        // Step 2: Decode Token
         const decodedToken: DecodedToken = jwtDecode(loginResult.token)
         const uid = decodedToken.sub
 
-        if (!uid) {
-          throw new Error("Invalid token: Missing 'sub' (user ID).")
-        }
+        if (!uid) throw new Error("Invalid token: Missing 'sub' (user ID).")
 
-        // Step 3: Fetch the full user profile from our backend (current user)
-        // We set the token first so the next request is authenticated
+        // Step 3: Fetch Profile
         auth.setAccessToken(loginResult.token)
         const profile: Profile = await getMyProfile()
 
-        // Step 4: Build the full AuthUser object
+        // Step 4: Build User Object
         const user: AuthUser = {
           uid: uid,
           email: profile.email,
@@ -124,7 +109,7 @@ export function UserAuthForm({
           exp: decodedToken.exp,
         }
 
-        // Step 5: Use the atomic function to set everything in the store
+        // Step 5: Update Store
         auth.setLoginData(user, loginResult.token, loginResult.refresh_token)
 
         toast.success(`Welcome back, ${user.profile.first_name || user.email}!`)
@@ -136,13 +121,30 @@ export function UserAuthForm({
       }
     } catch (error: any) {
       console.error('Login error:', error)
-      const errorMsg =
-        error.response?.data?.detail || 'Login failed. Please try again.'
-      toast.error(errorMsg)
-      auth.reset() // Clear any partial tokens
-    }
+      auth.reset()
 
-    setIsLoading(false)
+      // --- Robust Error Handling ---
+      const detail = error.response?.data?.detail
+
+      if (Array.isArray(detail)) {
+        // Handle Pydantic Validation Errors (422)
+        detail.forEach((err: any) => {
+          const field = err.loc[err.loc.length - 1]
+          const message = err.msg.replace('Value error, ', '')
+          toast.error(`Error in ${field}`, { description: message })
+        })
+      } else if (typeof detail === 'string') {
+        // Handle Standard HTTP Exceptions (400, 401, 403, 500)
+        toast.error('Login Failed', { description: detail })
+      } else {
+        // Fallback for unknown errors
+        toast.error('Login Failed', {
+          description: 'An unexpected error occurred. Please try again.',
+        })
+      }
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -162,7 +164,7 @@ export function UserAuthForm({
                 <Input
                   placeholder='Enter your email address'
                   {...field}
-                  autoComplete='off'
+                  autoComplete='email'
                 />
               </FormControl>
               <FormMessage />
@@ -179,7 +181,7 @@ export function UserAuthForm({
                 <PasswordInput
                   placeholder='Enter your password'
                   {...field}
-                  autoComplete='off'
+                  autoComplete='current-password'
                 />
               </FormControl>
               <FormMessage />

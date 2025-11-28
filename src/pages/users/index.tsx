@@ -1,89 +1,83 @@
-// src/pages/users/index.tsx
-import { useState } from 'react'
-// --- REMOVE route imports ---
-// import { getRouteApi } from '@tanstack/react-router' 
-import { ConfigDrawer } from '@/components/config-drawer'
+import { useEffect } from 'react'
+import { useUsers } from './components/users-provider' // Adjust path if needed
+import { columns } from './components/columns' // Assuming you have columns defined
+import { DataTable } from './components/users-table' // Assuming you have a DataTable component
+import { UsersPrimaryButtons } from './components/users-primary-buttons'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
+import { TopNav } from '@/components/layout/top-nav'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { UsersDialogs } from './components/users-dialogs'
-import { UsersPrimaryButtons } from './components/users-primary-buttons'
-import { useUsers } from './components/users-provider'
-import { UsersTable } from './components/users-table'
-import { Skeleton } from '@/components/ui/skeleton'
-// --- REMOVE route import ---
-// const route = getRouteApi('/_authenticated/users/')
 
-// ✅ Separate component to access context
-function UsersContent() {
-  // --- REMOVE search and navigate hooks ---
-  // const search = route.useSearch()
-  // const navigate = route.useNavigate()
-  const { users, isLoading } = useUsers()
-  const [showDeleted, setShowDeleted] = useState(false)
+export default function UsersPage() {
+  // 1. Get the load function from our provider
+  const { users, loadUsers, isLoading } = useUsers()
 
-  // Filter logic: show all users, but filter by role if needed
-  const filteredUsers = users.filter((_user) => {
-  return true // For now, show all users
-  // TODO: Add filtering logic here later
-})
+  // 2. [FIX] Trigger the fetch ONLY when this page mounts
+  useEffect(() => {
+    loadUsers() 
+  }, [loadUsers])
+
   return (
     <>
-      <Header fixed>
-        <Search />
-        <div className='ms-auto flex items-center gap-4'>
-          <div className='flex items-center gap-2'>
-            <label className='text-muted-foreground text-sm'>
-              <input
-                type='checkbox'
-                checked={showDeleted}
-                onChange={(e) => setShowDeleted(e.target.checked)}
-                className='mr-2'
-              />
-              Show deleted users
-            </label>
-          </div>
+      {/* Header Section */}
+      <Header>
+        <TopNav links={topNavLinks} />
+        <div className='ms-auto flex items-center space-x-4'>
+          <Search />
           <ThemeSwitch />
-          <ConfigDrawer />
           <ProfileDropdown />
         </div>
       </Header>
 
       <Main>
-        <div className='mb-2 flex flex-wrap items-center justify-between space-y-2'>
+        <div className='mb-2 flex items-center justify-between space-y-2'>
           <div>
-            <h2 className='text-2xl font-bold tracking-tight'>
-              List of All Users
-            </h2>
+            <h2 className='text-2xl font-bold tracking-tight'>User Management</h2>
             <p className='text-muted-foreground'>
-              Manage your users and their roles here.
+              Manage students, faculty, and administrators.
             </p>
           </div>
           <UsersPrimaryButtons />
         </div>
-        <div className='-mx-4 flex-1 overflow-auto px-4 py-1 lg:flex-row lg:space-y-0 lg:space-x-12'>
-          {isLoading ? (
-            <div className='grid grid-cols-1'>
-              <Skeleton className='h-32 flex items-center justify-center gap-2'>
-                Loading users...
-              </Skeleton>
-            </div>
-          ) : (
-            // --- REMOVE search and navigate props ---
-            <UsersTable
-              data={filteredUsers}
-              showDeleted={showDeleted}
-            />
-          )}
+        
+        {/* User Table Section */}
+        <div className='-mx-4 flex-1 overflow-auto px-4 py-1 lg:flex-row lg:space-x-12 lg:space-y-0'>
+          <DataTable 
+            data={users} 
+            columns={columns} 
+            loading={isLoading} // Pass loading state if your table supports it
+          />
         </div>
       </Main>
-      <UsersDialogs />
     </>
   )
 }
 
-export function Users() {
-  return <UsersContent />
-}
+const topNavLinks = [
+  {
+    title: 'Overview',
+    href: '/',
+    isActive: false,
+    disabled: false,
+  },
+  {
+    title: 'Users',
+    href: '/users',
+    isActive: true,
+    disabled: false,
+  },
+  {
+    title: 'Analytics',
+    href: '/analytics',
+    isActive: false,
+    disabled: false,
+  },
+  {
+    title: 'Settings',
+    href: '/settings',
+    isActive: false,
+    disabled: false,
+  },
+]
