@@ -1,5 +1,5 @@
 // src/lib/axios-client.ts
-import axios, { AxiosError } from 'axios'
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
 import { useAuthStore } from '@/stores/auth-store'
 import { setCookie } from './cookies'
 
@@ -21,13 +21,16 @@ const api = axios.create({
   },
 })
 
+// Helper to sanitize token (remove extra quotes if present)
+const sanitizeToken = (token: string) => token.replace(/^"|"$/g, '')
+
 // Attach bearer token if we have one
 api.interceptors.request.use(
-  (config) => {
+  (config: InternalAxiosRequestConfig) => {
     const token = accessToken || useAuthStore.getState().auth.accessToken
     if (token) {
-      config.headers = config.headers ?? {}
-      ;(config.headers as any).Authorization = `Bearer ${token}`
+      config.headers = config.headers || {}
+      config.headers.Authorization = `Bearer ${sanitizeToken(token)}`
     }
     return config
   },
@@ -77,7 +80,7 @@ api.interceptors.response.use(
           }
 
           originalRequest.headers = originalRequest.headers ?? {}
-          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`
+          originalRequest.headers.Authorization = `Bearer ${sanitizeToken(newAccessToken)}`
           return api(originalRequest)
         }
       } catch (refreshErr) {
@@ -100,34 +103,50 @@ api.interceptors.response.use(
 
       // Only run permission check after login or refresh responses
       if (url.includes('/auth/login') || url.includes('/auth/refresh')) {
-        // Call permission endpoint without a designation to receive role_designation,
-        // or you can pass { designation: 'some_role' } to check specific permission.
-        const permissionResponse = await axios.post(
-          `${API_BASE_URL}/auth/permission`,
-          {
-            designation: ["admin", "faculty_member"]
-          },
-          {
-            withCredentials: true,
-            headers: { 'Content-Type': 'application/json' },
-          }
-        )
+        
+        // 1. Extract token from the current response (Login) or Store (Refresh)
+        // Note: On login, the store is NOT updated yet, so we must use response.data.token
+        let currentToken = (response.data as any)?.token 
+        
+        if (!currentToken) {
+           // Fallback to existing token if not in response body
+           currentToken = accessToken || useAuthStore.getState().auth.accessToken
+        }
 
-        const data = (permissionResponse.data as any) || {}
+        if (currentToken) {
+            // Call permission endpoint without a designation to receive role_designation,
+            // or you can pass { designation: 'some_role' } to check specific permission.
+            const permissionResponse = await axios.post(
+              `${API_BASE_URL}/auth/permission`,
+              {
+                designation: ["admin", "faculty_member"]
+              },
+              {
+                withCredentials: true,
+                headers: { 
+                    'Content-Type': 'application/json',
+                    // FIX: Manually attach the Authorization header here
+                    'Authorization': `Bearer ${sanitizeToken(currentToken)}` 
+                },
+              }
+            )
 
-        // If backend returned explicit has_permission boolean, act on it
-        if (typeof data.has_permission === 'boolean') {
-          if (data.has_permission) {
-            // user allowed — redirect to main page
-            window.location.href = '/'
-          } else {
-            throw new Error('Failed to check permissions')
-          }
-        } else if (data.role_designation) {
-          // store role designation in auth store for later use
-          useAuthStore.setState((state) => ({
-            auth: { ...state.auth, roleDesignation: data.role_designation },
-          }))
+            const data = (permissionResponse.data as any) || {}
+
+            // If backend returned explicit has_permission boolean, act on it
+            if (typeof data.has_permission === 'boolean') {
+              if (data.has_permission) {
+                // user allowed — redirect to main page
+                window.location.href = '/'
+              } else {
+                throw new Error('Failed to check permissions')
+              }
+            } else if (data.role_designation) {
+              // store role designation in auth store for later use
+              useAuthStore.setState((state) => ({
+                auth: { ...state.auth, roleDesignation: data.role_designation },
+              }))
+            }
         }
       }
     } catch (err) {
