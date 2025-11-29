@@ -12,7 +12,7 @@ import { subjectsColumns } from './components/subjects-columns'
 import { Library, Table as TableIcon } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 
-export default function SubjectsPage() {
+export default function Subjects() {
   return (
     <SubjectsProvider>
       <SubjectsPageContent />

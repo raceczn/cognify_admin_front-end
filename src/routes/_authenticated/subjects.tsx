@@ -1,7 +1,7 @@
 // src/routes/_authenticated/subjects.tsx
 import z from 'zod'
 import { createFileRoute } from '@tanstack/react-router'
-import { Subjects } from '@/pages/subjects/index'
+import Subjects from '@/pages/subjects/index'
 
 // Search schema for pagination and filtering
 const subjectsSearchSchema = z.object({

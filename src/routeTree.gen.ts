@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as ModulesModuleIdRouteImport } from './routes/modules.$moduleId'
 import { Route as AuthenticatedSubjectsRouteImport } from './routes/_authenticated/subjects'
 import { Route as AuthenticatedModulesRouteImport } from './routes/_authenticated/modules'
 import { Route as errors503RouteImport } from './routes/(errors)/503'
@@ -49,6 +50,11 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const ModulesModuleIdRoute = ModulesModuleIdRouteImport.update({
+  id: '/modules/$moduleId',
+  path: '/modules/$moduleId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedSubjectsRoute = AuthenticatedSubjectsRouteImport.update({
   id: '/subjects',
@@ -226,6 +232,7 @@ export interface FileRoutesByFullPath {
   '/503': typeof errors503Route
   '/modules': typeof AuthenticatedModulesRoute
   '/subjects': typeof AuthenticatedSubjectsRoute
+  '/modules/$moduleId': typeof ModulesModuleIdRoute
   '/': typeof AuthenticatedIndexRoute
   '/admin/verification': typeof AuthenticatedAdminVerificationRoute
   '/admin/whitelisting': typeof AuthenticatedAdminWhitelistingRoute
@@ -257,6 +264,7 @@ export interface FileRoutesByTo {
   '/503': typeof errors503Route
   '/modules': typeof AuthenticatedModulesRoute
   '/subjects': typeof AuthenticatedSubjectsRoute
+  '/modules/$moduleId': typeof ModulesModuleIdRoute
   '/': typeof AuthenticatedIndexRoute
   '/admin/verification': typeof AuthenticatedAdminVerificationRoute
   '/admin/whitelisting': typeof AuthenticatedAdminWhitelistingRoute
@@ -291,6 +299,7 @@ export interface FileRoutesById {
   '/(errors)/503': typeof errors503Route
   '/_authenticated/modules': typeof AuthenticatedModulesRoute
   '/_authenticated/subjects': typeof AuthenticatedSubjectsRoute
+  '/modules/$moduleId': typeof ModulesModuleIdRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/admin/verification': typeof AuthenticatedAdminVerificationRoute
   '/_authenticated/admin/whitelisting': typeof AuthenticatedAdminWhitelistingRoute
@@ -325,6 +334,7 @@ export interface FileRouteTypes {
     | '/503'
     | '/modules'
     | '/subjects'
+    | '/modules/$moduleId'
     | '/'
     | '/admin/verification'
     | '/admin/whitelisting'
@@ -356,6 +366,7 @@ export interface FileRouteTypes {
     | '/503'
     | '/modules'
     | '/subjects'
+    | '/modules/$moduleId'
     | '/'
     | '/admin/verification'
     | '/admin/whitelisting'
@@ -389,6 +400,7 @@ export interface FileRouteTypes {
     | '/(errors)/503'
     | '/_authenticated/modules'
     | '/_authenticated/subjects'
+    | '/modules/$moduleId'
     | '/_authenticated/'
     | '/_authenticated/admin/verification'
     | '/_authenticated/admin/whitelisting'
@@ -420,6 +432,7 @@ export interface RootRouteChildren {
   errors404Route: typeof errors404Route
   errors500Route: typeof errors500Route
   errors503Route: typeof errors503Route
+  ModulesModuleIdRoute: typeof ModulesModuleIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -437,6 +450,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/modules/$moduleId': {
+      id: '/modules/$moduleId'
+      path: '/modules/$moduleId'
+      fullPath: '/modules/$moduleId'
+      preLoaderRoute: typeof ModulesModuleIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/subjects': {
       id: '/_authenticated/subjects'
@@ -720,6 +740,7 @@ const rootRouteChildren: RootRouteChildren = {
   errors404Route: errors404Route,
   errors500Route: errors500Route,
   errors503Route: errors503Route,
+  ModulesModuleIdRoute: ModulesModuleIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

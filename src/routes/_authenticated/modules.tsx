@@ -3,7 +3,7 @@ import z from 'zod'
 import { createFileRoute } from '@tanstack/react-router'
 
 // --- FIX: Change this line ---
-import { Modules } from '@/pages/modules/index'
+import Modules from '@/pages/modules/index'
 // --- END FIX ---
 
 // Search schema for pagination and filtering

@@ -1,20 +1,12 @@
-import { useState } from 'react'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Header } from '@/components/layout/header'
-import { Main } from '@/components/layout/main'
-import { ProfileDropdown } from '@/components/profile-dropdown'
-import { Search } from '@/components/search'
-import { ThemeSwitch } from '@/components/theme-switch'
-import { AssessmentList } from './AssessmentList'
-import { AssessmentEditor } from './AssessmentEditor' 
-import { ClipboardList, PlusCircle, LayoutGrid } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
-import { useAssessmentsQuery, useCreateAssessmentMutation, useUpdateAssessmentMutation } from '@/lib/assessment-hooks'
-import { Assessment } from './data/assessment'
-import { toast } from 'sonner'
+// src/pages/assessments/components/AssessmentList.tsx
+// This component should ONLY render the list of assessments based on props.
 
-// --- COMPONENT PROPS TYPES ---
+import { Assessment } from '../data/assessment'
+import { Card } from '@/components/ui/card'
+import { ArrowRight } from 'lucide-react'
+import { cn } from '@/lib/utils' // Assuming cn is available globally/imported
+
+// --- 1. Define Props (Correctly enforced on the component function) ---
 interface AssessmentListProps {
   assessments: Assessment[]
   selectedAssessment: Assessment | null
@@ -22,139 +14,50 @@ interface AssessmentListProps {
   onNewAssessment: () => void
 }
 
-export function AssessmentList() {
-  // [FIX] Use React Query Hooks
-  const { data: assessments = [], isLoading } = useAssessmentsQuery()
-  const createMutation = useCreateAssessmentMutation()
-  const updateMutation = useUpdateAssessmentMutation()
-
-  // [FIX] State management for view switching
-  const [view, setView] = useState<'list' | 'editor'>('list')
-  const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null)
-
-  // Handlers
-  const handleSelect = (assessment: Assessment) => {
-    setSelectedAssessment(assessment)
-    setView('editor')
+// --- 2. Export the component receiving props ---
+// The original file contained the whole page logic here, which is wrong.
+// This is the correct, fixed version that resolves the "assessments are not params" issue.
+export function AssessmentList({ 
+  assessments, 
+  selectedAssessment, 
+  onSelectAssessment 
+}: AssessmentListProps) {
+  
+  if (assessments.length === 0) {
+    return (
+      <div className="py-12 text-center text-muted-foreground border border-dashed rounded-lg mt-4">
+        <p>No matching assessments found.</p>
+        <p className="text-sm mt-2">Try adjusting your search filter.</p>
+      </div>
+    )
   }
 
-  const handleCreateNew = () => {
-    // Initialize a blank assessment template
-    const newAssessment: Assessment = {
-      id: '', // Will be assigned by backend
-      title: 'New Assessment',
-      purpose: 'Quiz',
-      subject_id: '',
-      questions: []
-    }
-    setSelectedAssessment(newAssessment)
-    setView('editor')
-  }
-
-  const handleBack = () => {
-    setSelectedAssessment(null)
-    setView('list')
-  }
-
-  const handleSave = async (updatedAssessment: Assessment) => {
-    try {
-      if (updatedAssessment.id) {
-        // Update existing
-        await updateMutation.mutateAsync({ 
-          id: updatedAssessment.id, 
-          data: updatedAssessment 
-        })
-        toast.success('Assessment updated')
-      } else {
-        // Create new
-        await createMutation.mutateAsync(updatedAssessment)
-        toast.success('Assessment created')
-      }
-      setView('list')
-    } catch (error) {
-      toast.error('Failed to save assessment')
-      console.error(error)
-    }
-  }
-
+  // NOTE: This assumes the visual style uses Card/div elements for rows.
   return (
-    <>
-      <Header>
-        <Search />
-        <div className='ms-auto flex items-center space-x-4'>
-          <ThemeSwitch />
-          <ProfileDropdown />
-        </div>
-      </Header>
-
-      <Main>
-        <div className='mb-4 flex items-center justify-between'>
-          <div>
-            <h2 className='text-2xl font-bold tracking-tight'>Assessments</h2>
-            <p className='text-muted-foreground'>
-              Create and manage quizzes and exams.
-            </p>
-          </div>
-          {/* Only show Create button if in list view to avoid clutter */}
-          {view === 'list' && (
-            <Button onClick={handleCreateNew}>
-              <PlusCircle className="mr-2 h-4 w-4" /> Create Assessment
-            </Button>
+    <div className='divide-y'>
+      {assessments.map(assessment => (
+        <Card 
+          key={assessment.id || assessment.title}
+          // Highlight selected assessment
+          className={cn(
+            "p-3 rounded-none border-x-0 border-t-0 last:border-b-0 hover:bg-muted/50 cursor-pointer transition-colors shadow-none",
+            selectedAssessment?.id === assessment.id && "bg-accent/30 hover:bg-accent/40"
           )}
-        </div>
-
-        {view === 'editor' ? (
-            // [FIX] Editor View
-            <AssessmentEditor 
-                assessment={selectedAssessment} 
-                onUpdateAssessment={handleSave} 
-                onBack={handleBack} 
-            />
-        ) : (
-            // [FIX] List/Browse View
-            <Tabs defaultValue="manage" className="space-y-4">
-                <TabsList>
-                    <TabsTrigger value="browse" className="gap-2">
-                        <LayoutGrid size={16} /> Browse
-                    </TabsTrigger>
-                    <TabsTrigger value="manage" className="gap-2">
-                        <ClipboardList size={16} /> Manage
-                    </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="browse">
-                    <div className="p-8 text-center text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
-                        <p>Browse view coming soon...</p>
-                        <Button variant="link" onClick={() => document.querySelector<HTMLElement>('[value="manage"]')?.click()}>
-                            Go to Manage View
-                        </Button>
-                    </div>
-                </TabsContent>
-
-                <TabsContent value="manage">
-                    {isLoading ? (
-                        <div className="space-y-2">
-                            <Skeleton className="h-16 w-full" />
-                            <Skeleton className="h-16 w-full" />
-                            <Skeleton className="h-16 w-full" />
-                        </div>
-                    ) : (
-                        <div className="bg-card rounded-md border p-2">
-                            <AssessmentList 
-                                assessments={assessments}
-                                selectedAssessment={selectedAssessment}
-                                onSelectAssessment={handleSelect}
-                                onNewAssessment={handleCreateNew}
-                            />
-                        </div>
-                    )}
-                </TabsContent>
-            </Tabs>
-        )}
-      </Main>
-    </>
+          onClick={() => onSelectAssessment(assessment)}
+        >
+            <div className='flex items-center justify-between'>
+                <div>
+                    <h4 className='font-semibold text-base'>{assessment.title}</h4>
+                    <p className='text-xs text-muted-foreground'>
+                        {assessment.purpose} &bull; {assessment.questions?.length || 0} items
+                    </p>
+                </div>
+                <ArrowRight size={16} className='text-muted-foreground' />
+            </div>
+        </Card>
+      ))}
+    </div>
   )
 }
 
-// Named export for the Router
-export default Assessments
+// NOTE: The previous conflicting 'export default Assessments' is removed.

@@ -14,7 +14,7 @@ import { modulesColumns } from './components/modules-columns'
 import { BookOpen, Table as TableIcon } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 
-export default function ModulesPage() {
+export default function Modules() {
   return (
     <ModulesProvider>
       <ModulesPageContent />
