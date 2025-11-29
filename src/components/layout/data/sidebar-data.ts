@@ -142,12 +142,12 @@ export const staticSidebarData: Omit<SidebarData, 'user'> = {
             { title: 'Display', url: '/settings/display', icon: Monitor },
           ],
         },
-        {
-          title: 'Help Center',
-          url: '/help-center',
-          icon: HelpCircle,
-          allowedRoles: [ROLES.ADMIN, ROLES.FACULTY_MEMBER],
-        },
+        // {
+        //   title: 'Help Center',
+        //   url: '/help-center',
+        //   icon: HelpCircle,
+        //   allowedRoles: [ROLES.ADMIN, ROLES.FACULTY_MEMBER],
+        // },
       ],
     },
   ],
