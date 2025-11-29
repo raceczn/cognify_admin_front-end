@@ -1,7 +1,6 @@
 import z from 'zod'
 import { createFileRoute } from '@tanstack/react-router'
-import { Users } from '@/pages/users'
-import { roles } from '@/pages/users/data/data'
+import UsersPage from '@/pages/users' // [FIX] Import default export
 
 const usersSearchSchema = z.object({
   page: z.number().optional().catch(1),
@@ -18,15 +17,13 @@ const usersSearchSchema = z.object({
     )
     .optional()
     .catch([]),
-  role: z
-    .array(z.enum(roles.map((r) => r.value as (typeof roles)[number]['value'])))
-    .optional()
-    .catch([]),
+  // [FIX] Update role schema to match string designations
+  role: z.array(z.string()).optional().catch([]), 
   // Per-column text filter (example for username)
   username: z.string().optional().catch(''),
 })
 
 export const Route = createFileRoute('/_authenticated/users/')({
   validateSearch: usersSearchSchema,
-  component: Users,
+  component: UsersPage, // [FIX] Use the imported component
 })

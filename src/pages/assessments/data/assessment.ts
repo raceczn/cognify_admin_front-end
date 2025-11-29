@@ -1,41 +1,64 @@
 // src/pages/assessments/data/assessment.ts
+import { z } from 'zod'
 
-export type AssessmentPurpose = 
-  | 'Pre-Test'
-  | 'Quiz'
-  | 'Post-Test'
-  | 'Practice_Exam'
-  | 'Diagnostic'
+// --- 1. Assessment Purpose Type ---
+export const ASSESSMENT_PURPOSES = [
+    'Pre-Test',
+    'Quiz',
+    'Post-Test',
+    'Practice_Exam',
+    'Diagnostic',
+] as const;
 
-export type QuestionType = 'multiple_choice'
+// [FIX] Export AssessmentPurpose Type
+export type AssessmentPurpose = typeof ASSESSMENT_PURPOSES[number];
 
-export interface Option {
-  id: string
-  text: string
-  is_correct: boolean
-}
+// --- 2. Question Types ---
+export const QUESTION_TYPES = [
+    'multiple_choice',
+    'multiple_response',
+    'true_false',
+    'essay',
+] as const;
 
-export interface Question {
-  question_id: string // FIX: Changed from 'id' to 'question_id' to match backend
-  type: QuestionType
-  text: string
-  options: Option[] 
-  points: number
-}
+export type QuestionType = typeof QUESTION_TYPES[number];
 
-export interface Assessment {
-  id: string
-  title: string
-  description: string
-  instructions?: string
-  subject_id?: string
-  module_id?: string
-  purpose: AssessmentPurpose 
-  
-  questions: Question[]
-  created_at: string
-  updated_at?: string
-  last_modified?: string
-}
+// --- 3. Option/Answer Schema ---
+export const optionSchema = z.object({
+    id: z.string(),
+    text: z.string(),
+    is_correct: z.boolean().optional(),
+})
+export type Option = z.infer<typeof optionSchema>;
 
-export const mockAssessments: Assessment[] = []
+// --- 4. Question Schema ---
+export const questionSchema = z.object({
+    question_id: z.string(),
+    text: z.string(),
+    type: z.enum(QUESTION_TYPES),
+    points: z.number().min(1).default(1),
+    options: z.array(optionSchema), // Options for MC/MR
+    answer: z.string().optional(), // Used for True/False or Essay (Correct Answer text)
+    // Backend metadata (non-form fields)
+    topic_title: z.string().optional(),
+    bloom_level: z.string().optional(),
+});
+export type Question = z.infer<typeof questionSchema>;
+
+// --- 5. Assessment Schema (Main) ---
+export const assessmentSchema = z.object({
+    id: z.string().optional(),
+    title: z.string(),
+    description: z.string().optional(),
+    purpose: z.enum(ASSESSMENT_PURPOSES), 
+    subject_id: z.string(),
+    module_id: z.string().optional().nullable(),
+    total_items: z.number().optional(),
+    questions: z.array(questionSchema).optional(),
+    
+    // [FIX] Ensure is_verified is included for all instances, defaulting to false for new ones
+    is_verified: z.boolean().default(false), // <-- Added default
+    created_at: z.coerce.date().optional(),
+});
+
+export type Assessment = z.infer<typeof assessmentSchema>;

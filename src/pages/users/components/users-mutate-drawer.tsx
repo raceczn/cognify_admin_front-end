@@ -1,4 +1,3 @@
-// src/pages/users/components/users-mutate-drawer.tsx
 'use client'
 
 import { useEffect } from 'react'
@@ -32,8 +31,6 @@ import { SelectDropdown } from '@/components/select-dropdown'
 import { roles } from '../data/data'
 import { type User } from '../data/schema'
 import { useUsers } from './users-provider'
-
-// src/pages/users/components/users-mutate-drawer.tsx
 
 type UserMutateDrawerProps = {
   open: boolean
@@ -97,10 +94,12 @@ export function UsersMutateDrawer({
     },
   })
 
-  // Reset form when currentRow changes or modal opens/closes
   useEffect(() => {
     if (open) {
       if (isEdit && currentRow) {
+        // [FIX] Map current role correctly to the dropdown value
+        const roleValue = roles.find(r => r.value === currentRow.role_id)?.value || currentRow.role_id || currentRow.role_id
+        
         form.reset({
           first_name: currentRow.first_name || '',
           last_name: currentRow.last_name || '',
@@ -109,7 +108,7 @@ export function UsersMutateDrawer({
           email: currentRow.email,
           password: '',
           confirmPassword: '',
-          role_id: currentRow.role_id,
+          role_id: roleValue,
           isEdit: true,
         })
       } else {
@@ -143,16 +142,15 @@ export function UsersMutateDrawer({
       if (isEdit && currentRow?.id) {
         // UPDATE
         const updatePayload = { ...payload }
-        delete (updatePayload as any).password // Don't send password on edit
+        delete (updatePayload as any).password
 
         const response = await updateProfile(currentRow.id, updatePayload)
 
+        // [FIX] Use response.role directly
         const updatedUser: User = {
           ...currentRow,
           ...response,
-          role:
-            roles.find((r) => r.value === response.role_id)?.designation ||
-            'unknown',
+          role_id: response.role_id || 'unknown',
         }
 
         updateLocalUsers(updatedUser, 'edit')
@@ -163,6 +161,7 @@ export function UsersMutateDrawer({
         // CREATE
         const response = await createProfile(payload)
 
+        // [FIX] Use response.role directly
         const newUser: User = {
           id: response.id,
           first_name: response.first_name || '',
@@ -172,9 +171,7 @@ export function UsersMutateDrawer({
           user_name: response.user_name || '',
           email: response.email,
           role_id: response.role_id,
-          role:
-            roles.find((r) => r.value === response.role_id)?.designation ||
-            'unknown',
+          role: response.role || 'unknown',
           status: 'offline',
           created_at: new Date(response.created_at),
           deleted: false,
@@ -296,7 +293,6 @@ export function UsersMutateDrawer({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Role</FormLabel>
-
                     <FormControl>
                       <SelectDropdown
                         defaultValue={field.value}
@@ -304,13 +300,11 @@ export function UsersMutateDrawer({
                         placeholder='Select a role'
                         items={roles.map(({ label, value }) => ({
                           label,
-
                           value,
                         }))}
                         isControlled={true}
                       />
                     </FormControl>
-
                     <FormMessage />
                   </FormItem>
                 )}

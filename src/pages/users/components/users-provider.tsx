@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useState, useCallback, useRef } from 'react' // [FIX] Removed useEffect
+import React, { useState, useCallback } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getAllProfiles, type UserProfile } from '@/lib/profile-hooks'
 import useDialogState from '@/hooks/use-dialog-state'
 import { type User } from '../data/schema'
@@ -28,89 +29,94 @@ const UsersContext = React.createContext<UsersContextType | null>(null)
 export function UsersProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useDialogState<UsersDialogType>(null)
   const [currentRow, setCurrentRow] = useState<User | null>(null)
-  const [users, setUsers] = useState<User[]>([])
-  const [isLoading, setIsLoading] = useState(false) // Default to false since we don't auto-fetch
+  
+  const queryClient = useQueryClient()
+  const QUERY_KEY = ['users-list']
 
-  const isFetching = useRef(false)
-
-  // [FIX] "Load Once" Strategy
-  const loadUsers = useCallback(async (force = false) => {
-    // 1. If we already have users and this isn't a forced refresh, STOP.
-    // This prevents re-fetching when navigating between Dashboard <-> Users
-    if (!force && users.length > 0) {
-        return
-    }
-
-    // 2. Prevent duplicate parallel requests
-    if (isFetching.current) return
-
-    try {
-      isFetching.current = true
-      setIsLoading(true)
-
+  // [SOLUTION] Use React Query instead of manual fetching
+  const { data: users = [], isLoading, refetch } = useQuery({
+    queryKey: QUERY_KEY,
+    queryFn: async () => {
       const res = await getAllProfiles()
-
+      
+      // Perform the mapping here, once, when data arrives
       if (res && Array.isArray(res.items)) {
-        const mappedUsers: User[] = res.items.map((apiUser: UserProfile) => {
-            const roleName = apiUser.role || 
-                roles.find((r) => r.value === apiUser.role_id)?.designation || 
-                'student'
+        return res.items.map((apiUser: UserProfile) => {
+          const roleName = apiUser.role || 
+            roles.find((r) => r.value === apiUser.role_id)?.designation || 
+            'student'
 
-            return {
-              id: apiUser.id,
-              first_name: apiUser.first_name || '',
-              last_name: apiUser.last_name || '',
-              middle_name: apiUser.middle_name || null,
-              nickname: apiUser.nickname || null,
-              user_name: apiUser.user_name || apiUser.email.split('@')[0],
-              email: apiUser.email,
-              status: 'offline',
-              role: roleName,
-              created_at: new Date(apiUser.created_at),
-              updated_at: apiUser.updated_at ? new Date(apiUser.updated_at) : new Date(),
-              is_verified: apiUser.is_verified || false,
-              profile_picture: apiUser.profile_picture || null,
-              deleted: apiUser.deleted || false,
-              deleted_at: apiUser.deleted_at ? new Date(apiUser.deleted_at) : undefined
-            } as unknown as User
+          return {
+            id: apiUser.id,
+            first_name: apiUser.first_name || '',
+            last_name: apiUser.last_name || '',
+            middle_name: apiUser.middle_name || null,
+            nickname: apiUser.nickname || null,
+            user_name: apiUser.user_name || apiUser.email.split('@')[0],
+            email: apiUser.email,
+            status: 'offline', // Default status
+            role: roleName,
+            role_id: apiUser.role_id, // Ensure this exists for logic
+            created_at: new Date(apiUser.created_at),
+            updated_at: apiUser.updated_at ? new Date(apiUser.updated_at) : new Date(),
+            is_verified: apiUser.is_verified || false,
+            profile_picture: apiUser.profile_picture || null,
+            deleted: apiUser.deleted || false,
+            deleted_at: apiUser.deleted_at ? new Date(apiUser.deleted_at) : undefined
+          } as User
         })
-        setUsers(mappedUsers)
       }
-    } catch (err) {
-      console.error('❌ Failed to load users:', err)
-    } finally {
-      setIsLoading(false)
-      isFetching.current = false
-    }
-  }, [users.length])
+      return []
+    },
+    // [CRITICAL] Prevents auto-refetching for 5 minutes, stopping the server clog
+    staleTime: 1000 * 60 * 5, 
+    // Prevents refetching when you switch windows/tabs (optional, usually good to keep true)
+    refetchOnWindowFocus: false, 
+  })
 
-  // [CRITICAL FIX] Removed the useEffect() that called loadUsers on mount.
-  // This stops the Dashboard from fetching the user list.
+  // Wrapper to maintain compatibility with your existing components
+  const loadUsers = useCallback(async (force = false) => {
+    if (force) {
+      await refetch()
+    }
+    // If not forced, React Query handles the caching, so we do nothing.
+  }, [refetch])
 
   const refreshUsers = useCallback(async () => {
-    await loadUsers(true)
-  }, [loadUsers])
+    await refetch()
+  }, [refetch])
 
+  // Optimistic Updater
   const updateLocalUsers = useCallback(
-    async (
+    (
       updated: User | User[],
       action: 'add' | 'edit' | 'delete' | 'purge'
     ) => {
-        // Update UI immediately (Optimistic)
-        setUsers((prev) => {
-             // ... (Keep your existing optimistic logic here) ...
-             if (action === 'delete' || action === 'purge') {
-                const deletedIds = new Set((Array.isArray(updated) ? updated : [updated]).map(u => u.id))
-                return prev.filter(u => !deletedIds.has(u.id))
-             }
-             return prev
-        })
+      queryClient.setQueryData<User[]>(QUERY_KEY, (oldData = []) => {
+        const items = Array.isArray(updated) ? updated : [updated]
+        const ids = new Set(items.map(u => u.id))
 
-        // [FIX] Only request backend refresh if changes were made
-        // This matches your requirement: "if changes made... then we request another"
-        await refreshUsers()
+        switch (action) {
+          case 'add':
+            return [...items, ...oldData]
+          case 'edit':
+            return oldData.map(user => 
+              ids.has(user.id) 
+                ? items.find(i => i.id === user.id)! 
+                : user
+            )
+          case 'delete':
+          case 'purge':
+            return oldData.filter(user => !ids.has(user.id))
+          default:
+            return oldData
+        }
+      })
+      
+      // Optional: Invalidate to ensure server sync eventually
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY })
     },
-    [refreshUsers]
+    [queryClient]
   )
 
   return (
@@ -120,7 +126,7 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
         setOpen,
         currentRow,
         setCurrentRow,
-        users,
+        users, // This now comes from React Query
         loadUsers,
         refreshUsers,
         updateLocalUsers,

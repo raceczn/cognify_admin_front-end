@@ -6,11 +6,6 @@ import { type Subject } from '../data/schema'
 
 type SubjectsDialogType = 'add' | 'edit' | 'delete'
 
-type PaginatedSubjectsResponse = {
-  items: Subject[]
-  last_doc_id: string | null
-}
-
 type SubjectsContextType = {
   open: SubjectsDialogType | null
   setOpen: (str: SubjectsDialogType | null) => void
@@ -32,12 +27,9 @@ export function SubjectsProvider({ children }: { children: React.ReactNode }) {
   const loadSubjects = useCallback(async () => {
     try {
       setIsLoading(true)
-      const res: PaginatedSubjectsResponse = await getAllSubjects()
-      if (res && Array.isArray(res.items)) {
-        setSubjects(res.items)
-      } else {
-        setSubjects([])
-      }
+      const res = await getAllSubjects()
+      // Now res.items matches Subject[] exactly
+      setSubjects(res.items)
     } catch (err) {
       console.error('Failed to load subjects:', err)
     } finally {

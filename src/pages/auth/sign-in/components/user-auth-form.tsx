@@ -3,12 +3,11 @@ import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useNavigate, useSearch } from '@tanstack/react-router'
-import { jwtDecode } from 'jwt-decode'
 import { Loader2, LogIn } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
 import { login } from '@/lib/auth-hooks'
-import { getMyProfile } from '@/lib/profile-hooks'
+import { getMyProfile, UserProfile } from '@/lib/profile-hooks' // [FIX] Import UserProfile
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -26,38 +25,6 @@ const formSchema = z.object({
   email: z.string().email('Please enter a valid email'),
   password: z.string().min(1, 'Password is required'),
 })
-
-// Types for Auth Store
-interface Profile {
-  id: string
-  first_name?: string
-  middle_name?: string | null
-  last_name?: string
-  nickname?: string
-  role_id: string
-  email: string
-  pre_assessment_score?: number
-  ai_confidence?: number
-  current_module?: string
-  created_at: string
-  updated_at?: string
-  deleted: boolean
-}
-
-interface DecodedToken {
-  sub: string
-  email: string
-  exp: number
-  iat: number
-}
-
-interface AuthUser {
-  uid: string
-  email: string
-  role_id: string
-  profile: Profile
-  exp: number
-}
 
 interface UserAuthFormProps extends React.HTMLAttributes<HTMLFormElement> {
   redirectTo?: string
@@ -83,47 +50,32 @@ export function UserAuthForm({
     setIsLoading(true)
 
     try {
-      // Step 1: Login
+      // 1. Login (Sets HttpOnly cookie automatically)
+      // Expects response: { message: string, uid: string }
       const loginResult = await login({
         email: data.email,
         password: data.password,
       })
 
-      if (loginResult && loginResult.token) {
-        // Step 2: Decode Token
-        const decodedToken: DecodedToken = jwtDecode(loginResult.token)
-        const uid = decodedToken.sub
+      // 2. Fetch full profile using the new cookie
+      const profile: UserProfile = await getMyProfile()
 
-        if (!uid) throw new Error("Invalid token: Missing 'sub' (user ID).")
+      // 3. Update Store (No sensitive tokens, just UI data)
+      auth.setUser({
+        uid: loginResult.uid,
+        email: profile.email,
+        role_id: profile.role_id,
+        profile: profile,
+      })
 
-        // Step 3: Fetch Profile
-        auth.setAccessToken(loginResult.token)
-        const profile: Profile = await getMyProfile()
-
-        // Step 4: Build User Object
-        const user: AuthUser = {
-          uid: uid,
-          email: profile.email,
-          role_id: profile.role_id,
-          profile: profile,
-          exp: decodedToken.exp,
-        }
-
-        // Step 5: Update Store
-        auth.setLoginData(user, loginResult.token, loginResult.refresh_token)
-
-        toast.success(`Welcome back, ${user.profile.first_name || user.email}!`)
-
-        // Step 6: Navigate
-        navigate({ to: redirect || '/', replace: true })
-      } else {
-        toast.error('Invalid email or password')
-      }
+      toast.success(`Welcome back, ${profile.first_name || profile.email}!`)
+      
+      // 4. Navigate
+      navigate({ to: redirect || '/', replace: true })
     } catch (error: any) {
       console.error('Login error:', error)
       auth.reset()
 
-      // --- Robust Error Handling ---
       const detail = error.response?.data?.detail
 
       if (Array.isArray(detail)) {
@@ -134,10 +86,8 @@ export function UserAuthForm({
           toast.error(`Error in ${field}`, { description: message })
         })
       } else if (typeof detail === 'string') {
-        // Handle Standard HTTP Exceptions (400, 401, 403, 500)
         toast.error('Login Failed', { description: detail })
       } else {
-        // Fallback for unknown errors
         toast.error('Login Failed', {
           description: 'An unexpected error occurred. Please try again.',
         })

@@ -1,14 +1,14 @@
 // src/pages/modules/components/modules-provider.tsx
 import React, { useState, useCallback, useEffect } from 'react'
-// --- 1. IMPORT from correct hook file ---
 import { getModules } from '@/lib/content-hooks'
-import { getAllSubjects } from '@/lib/subjects-hooks'
-// --- END IMPORT FIX ---
+import { getAllSubjects } from '@/lib/subjects-hooks' // This now returns full Subject objects
 import useDialogState from '@/hooks/use-dialog-state'
 import { type Module } from '../data/schema'
 
 type ModulesDialogType = 'add' | 'edit' | 'delete'
-type Subject = { subject_id: string; subject_name: string }
+
+// [FIX] Update local Subject definition to match the new Hook return
+type SubjectOption = { id: string; title: string }
 
 type ModulesContextType = {
   open: ModulesDialogType | null
@@ -16,7 +16,7 @@ type ModulesContextType = {
   currentRow: Module | null
   setCurrentRow: React.Dispatch<React.SetStateAction<Module | null>>
   modules: Module[]
-  subjects: Subject[]
+  subjects: SubjectOption[]
   loadModules: () => Promise<void>
   isLoading: boolean
   isLoadingSubjects: boolean
@@ -28,7 +28,7 @@ export function ModulesProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useDialogState<ModulesDialogType>(null)
   const [currentRow, setCurrentRow] = useState<Module | null>(null)
   const [modules, setModules] = useState<Module[]>([])
-  const [subjects, setSubjects] = useState<Subject[]>([])
+  const [subjects, setSubjects] = useState<SubjectOption[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(false)
 
@@ -51,11 +51,13 @@ export function ModulesProvider({ children }: { children: React.ReactNode }) {
   const loadSubjects = useCallback(async () => {
     try {
       setIsLoadingSubjects(true)
-      // --- 2. This function now correctly calls the hook ---
       const res = await getAllSubjects()
-      // This response is paginated, so we get 'items'
-      setSubjects(res?.items || [])
-      // --- END FIX ---
+      // [FIX] Map the full Subject object to the simpler shape needed here
+      const options = res.items.map(s => ({
+        id: s.id,
+        title: s.title
+      }))
+      setSubjects(options)
     } catch (err) {
       console.error('Failed to load subjects:', err)
     } finally {

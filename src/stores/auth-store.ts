@@ -1,9 +1,9 @@
 // src/stores/auth-store.ts
 import { create } from 'zustand'
-import { setAccessToken as setAxiosAccessToken } from '@/lib/axios-client'
 import { getCookie, setCookie, removeCookie } from '@/lib/cookies'
 
 interface Profile {
+  role: any
   id: string
   first_name?: string
   middle_name?: string | null
@@ -26,20 +26,12 @@ interface AuthUser {
   email: string
   role_id: string
   profile: Profile
-  exp: number
+  roleDesignation?: string // Added to track role from permission check
 }
 
 type AuthSlice = {
   user: AuthUser | null
-  accessToken: string
-  refreshToken: string
   setUser: (user: AuthUser | null) => void
-  setAccessToken: (accessToken: string) => void
-  setLoginData: (
-    user: AuthUser,
-    accessToken: string,
-    refreshToken: string
-  ) => void
   reset: () => void
 }
 
@@ -47,8 +39,8 @@ export interface AuthState {
   auth: AuthSlice
 }
 
-const ACCESS_TOKEN_KEY = 'access_token'
-const REFRESH_TOKEN_KEY = 'refresh_token'
+// We only store User Info in a visible cookie to persist "Logged In" state UI.
+// The actual security is handled by the HttpOnly cookie (invisible to JS).
 const USER_INFO_KEY = 'user_info'
 
 const readJsonCookie = <T = any>(key: string): T | null => {
@@ -62,18 +54,11 @@ const readJsonCookie = <T = any>(key: string): T | null => {
 }
 
 export const useAuthStore = create<AuthState>()((set) => {
-  const initToken = readJsonCookie<string>(ACCESS_TOKEN_KEY) || ''
   const initUser = readJsonCookie<AuthUser>(USER_INFO_KEY)
-  const initRefresh = readJsonCookie<string>(REFRESH_TOKEN_KEY) || ''
-
-  if (initToken) {
-    setAxiosAccessToken(initToken)
-  }
 
   const initial: AuthSlice = {
     user: initUser || null,
-    accessToken: initToken,
-    refreshToken: initRefresh,
+    
     setUser: (user) =>
       set((state) => {
         if (user === null) {
@@ -83,36 +68,16 @@ export const useAuthStore = create<AuthState>()((set) => {
         setCookie(USER_INFO_KEY, JSON.stringify(user))
         return { ...state, auth: { ...state.auth, user } }
       }),
-    setAccessToken: (accessToken) =>
-      set((state) => {
-        setCookie(ACCESS_TOKEN_KEY, JSON.stringify(accessToken))
-        setAxiosAccessToken(accessToken)
-        return { ...state, auth: { ...state.auth, accessToken } }
-      }),
-    setLoginData: (user, accessToken, refreshToken) =>
-      set((state) => {
-        setCookie(USER_INFO_KEY, JSON.stringify(user))
-        setCookie(ACCESS_TOKEN_KEY, JSON.stringify(accessToken))
-        setCookie(REFRESH_TOKEN_KEY, JSON.stringify(refreshToken))
-        setAxiosAccessToken(accessToken)
-        return {
-          ...state,
-          auth: { ...state.auth, user, accessToken, refreshToken },
-        }
-      }),
+
     reset: () =>
       set((state) => {
-        removeCookie(ACCESS_TOKEN_KEY)
         removeCookie(USER_INFO_KEY)
-        removeCookie(REFRESH_TOKEN_KEY)
-        setAxiosAccessToken(null)
+        // We don't touch access_token cookies here; the logout API route clears them.
         return {
           ...state,
           auth: {
             ...state.auth,
             user: null,
-            accessToken: '',
-            refreshToken: '',
           },
         }
       }),

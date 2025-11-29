@@ -1,24 +1,17 @@
-// src/pages/modules/components/modules-table.tsx
-import { useMemo, useState } from 'react'
-// import { getRouteApi } from '@tanstack/react-router' // Remove
+import { useState } from 'react'
 import {
   type SortingState,
   type VisibilityState,
   type ColumnFiltersState,
-  // Import this
   type PaginationState,
-  // Import this
   flexRender,
   getCoreRowModel,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-// --- REMOVE useTableUrlState ---
-// import { type NavigateFn, useTableUrlState } from '@/hooks/use-table-url-state'
+
 import {
   Table,
   TableBody,
@@ -29,55 +22,36 @@ import {
 } from '@/components/ui/table'
 import { DataTablePagination, DataTableToolbar } from '@/components/data-table'
 import { type Module } from '../data/schema'
-import { modulesColumns as columns } from './modules-columns'
-import { useModules } from './modules-provider'
 
-// const route = getRouteApi('/_authenticated/modules') // Remove
-
-type DataTableProps = {
+interface DataTableProps {
   data: Module[]
-  // --- REMOVE search and navigate ---
-  // search: Record<string, unknown>
-  // navigate: NavigateFn
+  columns: any[] // passed from parent
 }
 
-export function ModulesTable({ data }: DataTableProps) {
+// [FIX] Export as DataTable
+export function DataTable({ data, columns }: DataTableProps) {
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [sorting, setSorting] = useState<SortingState>([])
-
-  // --- REVERT PAGINATION & FILTERS TO LOCAL STATE ---
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 10,
   })
-  // --- END REVERT ---
-
-  const { subjects } = useModules() //
-
-  const subjectOptions = useMemo(() => {
-    return subjects.map((s) => ({
-      label: s.subject_name,
-      value: s.subject_id,
-    }))
-  }, [subjects])
-
-  // --- REMOVE useTableUrlState hook ---
 
   const table = useReactTable({
     data,
     columns,
     state: {
       sorting,
-      pagination, // Use local state
+      pagination,
       rowSelection,
-      columnFilters, // Use local state
+      columnFilters,
       columnVisibility,
     },
     enableRowSelection: true,
-    onPaginationChange: setPagination, // Use local state setter
-    onColumnFiltersChange: setColumnFilters, // Use local state setter
+    onPaginationChange: setPagination,
+    onColumnFiltersChange: setColumnFilters,
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
@@ -85,40 +59,23 @@ export function ModulesTable({ data }: DataTableProps) {
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
   })
 
-  // --- REMOVE the ensurePageInRange useEffect ---
-
   return (
-    <div className='space-y-4 max-sm:has-[div[role="toolbar"]]:mb-16'>
+    <div className='space-y-4'>
       <DataTableToolbar
         table={table}
         searchPlaceholder='Filter by title...'
         searchKey='title'
-        filters={[
-          {
-            columnId: 'subject_id',
-            title: 'Core Subject',
-            options: subjectOptions,
-            
-          },
-        ]}
       />
-      {/* ... (rest of table JSX is unchanged) ... */}
-      <div className='overflow-hidden rounded-md border'>
+      <div className='rounded-md border'>
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className='group/row'>
+              <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead
-                      key={header.id}
-                      colSpan={header.colSpan}
-                      className='bg-[#faf1e8]  dark:bg-gray-800' 
-                    >
+                    <TableHead key={header.id} colSpan={header.colSpan}>
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -131,31 +88,20 @@ export function ModulesTable({ data }: DataTableProps) {
               </TableRow>
             ))}
           </TableHeader>
-
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && 'selected'}
-                  className='group/row'
-                >
+                <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className='h-24 text-center'
-                >
+                <TableCell colSpan={columns.length} className='h-24 text-center'>
                   No results.
                 </TableCell>
               </TableRow>

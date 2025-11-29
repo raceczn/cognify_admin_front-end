@@ -1,4 +1,3 @@
-// src/pages/users/components/users-delete-dialog.tsx
 'use client'
 
 import { useState } from 'react'
@@ -12,10 +11,6 @@ import { ConfirmDialog } from '@/components/confirm-dialog'
 import { roles } from '../data/data'
 import { type User } from '../data/schema'
 import { useUsers } from './users-provider'
-
-// src/pages/users/components/users-delete-dialog.tsx
-
-// --- 1. Import roles ---
 
 type UserDeleteDialogProps = {
   open: boolean
@@ -33,7 +28,6 @@ export function UsersDeleteDialog({
   const { updateLocalUsers } = useUsers()
 
   const handleDelete = async () => {
-    // --- 2. FIX: Check against 'email' ---
     if (value.trim() !== currentRow.email) {
       toast.error('The email you entered does not match.')
       return
@@ -41,26 +35,22 @@ export function UsersDeleteDialog({
 
     setIsLoading(true)
     try {
-      // 1. Call the soft-delete API
       const response = await deactivateUser(currentRow.id)
 
-      // 2. Update local state immediately
-      // --- 3. FIX: Spread 'response' directly, not 'response.profile' ---
+      // [FIXED] Date conversion for soft delete fields
       const updatedUser: User = {
         ...currentRow,
-        ...response, // Spread the returned UserProfile
+        ...response,
+        created_at: new Date(response.created_at || currentRow.created_at),
+        updated_at: new Date(),
         deleted: Boolean(response.deleted),
         deleted_at: response.deleted_at
           ? new Date(response.deleted_at)
           : new Date(),
-        // Ensure 'role' designation is populated for the local state
-        role:
-          roles.find((r) => r.value === response.role_id)?.designation ||
-          'unknown',
+        role: response.role || currentRow.role || 'unknown',
       }
-      updateLocalUsers(updatedUser, 'edit') // 'edit' to update status
+      updateLocalUsers(updatedUser, 'edit')
 
-      // 3. Close dialog and show success
       onOpenChange(false)
       toast.success(
         `${currentRow.first_name} ${currentRow.last_name} has been soft-deleted.`
@@ -81,7 +71,6 @@ export function UsersDeleteDialog({
       open={open}
       onOpenChange={onOpenChange}
       handleConfirm={handleDelete}
-      // --- 4. FIX: Check against 'email' ---
       disabled={value.trim() !== currentRow.email || isLoading}
       title={
         <span className='text-destructive'>
@@ -102,8 +91,6 @@ export function UsersDeleteDialog({
             This action will perform a soft-delete. The user can be restored
             later.
           </p>
-
-          {/* --- 5. FIX: Ask for email, not username/name --- */}
           <Label className='my-2'>
             Type the user's email{' '}
             <span className='text-destructive font-bold'>

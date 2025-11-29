@@ -5,13 +5,10 @@ import {
   Outlet,
   redirect,
 } from '@tanstack/react-router'
-import { roles } from '@/pages/users/data/data'
 import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
 import { getMyProfile } from '@/lib/profile-hooks'
-
-// import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 
 // Define the context for your router
 interface MyRouterContext {
@@ -25,19 +22,15 @@ const FullScreenLoader = () => (
   </div>
 )
 
-// This is your new root route
 export const Route = createRootRouteWithContext<MyRouterContext>()({
   component: () => (
     <>
       <Outlet />
-      {/* <TanStackRouterDevtools /> */}
     </>
   ),
 
-  // This is the global loader that shows while `beforeLoad` is awaiting
   pendingComponent: FullScreenLoader,
 
-  // This is the auth guard logic
   beforeLoad: async ({ location }) => {
     const { auth } = useAuthStore.getState()
     const publicPaths = ['/sign-in', '/sign-up', '/forgot-password']
@@ -45,8 +38,8 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 
     if (publicPaths.includes(currentPath)) return
 
-    if (!auth.accessToken || !auth.user?.uid) {
-      toast.error('You must be logged in.')
+    // 1. Check if user is logged in (UID exists)
+    if (!auth.user?.uid) {
       throw redirect({
         to: '/sign-in',
         search: { redirect: currentPath },
@@ -54,23 +47,17 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       })
     }
 
-    // Get role IDs from the roles configuration
-    const studentRoleId = roles.find((r) => r.designation === 'student')?.value
-    const facultyRoleId = roles.find(
-      (r) => r.designation === 'faculty_member'
-    )?.value
-    const adminRoleId = roles.find((r) => r.designation === 'admin')?.value
+    // 2. Resolve Role Designation (Name)
+    // We prefer the name (e.g. 'student') over the ID because IDs might change between DB resets.
+    let userRole = auth.user.profile?.role
 
-    // Prefer role_id from store; if missing, load current user profile
-    let userRole = auth.user.role_id || auth.user.profile?.role_id
-
+    // If role is missing in store, force a profile fetch
     if (!userRole) {
       try {
         const profile = await getMyProfile()
         const currentUser = auth.user
 
         if (currentUser) {
-          // Persist role_id derived from backend profile
           auth.setUser({
             ...currentUser,
             role_id: profile.role_id || currentUser.role_id,
@@ -81,8 +68,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
             },
           })
         }
-
-        userRole = profile.role_id
+        userRole = profile.role // 'student' | 'faculty_member' | 'admin'
       } catch (err) {
         toast.error('Session expired. Please log in again.')
         auth.reset()
@@ -90,15 +76,16 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       }
     }
 
-    // Check if the user has a valid role (either admin or faculty)
-    if (userRole && userRole === studentRoleId) {
-      toast.error('Access Denied: Student accounts cannot access this app.')
-      auth.reset()
+    // 3. Permission Checks based on Role Name
+    if (userRole === 'student') {
+      toast.error('Access Denied: Student accounts cannot access this portal.')
+      // Optional: Redirect students to a mobile app download page or a specific student view
+      auth.reset() 
       throw redirect({ to: '/sign-in', replace: true })
-    } else if (!userRole || (userRole !== adminRoleId && userRole !== facultyRoleId)) {
-      toast.error(
-        'Access Denied: You must be a faculty member or admin to access this app.'
-      )
+    } 
+    
+    if (userRole !== 'admin' && userRole !== 'faculty_member') {
+      toast.error('Access Denied: You must be a faculty member or admin.')
       auth.reset()
       throw redirect({ to: '/sign-in', replace: true })
     }

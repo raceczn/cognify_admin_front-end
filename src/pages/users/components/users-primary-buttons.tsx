@@ -1,20 +1,15 @@
-import { MailPlus, UserPlus } from 'lucide-react'
+import { Link } from '@tanstack/react-router'
+import { UserPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useUsers } from './users-provider'
 
 export function UsersPrimaryButtons() {
-  const { setOpen } = useUsers()
   return (
     <div className='flex gap-2'>
-      <Button
-        variant='outline'
-        className='space-x-1'
-        onClick={() => setOpen('invite')}
-      >
-       <MailPlus size={18} />
-      </Button>
-      <Button className='space-x-2' onClick={() => setOpen('add')}>
-         <UserPlus size={18} />
+      <Button asChild className='space-x-1'>
+        <Link to='/admin/whitelisting'>
+          <span>Manage Whitelist</span>
+          <UserPlus size={18} />
+        </Link>
       </Button>
     </div>
   )

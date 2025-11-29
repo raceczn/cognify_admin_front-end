@@ -1,66 +1,75 @@
 'use client'
 
-import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart } from "recharts"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import { PolarAngleAxis, PolarGrid, Radar, RadarChart } from 'recharts'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from '@/components/ui/chart'
 
-const BLOOM_ORDER = ["remembering", "understanding", "applying", "analyzing", "evaluating", "creating"];
+// Define the exact data shape
+interface StudentBloomChartProps {
+  data: { [key: string]: number } | undefined
+}
 
 const chartConfig = {
   score: {
-    label: "Score",
-    color: "hsl(var(--chart-1))",
+    label: 'Score',
+    color: 'hsl(var(--primary))',
   },
 } satisfies ChartConfig
 
-interface StudentBloomChartProps {
-  data: Record<string, number> | undefined 
-}
-
 export function StudentBloomChart({ data }: StudentBloomChartProps) {
-  if (!data || Object.keys(data).length === 0) {
-    return (
-      <Card className="flex flex-col h-full">
-        <CardHeader className="items-center pb-4">
-          <CardTitle>Cognitive Performance</CardTitle>
-          <CardDescription>No data available</CardDescription>
-        </CardHeader>
-        <CardContent className="flex-1 pb-0 min-h-[250px] flex items-center justify-center">
-           <div className="text-muted-foreground text-sm">No Activity Recorded</div>
-        </CardContent>
-      </Card>
-    )
-  }
+  // Transform dictionary { "remembering": 80 } to array [{ level: "Remembering", score: 80 }]
+  const chartData = data
+    ? Object.entries(data).map(([level, score]) => ({
+        bloom_level: level.charAt(0).toUpperCase() + level.slice(1), // Capitalize
+        score: score,
+      }))
+    : []
 
-  const chartData = BLOOM_ORDER.map(level => ({
-    subject: level.charAt(0).toUpperCase() + level.slice(1),
-    score: data[level] || 0,
-    fullMark: 100
-  }));
+  // Ensure standard order for Radar chart readability
+  const order = ['Remembering', 'Understanding', 'Applying', 'Analyzing', 'Evaluating', 'Creating']
+  chartData.sort((a, b) => order.indexOf(a.bloom_level) - order.indexOf(b.bloom_level))
 
   return (
-    // --- FIX: Full height ---
-    <Card className="flex flex-col h-full">
-      <CardHeader className="items-center pb-4">
-        <CardTitle>Cognitive Performance</CardTitle>
-        <CardDescription>Class average by Bloom's level</CardDescription>
+    <Card className='flex flex-col'>
+      <CardHeader className='items-center pb-0'>
+        <CardTitle>Cognitive Profile</CardTitle>
+        <CardDescription>Performance by Bloom's Taxonomy</CardDescription>
       </CardHeader>
-      <CardContent className="pb-0 flex-1">
-        <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[250px] w-full">
-          <RadarChart data={chartData}>
-            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-            <PolarGrid />
-            <PolarAngleAxis dataKey="subject" />
-            <PolarRadiusAxis angle={30} domain={[0, 100]} />
-            <Radar
-              name="Score"
-              dataKey="score"
-              stroke="var(--color-score)"
-              fill="var(--color-score)"
-              fillOpacity={0.6}
-            />
-          </RadarChart>
-        </ChartContainer>
+      <CardContent className='flex-1 pb-0'>
+        {chartData.length > 0 ? (
+          <ChartContainer
+            config={chartConfig}
+            className='mx-auto aspect-square max-h-[300px]'
+          >
+            <RadarChart data={chartData} outerRadius={90}>
+              <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+              <PolarGrid />
+              <PolarAngleAxis dataKey='bloom_level' />
+              <Radar
+                dataKey='score'
+                fill='var(--color-score)'
+                fillOpacity={0.5}
+                stroke='var(--color-score)'
+                strokeWidth={2}
+              />
+            </RadarChart>
+          </ChartContainer>
+        ) : (
+          <div className="flex h-[200px] items-center justify-center text-muted-foreground">
+            No data available
+          </div>
+        )}
       </CardContent>
     </Card>
   )

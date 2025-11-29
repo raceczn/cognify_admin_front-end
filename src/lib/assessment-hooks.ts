@@ -1,5 +1,7 @@
+import { Assessment } from '@/pages/assessments/data/assessment';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useMutation, useQuery } from "@tanstack/react-query";
+import api from './axios-client';
 
 // --- Query Keys ---
 export const assessmentKeys = {
@@ -67,3 +69,9 @@ export function useUpdateAssessmentMutation() {
       const res = await api.put(`/assessments/${id}`, data)
       return res.data
     },
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: assessmentKeys.detail(id) })
+      queryClient.invalidateQueries({ queryKey: assessmentKeys.lists() })
+    },
+  })
+}

@@ -1,17 +1,8 @@
 // src/lib/axios-client.ts
-import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
 import { useAuthStore } from '@/stores/auth-store'
-import { setCookie } from './cookies'
+import axios from 'axios'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
-
-let accessToken: string | null = null
-
-export const setAccessToken = (token: string | null) => {
-  accessToken = token
-}
-
-export const getAccessToken = () => accessToken
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -21,142 +12,76 @@ const api = axios.create({
   },
 })
 
-// Helper to sanitize token (remove extra quotes if present)
-const sanitizeToken = (token: string) => token.replace(/^"|"$/g, '')
-
-// Attach bearer token if we have one
+// Request Interceptor
 api.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    const token = accessToken || useAuthStore.getState().auth.accessToken
-    if (token) {
-      config.headers = config.headers || {}
-      config.headers.Authorization = `Bearer ${sanitizeToken(token)}`
-    }
+  (config) => {
+    // Token is now in HTTP-only cookie, no need to add manually
     return config
   },
   (error) => Promise.reject(error)
 )
 
-// Attempt token refresh on 401s (except for login/refresh requests)
+// Response Interceptor: Handle 401s and Permissions
 api.interceptors.response.use(
-  (response) => response,
-  async (error: AxiosError) => {
-    const originalRequest: any = error.config
+  async (response) => {
+    const url = String(response.config?.url || '')
 
-    if (
-      error.response?.status === 401 &&
-      originalRequest &&
-      !originalRequest._retry &&
-      !String(originalRequest.url || '').includes('/auth/refresh') &&
-      !String(originalRequest.url || '').includes('/auth/login')
-    ) {
-      originalRequest._retry = true
-
+    // Check permission after login or refresh
+    if (url.includes('/auth/login') || url.includes('/auth/refresh')) {
       try {
-        const { refreshToken } = useAuthStore.getState().auth
-        const body = refreshToken ? { refresh_token: refreshToken } : {}
-
-        const refreshResponse = await axios.post(
-          `${API_BASE_URL}/auth/refresh`,
-          body,
+        const permissionResponse = await axios.post(
+          `${API_BASE_URL}/auth/permission`,
+          {
+            designation: ["admin", "faculty_member"]
+          },
           {
             withCredentials: true,
-            headers: { 'Content-Type': 'application/json' },
           }
         )
 
-        const newAccessToken = (refreshResponse.data as any)?.token
-        const newRefreshToken = (refreshResponse.data as any)?.refresh_token
+        const data = (permissionResponse.data as any) || {}
 
-        if (newAccessToken) {
-          // Update store and local token
-          useAuthStore.getState().auth.setAccessToken(newAccessToken)
-
-          if (newRefreshToken) {
-            useAuthStore.setState((state) => ({
-              auth: { ...state.auth, refreshToken: newRefreshToken },
-            }))
-            setCookie('refresh_token', JSON.stringify(newRefreshToken))
+        // Handle Permission Logic
+        if (typeof data.has_permission === 'boolean') {
+          if (!data.has_permission) {
+            console.warn('User does not have required permissions.')
+            throw new Error('Access Denied: You do not have permission to access this system.')
           }
-
-          originalRequest.headers = originalRequest.headers ?? {}
-          originalRequest.headers.Authorization = `Bearer ${sanitizeToken(newAccessToken)}`
-          return api(originalRequest)
-        }
-      } catch (refreshErr) {
-        try {
-          useAuthStore.getState().auth.reset()
-        } catch {}
-        return Promise.reject(refreshErr)
-      }
-    }
-
-    return Promise.reject(error)
-  }
-)
-
-// Check permission endpoint after auth responses (login/refresh)
-api.interceptors.response.use(
-  async (response) => {
-    try {
-      const url = String(response.config?.url || '')
-
-      // Only run permission check after login or refresh responses
-      if (url.includes('/auth/login') || url.includes('/auth/refresh')) {
+          // [FIX] REMOVED window.location.href = '/'
+          // We simply return the response and let the calling component (UserAuthForm) handle navigation.
+        } 
         
-        // 1. Extract token from the current response (Login) or Store (Refresh)
-        // Note: On login, the store is NOT updated yet, so we must use response.data.token
-        let currentToken = (response.data as any)?.token 
-        
-        if (!currentToken) {
-           // Fallback to existing token if not in response body
-           currentToken = accessToken || useAuthStore.getState().auth.accessToken
+        if (data.role_designation) {
+          useAuthStore.setState((state) => ({
+            auth: { ...state.auth, roleDesignation: data.role_designation },
+          }))
         }
-
-        if (currentToken) {
-            // Call permission endpoint without a designation to receive role_designation,
-            // or you can pass { designation: 'some_role' } to check specific permission.
-            const permissionResponse = await axios.post(
-              `${API_BASE_URL}/auth/permission`,
-              {
-                designation: ["admin", "faculty_member"]
-              },
-              {
-                withCredentials: true,
-                headers: { 
-                    'Content-Type': 'application/json',
-                    // FIX: Manually attach the Authorization header here
-                    'Authorization': `Bearer ${sanitizeToken(currentToken)}` 
-                },
-              }
-            )
-
-            const data = (permissionResponse.data as any) || {}
-
-            // If backend returned explicit has_permission boolean, act on it
-            if (typeof data.has_permission === 'boolean') {
-              if (data.has_permission) {
-                // user allowed — redirect to main page
-                window.location.href = '/'
-              } else {
-                throw new Error('Failed to check permissions')
-              }
-            } else if (data.role_designation) {
-              // store role designation in auth store for later use
-              useAuthStore.setState((state) => ({
-                auth: { ...state.auth, roleDesignation: data.role_designation },
-              }))
-            }
-        }
+      } catch (err) {
+        // If permission check fails, reject the promise so UserAuthForm catches it
+        return Promise.reject(err)
       }
-    } catch (err) {
-      // swallow permission-check errors (optional: log)
-      console.error('Permission check error:', err)
     }
 
     return response
   },
-  (error) => Promise.reject(error)
+  async (error) => {
+    // Handle 401 Unauthorized (Token Expiry)
+    if (error.response?.status === 401 && !error.config._retry) {
+      error.config._retry = true
+      
+      try {
+        await api.post('/auth/refresh') // Backend reads refresh cookie
+        return api(error.config) // Retry original request
+      } catch (refreshError) {
+        // Only redirect to login if refresh fails and we are not already there
+        if (window.location.pathname !== '/sign-in') {
+             window.location.href = '/sign-in'
+        }
+        return Promise.reject(refreshError)
+      }
+    }
+    return Promise.reject(error)
+  }
 )
 
 export default api

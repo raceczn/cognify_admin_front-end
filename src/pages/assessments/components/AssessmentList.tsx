@@ -1,103 +1,160 @@
-// src/components/AssessmentList.tsx
-import { Fragment } from 'react'
-import { PlusCircle } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { useState } from 'react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Header } from '@/components/layout/header'
+import { Main } from '@/components/layout/main'
+import { ProfileDropdown } from '@/components/profile-dropdown'
+import { Search } from '@/components/search'
+import { ThemeSwitch } from '@/components/theme-switch'
+import { AssessmentList } from './AssessmentList'
+import { AssessmentEditor } from './AssessmentEditor' 
+import { ClipboardList, PlusCircle, LayoutGrid } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Assessment } from '@/pages/assessments/data/assessment' // Import Assessment type
+import { useAssessmentsQuery, useCreateAssessmentMutation, useUpdateAssessmentMutation } from '@/lib/assessment-hooks'
+import { Assessment } from './data/assessment'
+import { toast } from 'sonner'
 
 // --- COMPONENT PROPS TYPES ---
 interface AssessmentListProps {
-  assessments: Assessment[] // This list is already filtered from the hook
+  assessments: Assessment[]
   selectedAssessment: Assessment | null
   onSelectAssessment: (assessment: Assessment) => void
   onNewAssessment: () => void
 }
 
-// --- COMPONENT: AssessmentList (Replaces Student List) ---
-export function AssessmentList({
-  assessments, // assessments is now the *filtered* list from the hook
-  selectedAssessment,
-  onSelectAssessment,
-  onNewAssessment
-}: AssessmentListProps) {
+export function AssessmentList() {
+  // [FIX] Use React Query Hooks
+  const { data: assessments = [], isLoading } = useAssessmentsQuery()
+  const createMutation = useCreateAssessmentMutation()
+  const updateMutation = useUpdateAssessmentMutation()
 
-  // Function to get the color class for the purpose dot
-  const getPurposeDotColor = (purpose: Assessment['purpose']): string => {
-    switch (purpose) {
-      case 'Practice_Exam':
-        return 'bg-[#63A361]' // Green
-      case 'Post-Test':
-        return 'bg-[#8CA9FF]' // Blue
-      case 'Pre-Test':
-        return 'bg-[#FFA239]' // Orange
-      case 'Diagnostic':
-        return 'bg-[#D34E4E]' // Red
-      case 'Quiz':
-        return 'bg-gray-400' // Gray
-      default:
-        return 'bg-gray-500' // Default color
+  // [FIX] State management for view switching
+  const [view, setView] = useState<'list' | 'editor'>('list')
+  const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null)
+
+  // Handlers
+  const handleSelect = (assessment: Assessment) => {
+    setSelectedAssessment(assessment)
+    setView('editor')
+  }
+
+  const handleCreateNew = () => {
+    // Initialize a blank assessment template
+    const newAssessment: Assessment = {
+      id: '', // Will be assigned by backend
+      title: 'New Assessment',
+      purpose: 'Quiz',
+      subject_id: '',
+      questions: []
+    }
+    setSelectedAssessment(newAssessment)
+    setView('editor')
+  }
+
+  const handleBack = () => {
+    setSelectedAssessment(null)
+    setView('list')
+  }
+
+  const handleSave = async (updatedAssessment: Assessment) => {
+    try {
+      if (updatedAssessment.id) {
+        // Update existing
+        await updateMutation.mutateAsync({ 
+          id: updatedAssessment.id, 
+          data: updatedAssessment 
+        })
+        toast.success('Assessment updated')
+      } else {
+        // Create new
+        await createMutation.mutateAsync(updatedAssessment)
+        toast.success('Assessment created')
+      }
+      setView('list')
+    } catch (error) {
+      toast.error('Failed to save assessment')
+      console.error(error)
     }
   }
 
   return (
-    <ScrollArea className='-mx-3 h-full overflow-scroll p-3'>
-      <Button
-        onClick={onNewAssessment}
-        className='w-full mb-3 gap-2'
-      >
-        <PlusCircle size={16} /> Create New
-      </Button>
-
-      {/* --- Loading State (Simulated) --- */}
-      {false ? ( // Use the actual isLoading state here
-        <div className='space-y-2'>
-          <Skeleton className='h-16 w-full' />
-          <Skeleton className='h-16 w-full' />
+    <>
+      <Header>
+        <Search />
+        <div className='ms-auto flex items-center space-x-4'>
+          <ThemeSwitch />
+          <ProfileDropdown />
         </div>
-      ) : (
-        assessments.map((assessment) => (
-          <Fragment key={assessment.id}>
-            <button
-              type='button'
-              className={cn(
-                'group hover:bg-accent hover:text-accent-foreground',
-                'flex w-full flex-col rounded-md px-3 py-2 text-start text-sm',
-                selectedAssessment?.id === assessment.id && 'bg-muted'
-              )}
-              onClick={() => onSelectAssessment(assessment)}
-            >
-              <div className='flex items-center justify-between'>
-                <span className='font-medium line-clamp-1'>
-                  {assessment.title}
-                </span>
-                
-                {/* --- MODIFIED CODE START --- */}
-                <div className='flex items-center text-xs ml-2 opacity-80 flex-shrink-0'>
-                  {/* Colored Dot */}
-                  <span
-                    className={cn(
-                      'w-2 h-2 rounded-full mr-1',
-                      getPurposeDotColor(assessment.purpose)
+      </Header>
+
+      <Main>
+        <div className='mb-4 flex items-center justify-between'>
+          <div>
+            <h2 className='text-2xl font-bold tracking-tight'>Assessments</h2>
+            <p className='text-muted-foreground'>
+              Create and manage quizzes and exams.
+            </p>
+          </div>
+          {/* Only show Create button if in list view to avoid clutter */}
+          {view === 'list' && (
+            <Button onClick={handleCreateNew}>
+              <PlusCircle className="mr-2 h-4 w-4" /> Create Assessment
+            </Button>
+          )}
+        </div>
+
+        {view === 'editor' ? (
+            // [FIX] Editor View
+            <AssessmentEditor 
+                assessment={selectedAssessment} 
+                onUpdateAssessment={handleSave} 
+                onBack={handleBack} 
+            />
+        ) : (
+            // [FIX] List/Browse View
+            <Tabs defaultValue="manage" className="space-y-4">
+                <TabsList>
+                    <TabsTrigger value="browse" className="gap-2">
+                        <LayoutGrid size={16} /> Browse
+                    </TabsTrigger>
+                    <TabsTrigger value="manage" className="gap-2">
+                        <ClipboardList size={16} /> Manage
+                    </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="browse">
+                    <div className="p-8 text-center text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
+                        <p>Browse view coming soon...</p>
+                        <Button variant="link" onClick={() => document.querySelector<HTMLElement>('[value="manage"]')?.click()}>
+                            Go to Manage View
+                        </Button>
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="manage">
+                    {isLoading ? (
+                        <div className="space-y-2">
+                            <Skeleton className="h-16 w-full" />
+                            <Skeleton className="h-16 w-full" />
+                            <Skeleton className="h-16 w-full" />
+                        </div>
+                    ) : (
+                        <div className="bg-card rounded-md border p-2">
+                            <AssessmentList 
+                                assessments={assessments}
+                                selectedAssessment={selectedAssessment}
+                                onSelectAssessment={handleSelect}
+                                onNewAssessment={handleCreateNew}
+                            />
+                        </div>
                     )}
-                    aria-hidden="true"
-                  />
-                  {/* Label */}
-                  <span className='text-gray-600 dark:text-gray-400'>
-                    {assessment.purpose.replace(/_/g, ' ')} {/* Display purpose, replacing underscores */}
-                  </span>
-                </div>
-              </div>
-              <span className='text-muted-foreground group-hover:text-accent-foreground/90 line-clamp-1 text-xs mt-1'>
-                {assessment.subject_id || 'No subject connected.'}
-              </span>
-            </button>
-            <Separator className='my-1' />
-          </Fragment>
-        ))
-      )}
-    </ScrollArea>
+                </TabsContent>
+            </Tabs>
+        )}
+      </Main>
+    </>
   )
 }
+
+// Named export for the Router
+export default Assessments

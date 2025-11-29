@@ -19,36 +19,47 @@ import {
   ArrowLeft,
   BarChart,
   Brain,
-  Clock,
   Target,
   Check,
-  X,
+  BookOpen, // New Icon
   AlertTriangle,
 } from 'lucide-react'
-import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
-import React from 'react'
 import { AppErrorBoundary } from '@/components/error-boundary'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { StudentBloomChart } from '@/pages/analytics/components/student-bloom-chart'
 
 const routeApi = getRouteApi('/_authenticated/analytics/student/$studentId')
 
+// Updated Interface
 interface StudentAnalyticsData {
-  student_id: string
-  summary: {
-    total_activities: number
-    overall_score: number
-    time_spent_sec: number
+  student_profile: {
+    name: string
+    email: string
+    id: string
   }
-  performance_by_bloom: { [key: string]: number }
-  prediction: {
-    predicted_to_pass?: boolean
-    pass_probability?: number
+  overall_performance: {
+    average_score: number
+    total_assessments: number
+    passing_probability: number
+    risk_level: string
+    recommendation: string
   }
-  ai_motivation?: string
-  last_updated?: any
+  subject_performance: Array<{
+    subject_id: string
+    subject_title: string
+    average_score: number
+    assessments_taken: number
+    status: string
+  }>
+  weaknesses: Array<{
+    competency_id: string
+    mastery: number
+    attempts: number
+  }>
+  // Keep legacy fields optional if needed for compatibility
+  summary?: any 
+  performance_by_bloom?: any
 }
 
 function StudentAnalyticsErrorFallback() {
@@ -58,8 +69,7 @@ function StudentAnalyticsErrorFallback() {
         <AlertTriangle className='h-4 w-4' />
         <AlertTitle>Error Loading Student Report</AlertTitle>
         <AlertDescription>
-          There was an error loading this student's analytics. The data
-          might be incomplete or a system error occurred.
+          There was an error loading this student's analytics.
           <br />
           <Button
             variant='destructive'
@@ -86,208 +96,154 @@ function StudentAnalyticsPage() {
     queryFn: () => getStudentAnalytics(studentId),
   })
 
-  // Safe access for time calculation
-  const timeSpent = analytics?.summary?.time_spent_sec || 0
-  const hours = Math.floor(timeSpent / 3600)
-  const minutes = Math.floor((timeSpent % 3600) / 60)
-
-  const bloomPerformance = React.useMemo(() => {
-    if (!analytics?.performance_by_bloom) return []
-    return Object.entries(analytics.performance_by_bloom)
-      .map(([level, score]) => ({
-        bloom_level: level,
-        score: score,
-      }))
-      .sort((a, b) => a.bloom_level.localeCompare(b.bloom_level))
-  }, [analytics?.performance_by_bloom])
-
-  const strengths = bloomPerformance
-    .filter((p) => p.score >= 80)
-    .map((p) => p.bloom_level)
-  const weaknesses = bloomPerformance
-    .filter((p) => p.score < 70)
-    .map((p) => p.bloom_level)
-
   const renderContent = () => {
     if (isLoading) {
       return (
         <div className='space-y-4'>
           <div className='grid grid-cols-1 gap-4 md:grid-cols-4'>
-            <Skeleton className='h-32' />
-            <Skeleton className='h-32' />
-            <Skeleton className='h-32' />
-            <Skeleton className='h-32' />
+            <Skeleton className='h-32' /><Skeleton className='h-32' />
+            <Skeleton className='h-32' /><Skeleton className='h-32' />
           </div>
           <div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
-            <Skeleton className='h-64' />
-            <Skeleton className='h-64' />
+            <Skeleton className='h-64' /><Skeleton className='h-64' />
           </div>
         </div>
       )
     }
 
-    if (error) {
+    if (error || !analytics) {
       return (
         <Card className='flex min-h-64 items-center justify-center'>
-          <p className='text-destructive'>
-            No data analytics found for this student.
-          </p>
+          <p className='text-destructive'>No data found for this student.</p>
         </Card>
       )
     }
 
-    // Check for minimal required data structure
-    if (!analytics || !analytics.summary) {
-      return (
-        <Card className='flex min-h-64 items-center justify-center'>
-          <p className='text-muted-foreground'>
-            No analytics recorded for this student yet.
-          </p>
-        </Card>
-      )
-    }
+    const { overall_performance, subject_performance } = analytics
+    const isPassing = overall_performance.passing_probability >= 75
 
     return (
-      <div className='space-y-4'>
+      <div className='space-y-6'>
+        {/* 1. Summary Cards */}
         <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4'>
           <Card>
             <CardHeader className='flex-row items-center justify-between space-y-0 pb-2'>
-              <CardTitle className='text-sm font-medium'>
-                Overall Score
-              </CardTitle>
+              <CardTitle className='text-sm font-medium'>Overall Average</CardTitle>
               <Target className='h-4 w-4 text-muted-foreground' />
             </CardHeader>
             <CardContent>
               <div className='text-2xl font-bold'>
-                {/* FIX: Safe access and fallback before calling toFixed */}
-                {(analytics.summary.overall_score ?? 0).toFixed(2)}%
+                {overall_performance.average_score.toFixed(1)}%
               </div>
               <p className='text-xs text-muted-foreground'>
-                Average of all activities
+                Across {overall_performance.total_assessments} assessments
               </p>
             </CardContent>
           </Card>
+
           <Card>
             <CardHeader className='flex-row items-center justify-between space-y-0 pb-2'>
-              <CardTitle className='text-sm font-medium'>
-                Time Spent (HH:MM)
-              </CardTitle>
-              <Clock className='h-4 w-4 text-muted-foreground' />
-            </CardHeader>
-            <CardContent>
-              <div className='text-2xl font-bold'>
-                {String(hours).padStart(2, '0')}:
-                {String(minutes).padStart(2, '0')}
-              </div>
-              <p className='text-xs text-muted-foreground'>
-                Total duration in modules
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className='flex-row items-center justify-between space-y-0 pb-2'>
-              <CardTitle className='text-sm font-medium'>
-                Activities Logged
-              </CardTitle>
+              <CardTitle className='text-sm font-medium'>Passing Probability</CardTitle>
               <BarChart className='h-4 w-4 text-muted-foreground' />
             </CardHeader>
             <CardContent>
-              <div className='text-2xl font-bold'>
-                {analytics.summary.total_activities ?? 0}
+              <div className={`text-2xl font-bold ${isPassing ? 'text-green-600' : 'text-orange-600'}`}>
+                {overall_performance.passing_probability.toFixed(1)}%
               </div>
               <p className='text-xs text-muted-foreground'>
-                Total quizzes and modules
+                Risk Level: {overall_performance.risk_level}
               </p>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader className='flex-row items-center justify-between space-y-0 pb-2'>
-              <CardTitle className='text-sm font-medium'>
-                AI Prediction
-              </CardTitle>
-              {analytics.prediction?.predicted_to_pass ? (
-                <Check className='h-4 w-4 text-green-500' />
-              ) : (
-                <X className='h-4 w-4 text-red-500' />
-              )}
+
+          <Card className="col-span-2 bg-muted/20">
+             <CardHeader className='flex-row items-center justify-between space-y-0 pb-2'>
+              <CardTitle className='text-sm font-medium'>AI Recommendation</CardTitle>
+              <Brain className='h-4 w-4 text-primary' />
             </CardHeader>
             <CardContent>
-              <div
-                className={`text-2xl font-bold ${
-                  analytics.prediction?.predicted_to_pass
-                    ? 'text-green-600'
-                    : 'text-red-600'
-                }`}
-              >
-                {analytics.prediction?.predicted_to_pass ? 'Pass' : 'At-Risk'}
-              </div>
-              <p className='text-xs text-muted-foreground'>
-                {/* FIX: Safe access and fallback for probability */}
-                {(analytics.prediction?.pass_probability ?? 0).toFixed(2)}%
-                Pass Probability
+              <p className='text-sm font-medium'>
+                "{overall_performance.recommendation}"
               </p>
             </CardContent>
           </Card>
         </div>
 
-        <div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
-          <Card>
+        <div className='grid grid-cols-1 gap-4 lg:grid-cols-3'>
+          {/* 2. Subject Performance (The Requested Feature) */}
+          <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle className='flex items-center gap-2'>
-                <Brain className='h-5 w-5' />
-                Strengths & Weaknesses
+                <BookOpen className='h-5 w-5' />
+                Subject Performance
               </CardTitle>
               <CardDescription>
-                Based on Bloom's Taxonomy performance
+                Breakdown of performance by core subjects.
               </CardDescription>
             </CardHeader>
-            <CardContent className='space-y-4'>
-              <div>
-                <h4 className='font-semibold'>Strengths (Score {'>='} 80%)</h4>
-                <Separator className='my-2' />
-                <div className='flex flex-wrap gap-2'>
-                  {strengths.length > 0 ? (
-                    strengths.map((strength) => (
-                      <Badge
-                        key={strength}
-                        variant='success'
-                        className='capitalize'
-                      >
-                        {strength}
-                      </Badge>
-                    ))
-                  ) : (
-                    <p className='text-sm text-muted-foreground'>
-                      No significant strengths identified yet.
-                    </p>
-                  )}
+            <CardContent className='space-y-6'>
+              {subject_performance && subject_performance.length > 0 ? (
+                subject_performance.map((subject) => (
+                  <div key={subject.subject_id} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <div className="flex flex-col">
+                            <span className="font-semibold">{subject.subject_title}</span>
+                            <span className="text-xs text-muted-foreground">{subject.assessments_taken} assessments taken</span>
+                        </div>
+                        <div className="text-right">
+                            <span className="font-bold">{subject.average_score}%</span>
+                            {subject.average_score < 75 && (
+                                <Badge variant="destructive" className="ml-2 text-[10px] h-5">Review Needed</Badge>
+                            )}
+                        </div>
+                    </div>
+                    {/* Progress Bar with dynamic color */}
+                    <div className={`w-full h-2 rounded ${subject.average_score >= 75 ? 'bg-green-100' : 'bg-red-100'}`}>
+                      <div
+                        className={subject.average_score >= 75 ? 'h-2 rounded bg-green-500' : 'h-2 rounded bg-red-500'}
+                        style={{ width: `${subject.average_score}%` }}
+                      />
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                    No subject data available yet.
                 </div>
-              </div>
-              <div>
-                <h4 className='font-semibold'>Weaknesses (Score {'<'} 70%)</h4>
-                <Separator className='my-2' />
-                <div className='flex flex-wrap gap-2'>
-                  {weaknesses.length > 0 ? (
-                    weaknesses.map((weakness) => (
-                      <Badge
-                        key={weakness}
-                        variant='destructive'
-                        className='capitalize'
-                      >
-                        {weakness}
-                      </Badge>
-                    ))
-                  ) : (
-                    <p className='text-sm text-muted-foreground'>
-                      No significant weaknesses identified.
-                    </p>
-                  )}
-                </div>
-              </div>
+              )}
             </CardContent>
           </Card>
 
-          <StudentBloomChart data={analytics.performance_by_bloom} />
+          {/* 3. Strengths & Weaknesses (Competencies) */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Focus Areas</CardTitle>
+              <CardDescription>Specific competencies to improve</CardDescription>
+            </CardHeader>
+            <CardContent className='space-y-4'>
+               {analytics.weaknesses && analytics.weaknesses.length > 0 ? (
+                   <div className="space-y-3">
+                       {analytics.weaknesses.map((w, idx) => (
+                           <div key={idx} className="flex items-center justify-between border-b pb-2 last:border-0">
+                               <div className="text-sm">
+                                   <span className="font-medium text-muted-foreground">Competency ID:</span>
+                                   <br/>
+                                   <span className="font-mono text-xs">{w.competency_id.split('-').pop()}</span>
+                               </div>
+                               <Badge variant="outline" className="text-red-500 border-red-200 bg-red-50">
+                                   {w.mastery}% Mastery
+                               </Badge>
+                           </div>
+                       ))}
+                   </div>
+               ) : (
+                   <div className="flex flex-col items-center justify-center h-40 text-center space-y-2">
+                       <Check className="h-8 w-8 text-green-500" />
+                       <p className="text-sm text-muted-foreground">No critical weaknesses found!</p>
+                   </div>
+               )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     )
@@ -303,7 +259,7 @@ function StudentAnalyticsPage() {
             </Link>
           </Button>
           <h1 className='text-lg font-bold tracking-tight'>
-            Student Analytics Report
+            Student Report
           </h1>
         </div>
         <div className='ms-auto flex items-center gap-4'>
@@ -315,17 +271,18 @@ function StudentAnalyticsPage() {
 
       <Main>
         <AppErrorBoundary fallback={<StudentAnalyticsErrorFallback />}>
-          <div className='mb-4'>
-            <h2 className='text-xl font-bold tracking-tight'>
-              Student ID: {studentId}
+          <div className='mb-6'>
+            <h2 className='text-2xl font-bold tracking-tight flex items-center gap-2'>
+               {/* Display Name if available, else ID */}
+               {analytics?.student_profile?.name || `Student ${studentId}`}
             </h2>
             <p className='text-muted-foreground'>
-              Detailed performance and progress report.
+              {analytics?.student_profile?.email}
             </p>
           </div>
-          <Separator className='my-4' />
-          <ScrollArea className='h-[calc(100vh-14rem)]'>
-            <div className='pr-4'>{renderContent()}</div>
+          
+          <ScrollArea className='h-[calc(100vh-12rem)]'>
+            <div className='pr-4 pb-10'>{renderContent()}</div>
           </ScrollArea>
         </AppErrorBoundary>
       </Main>

@@ -1,6 +1,6 @@
 'use client'
 
-import { PolarAngleAxis, PolarGrid, Radar, RadarChart } from 'recharts'
+import { PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer } from 'recharts'
 import {
   Card,
   CardContent,
@@ -15,63 +15,70 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart'
 
-export const description = 'A radar chart'
-
-const chartData = [
-  { bloom_level: 'Remembering', Students: 186 },
-  { bloom_level: 'Applying', Students: 305 },
-  { bloom_level: 'Understanding', Students: 237 },
-  { bloom_level: 'Analyzing', Students: 209 },
-]
+// [FIX] Accept flexible dictionary input
+interface BloomLevelChartProps {
+  data?: Record<string, number> // e.g., { "remembering": 75, "applying": 60 }
+}
 
 const chartConfig = {
-  Students: {
-    label: 'Students',
-    color: 'var(--chart-1)',
+  score: {
+    label: 'Mastery (%)',
+    color: 'hsl(var(--primary))',
   },
 } satisfies ChartConfig
 
-export function BloomLevelChart() {
-  return (
-    <Card>
-      <CardHeader className='items-center pb-0'>
-        <CardTitle>Bloom Levels</CardTitle>
-        <CardDescription>Students' knowledge by Bloom level.</CardDescription>
-      </CardHeader>
-      <CardContent className='pb-0'>
-        <ChartContainer
-          config={chartConfig}
-          className='mx-auto aspect-square max-h-[250px]'
-        >
-          <RadarChart data={chartData} outerRadius={100}>
-            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-            <PolarGrid />
-            <PolarAngleAxis
-              dataKey='bloom_level'
-              tick={(props) => {
-                const { x, y, payload } = props
-                return (
-                  <text
-                    x={x}
-                    y={y}
-                    textAnchor='middle'
-                    fontSize={12}
-                    fill='#666'
-                    dy={4} // adjust vertical position if needed
-                  >
-                    {payload.value}
-                  </text>
-                )
-              }}
-            />
+export function BloomLevelChart({ data }: BloomLevelChartProps) {
+  // [FIX] Robust transformation logic
+  const chartData = data
+    ? Object.entries(data).map(([level, score]) => ({
+        // Capitalize first letter: 'remembering' -> 'Remembering'
+        subject: level.charAt(0).toUpperCase() + level.slice(1),
+        score: score,
+        fullMark: 100
+      }))
+    : []
 
-            <Radar
-              dataKey='Students'
-              fill='var(--color-Students)'
-              fillOpacity={0.6}
-            />
-          </RadarChart>
-        </ChartContainer>
+  // Ensure logical sort order for the radar shape
+  const order = ['Remembering', 'Understanding', 'Applying', 'Analyzing', 'Evaluating', 'Creating']
+  chartData.sort((a, b) => order.indexOf(a.subject) - order.indexOf(b.subject))
+
+  return (
+    <Card className='flex flex-col h-full'>
+      <CardHeader className='items-center pb-0'>
+        <CardTitle>Cognitive Profile</CardTitle>
+        <CardDescription>Mastery by Bloom's Taxonomy Level</CardDescription>
+      </CardHeader>
+      <CardContent className='flex-1 pb-0 min-h-[250px]'>
+        {chartData.length > 0 ? (
+          <ChartContainer
+            config={chartConfig}
+            className='mx-auto aspect-square max-h-[250px] w-full'
+          >
+            {/* [FIX] Wrapped in ResponsiveContainer for better layout safety */}
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart data={chartData} outerRadius={80}>
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent />}
+                />
+                <PolarGrid gridType="polygon" />
+                <PolarAngleAxis dataKey="subject" tick={{ fontSize: 12 }} />
+                <Radar
+                  name="Mastery"
+                  dataKey="score"
+                  fill="var(--color-score)"
+                  fillOpacity={0.4}
+                  stroke="var(--color-score)"
+                  strokeWidth={2}
+                />
+              </RadarChart>
+            </ResponsiveContainer>
+          </ChartContainer>
+        ) : (
+          <div className="flex h-full items-center justify-center text-muted-foreground text-sm">
+            Not enough data to generate profile.
+          </div>
+        )}
       </CardContent>
     </Card>
   )

@@ -1,3 +1,4 @@
+// src/lib/profile-hooks.ts
 import api from '@/lib/axios-client'
 
 export type UserRole = 'student' | 'faculty_member' | 'admin'
@@ -10,7 +11,7 @@ export interface UserProfile {
   last_name?: string
   nickname?: string
   user_name?: string
-  role?: UserRole
+  role?: string 
   role_id: string
   profile_picture?: string
   is_verified?: boolean
@@ -28,34 +29,44 @@ type PaginatedUsersResponse = {
   last_doc_id: string | null
 }
 
-const normalizeProfile = (p: any): UserProfile => ({
-  id: String(p.id ?? p.uid ?? ''),
-  email: String(p.email ?? ''),
-  first_name: p.first_name ?? '',
-  middle_name: p.middle_name ?? null,
-  last_name: p.last_name ?? '',
-  nickname: p.nickname ?? '',
-  user_name: p.user_name ?? '',
-  role: (p.role as UserRole) ?? undefined,
-  role_id: String(p.role_id ?? ''),
-  profile_picture: p.profile_picture ?? undefined,
-  is_verified: p.is_verified ?? undefined,
-  pre_assessment_score: p.pre_assessment_score ?? undefined,
-  ai_confidence: p.ai_confidence ?? undefined,
-  current_module: p.current_module ?? undefined,
-  created_at: p.created_at ?? new Date().toISOString(),
-  updated_at: p.updated_at ?? undefined,
-  deleted: Boolean(p.deleted ?? false),
-  deleted_at: p.deleted_at ?? null,
-})
+// [FIX] Helper to find the actual profile object inside nested responses
+const extractProfileData = (data: any) => {
+  if (!data) return {}
+  if (data.data?.profile) return data.data.profile
+  if (data.profile) return data.profile
+  if (data.data && !data.data.profile) return data.data
+  return data
+}
+
+const normalizeProfile = (p: any): UserProfile => {
+  const raw = extractProfileData(p)
+  
+  return {
+    id: String(raw.id ?? raw.uid ?? ''),
+    email: String(raw.email ?? ''),
+    first_name: raw.first_name ?? '',
+    middle_name: raw.middle_name ?? null,
+    last_name: raw.last_name ?? '',
+    nickname: raw.nickname ?? '',
+    user_name: raw.user_name ?? raw.username ?? '',
+    role: raw.role, 
+    role_id: String(raw.role_id ?? ''),
+    profile_picture: raw.profile_picture ?? raw.profile_image,
+    is_verified: !!raw.is_verified,
+    pre_assessment_score: raw.pre_assessment_score,
+    ai_confidence: raw.ai_confidence,
+    current_module: raw.current_module,
+    created_at: raw.created_at ?? new Date().toISOString(),
+    updated_at: raw.updated_at,
+    deleted: Boolean(raw.deleted ?? false),
+    deleted_at: raw.deleted_at ?? null,
+  }
+}
 
 // ===== Profiles (current user) =====
 export async function getMyProfile(): Promise<UserProfile> {
   const res = await api.get('/profiles/me')
-  const payload = res.data
-  const role = (payload?.role as UserRole) ?? undefined
-  const data = payload?.data?.profile ?? payload?.profile ?? payload
-  return normalizeProfile({ ...data, role })
+  return normalizeProfile(res.data)
 }
 
 export async function updateMyProfile(
@@ -84,20 +95,24 @@ export async function updateProfile(
   return normalizeProfile(res.data)
 }
 
+export async function uploadProfilePicture(file: File) {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const res = await api.post('/profiles/upload-avatar', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return res.data
+}
+
 // ===== Lists =====
-export async function listStudents(
-  skip = 0,
-  limit = 50
-): Promise<UserProfile[]> {
+export async function listStudents(skip = 0, limit = 50): Promise<UserProfile[]> {
   const res = await api.get('/profiles/students', { params: { skip, limit } })
   const students = res.data?.students ?? res.data?.items ?? res.data ?? []
   return (students as any[]).map(normalizeProfile)
 }
 
-export async function listFaculty(
-  skip = 0,
-  limit = 50
-): Promise<UserProfile[]> {
+export async function listFaculty(skip = 0, limit = 50): Promise<UserProfile[]> {
   const res = await api.get('/profiles/faculty', { params: { skip, limit } })
   const faculty = res.data?.faculty ?? res.data?.items ?? res.data ?? []
   return (faculty as any[]).map(normalizeProfile)
@@ -115,7 +130,6 @@ export async function searchUsers(params: {
 }
 
 // ===== Admin / Statistics =====
-// [FIX] Added new optimized stats endpoint
 export async function getSystemUserStatistics(): Promise<{
   total_subjects: number
   total_modules: number
@@ -128,6 +142,8 @@ export async function getSystemUserStatistics(): Promise<{
   verified_users: number
   pending_verification: number
   active_users: number
+  whitelist_students: number
+  whitelist_faculty: number
 }> {
   const res = await api.get('/admin/users/statistics')
   return res.data
@@ -135,6 +151,12 @@ export async function getSystemUserStatistics(): Promise<{
 
 export async function adminSystemOverview(): Promise<any> {
   const res = await api.get('/profiles/admin/system-overview')
+  return res.data
+}
+
+// [FIX] Restored this function which was missing
+export async function getUserGrowthStats(): Promise<{ date: string; new_users: number; total_users: number }[]> {
+  const res = await api.get('/admin/users/growth')
   return res.data
 }
 
@@ -201,9 +223,4 @@ export async function deactivateUser(
   })
   const data = res.data?.profile ?? res.data
   return normalizeProfile(data)
-}
-
-export async function getUserGrowthStats(): Promise<{ date: string; new_users: number; total_users: number }[]> {
-  const res = await api.get('/admin/users/growth')
-  return res.data
 }

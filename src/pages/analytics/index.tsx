@@ -4,11 +4,9 @@ import { Users, UserCheck, UserX, Percent, AlertTriangle } from 'lucide-react'
 import { useGlobalPredictions } from '@/lib/analytics-hooks'
 import { usePermissions } from '@/hooks/use-permissions'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardFooter,
@@ -35,14 +33,14 @@ function AnalyticsErrorFallback() {
         <AlertTriangle className='h-4 w-4' />
         <AlertTitle>Error Loading Analytics</AlertTitle>
         <AlertDescription>
-          There was an error loading the main analytics dashboard.
+          There was an error loading the dashboard data.
           <br />
           <Button
             variant='destructive'
             className='mt-4'
             onClick={() => window.location.reload()}
           >
-            Refresh Page
+            Retry
           </Button>
         </AlertDescription>
       </Alert>
@@ -50,7 +48,6 @@ function AnalyticsErrorFallback() {
   )
 }
 
-// --- FIX: EXPORT NAME MUST BE 'Apps' (Not FacultyAdmin) ---
 export function Apps() {
   const { isAdmin } = usePermissions()
 
@@ -59,6 +56,8 @@ export function Apps() {
     isLoading: isLoadingPredictions,
     error,
   } = useGlobalPredictions()
+
+  console.log(predictionData?.performance_by_bloom);
 
   const summary = predictionData?.summary
 
@@ -81,84 +80,72 @@ export function Apps() {
                 {isAdmin ? 'Dashboard Analytics' : 'Faculty Dashboard'}
               </h1>
               <p className='text-muted-foreground'>
-                {isAdmin
-                  ? 'Monitor system activity, user growth, and AI-powered predictions.'
-                  : 'Monitor student performance, identify trends, and track learning outcomes efficiently.'}
+                Overview of student performance and AI predictions.
               </p>
             </div>
             <div className='my-4'></div>
 
             {isLoadingPredictions ? (
               <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4'>
-                <Skeleton className='h-28' />
-                <Skeleton className='h-28' />
-                <Skeleton className='h-28' />
-                <Skeleton className='h-28' />
+                <Skeleton className='h-32' /><Skeleton className='h-32' />
+                <Skeleton className='h-32' /><Skeleton className='h-32' />
               </div>
             ) : summary ? (
               <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4'>
                 <Card>
                   <CardHeader>
-                    <CardDescription>Total Students</CardDescription>
+                    <div className="flex justify-between items-center">
+                        <CardDescription>Total Students</CardDescription>
+                        <Users className='text-muted-foreground size-4' />
+                    </div>
                     <CardTitle className='text-3xl font-semibold'>
                       {summary.total_students_predicted}
                     </CardTitle>
-                    <CardAction>
-                      <Badge variant='outline'>
-                        <Users className='mr-1 size-4' />
-                      </Badge>
-                    </CardAction>
                   </CardHeader>
                   <CardFooter className='text-muted-foreground text-sm'>
-                    Active students analyzed
+                    Active in system
                   </CardFooter>
                 </Card>
                 <Card>
                   <CardHeader>
-                    <CardDescription>Predicted Pass Rate</CardDescription>
+                    <div className="flex justify-between items-center">
+                        <CardDescription>Passing Rate</CardDescription>
+                        <Percent className='text-muted-foreground size-4' />
+                    </div>
                     <CardTitle className='text-3xl font-semibold'>
-                      {(summary.predicted_pass_rate || 0).toFixed(2)}%
+                      {(summary.predicted_pass_rate || 0).toFixed(1)}%
                     </CardTitle>
-                    <CardAction>
-                      <Badge variant='outline'>
-                        <Percent className='mr-1 size-4' />
-                      </Badge>
-                    </CardAction>
                   </CardHeader>
                   <CardFooter className='text-muted-foreground text-sm'>
-                    Based on current model
+                    AI Predicted
                   </CardFooter>
                 </Card>
                 <Card>
                   <CardHeader>
-                    <CardDescription>Predicted to Pass</CardDescription>
+                    <div className="flex justify-between items-center">
+                        <CardDescription>Predicted Pass</CardDescription>
+                        <UserCheck className='text-green-500 size-4' />
+                    </div>
                     <CardTitle className='text-3xl font-semibold'>
                       {summary.count_predicted_to_pass}
                     </CardTitle>
-                    <CardAction>
-                      <Badge variant='outline'>
-                        <UserCheck className='mr-1 size-4' />
-                      </Badge>
-                    </CardAction>
                   </CardHeader>
                   <CardFooter className='text-muted-foreground text-sm'>
-                    Students on track
+                    Low Risk
                   </CardFooter>
                 </Card>
                 <Card>
                   <CardHeader>
-                    <CardDescription>At-Risk (Fail)</CardDescription>
+                    <div className="flex justify-between items-center">
+                        <CardDescription>At Risk</CardDescription>
+                        <UserX className='text-red-500 size-4' />
+                    </div>
                     <CardTitle className='text-3xl font-semibold'>
                       {summary.count_predicted_to_fail}
                     </CardTitle>
-                    <CardAction>
-                      <Badge variant='outline'>
-                        <UserX className='mr-1 size-4' />
-                      </Badge>
-                    </CardAction>
                   </CardHeader>
                   <CardFooter className='text-muted-foreground text-sm'>
-                    Students needing support
+                    High Risk
                   </CardFooter>
                 </Card>
               </div>
@@ -166,19 +153,16 @@ export function Apps() {
               <Card>
                 <CardContent className='pt-6'>
                   <p className='text-muted-foreground text-center'>
-                    {error
-                      ? `Error: ${error.message}`
-                      : 'No prediction data available. Try running the backend test data script.'}
+                    No data available.
                   </p>
                 </CardContent>
               </Card>
             )}
 
             <div className='mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3'>
-              <BloomLevelChart />
-              {/* --- FIX: Pass summary prop --- */}
+              <BloomLevelChart data={predictionData?.performance_by_bloom} />
               <StudentStatus summary={summary} />
-              <CoreSubjectsPage />
+              <CoreSubjectsPage data={predictionData?.subjects} />
             </div>
 
             <div className='mt-4'>

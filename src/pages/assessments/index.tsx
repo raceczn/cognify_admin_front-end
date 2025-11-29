@@ -1,47 +1,79 @@
-// src/pages/assessments/index.tsx
 import { useState } from 'react'
-import { ArrowLeft, Search as SearchIcon, Pencil } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import {Search, LayoutGrid, ClipboardList, PlusCircle } from 'lucide-react'
+// import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
+// import { ScrollArea } from '@/components/ui/scroll-area'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
-import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { Badge } from '@/components/ui/badge'
+// import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { toast } from 'sonner'
 
-import { useAssessments } from '@/hooks/useAssessments'
-import { AssessmentList } from '@/pages/assessments/components/AssessmentList'
-import { AssessmentEditor } from '@/pages/assessments/components/AssessmentEditor'
+// [FIX] Use local imports for components and data
+import { AssessmentList } from './components/AssessmentList'
+import { AssessmentEditor } from './components/AssessmentEditor'
 import { Assessment } from './data/assessment'
+import { useAssessmentsQuery, useCreateAssessmentMutation, useUpdateAssessmentMutation } from '@/lib/assessment-hooks'
 
 export function Assessments() {
-  const {
-    search,
-    setSearch,
-    assessments,
-    selectedAssessment,
-    handleSelectAssessment,
-    handleUpdateAssessment,
-    handleNewAssessment,
-  } = useAssessments()
-  
-  const [mobileSelectedAssessment, setMobileSelectedAssessment] = useState(false)
-  
-  const handleSelectAssessmentWithMobile = (assessment: Assessment) => {
-    handleSelectAssessment(assessment)
-    setMobileSelectedAssessment(true)
-  }
-  
-  const handleCloseMobileEditor = () => {
-    setMobileSelectedAssessment(false)
+  const { data: assessments = [], isLoading } = useAssessmentsQuery()
+  const createMutation = useCreateAssessmentMutation()
+  const updateMutation = useUpdateAssessmentMutation()
+
+  const [view, setView] = useState<'list' | 'editor'>('list')
+  const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null)
+  const [search, setSearch] = useState('')
+
+  const handleSelect = (assessment: Assessment) => {
+    setSelectedAssessment(assessment)
+    setView('editor')
   }
 
-  // Ensure we only consider it selected if the object is not null
-  const isAssessmentSelected = selectedAssessment !== null
+  const handleCreateNew = () => {
+    // [FIX] Ensure all non-optional required fields are present, especially is_verified
+    const newAssessment: Assessment = {
+      title: 'New Assessment',
+      purpose: 'Quiz', // Default purpose
+      subject_id: '',
+      is_verified: false, // [FIX] Add the missing required boolean field
+      questions: []
+    }
+    setSelectedAssessment(newAssessment)
+    setView('editor')
+  }
+
+  const handleBack = () => {
+    setSelectedAssessment(null)
+    setView('list')
+  }
   
+  const handleSave = async (updatedAssessment: Assessment) => {
+    try {
+      if (updatedAssessment.id) {
+        await updateMutation.mutateAsync({ 
+          id: updatedAssessment.id, 
+          data: updatedAssessment 
+        })
+        toast.success('Assessment updated')
+      } else {
+        await createMutation.mutateAsync(updatedAssessment)
+        toast.success('Assessment created')
+      }
+      handleBack()
+    } catch (error) {
+      toast.error('Failed to save assessment')
+      console.error(error)
+    }
+  }
+  
+  const filteredAssessments = assessments.filter(a => 
+      a.title.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
     <>
       <Header>
@@ -53,104 +85,76 @@ export function Assessments() {
         </div>
       </Header>
 
-      <Main fixed>
-        <section className='flex h-full gap-6'>
-          <div className={cn(
-            'flex w-full flex-col gap-2 sm:w-64 lg:w-80 2xl:w-96',
-            mobileSelectedAssessment && 'hidden sm:flex'
-          )}>
-            <div className='bg-background sticky top-0 z-10 -mx-4 px-4 pb-3 shadow-md sm:static sm:z-auto sm:mx-0 sm:p-0 sm:shadow-none'>
-              <div className='flex items-center justify-between py-2'>
-                <div className='flex gap-2'>
-                  <h1 className='text-2xl font-bold'>Assessments</h1>
-                </div>
-              </div>
-
-              <label
-                className={cn(
-                  'focus-within:ring-ring focus-within:ring-1 focus-within:outline-hidden',
-                  'border-border flex h-10 w-full items-center space-x-0 rounded-md border ps-2'
-                )}
-              >
-                <SearchIcon size={15} className='me-2 stroke-slate-500' />
-                <span className='sr-only'>Search</span>
-                <input
-                  type='text'
-                  className='w-full flex-1 bg-inherit text-sm focus-visible:outline-hidden'
-                  placeholder='Search assessment...'
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </label>
-            </div>
-
-            <AssessmentList
-                assessments={assessments}
-                selectedAssessment={selectedAssessment}
-                onSelectAssessment={handleSelectAssessmentWithMobile}
-                onNewAssessment={handleNewAssessment}
-            />
+      <Main>
+        <div className='mb-4 flex items-center justify-between'>
+          <div>
+            <h2 className='text-2xl font-bold tracking-tight'>Assessments</h2>
+            <p className='text-muted-foreground'>
+              Create and manage quizzes and exams.
+            </p>
           </div>
-
-          {/* Editor Panel */}
-          {isAssessmentSelected && selectedAssessment ? (
-            <div
-              className={cn(
-                'bg-background absolute inset-0 start-full z-50 hidden w-full flex-1 flex-col border shadow-xs sm:static sm:z-auto sm:flex sm:rounded-md overflow-auto',
-                mobileSelectedAssessment && 'start-0 flex'
-              )}
-            >
-              <div className='bg-card mb-1 flex flex-none justify-between p-4 shadow-lg sm:rounded-t-md'>
-                <div className='flex gap-3 items-center'>
-                  <Button
-                    size='icon'
-                    variant='ghost'
-                    className='-ms-2 h-full sm:hidden'
-                    onClick={handleCloseMobileEditor}
-                  >
-                    <ArrowLeft className='rtl:rotate-180' />
-                  </Button>
-                  <h2 className='text-xl font-semibold line-clamp-1'>
-                    {selectedAssessment.title}
-                  </h2>
-                  <Badge variant='outline' className='text-sm font-normal'>
-                    ID: {selectedAssessment.id}
-                  </Badge>
-                </div>
-              </div>
-
-              <ScrollArea className='flex-1'>
-                <AssessmentEditor 
-                    // KEY FIX: Force remount when ID changes to reset state
-                    key={selectedAssessment.id} 
-                    assessment={selectedAssessment} 
-                    onUpdateAssessment={handleUpdateAssessment}
-                />
-              </ScrollArea>
-            </div>
-          ) : (
-            <div
-              className={cn(
-                'bg-card absolute inset-0 start-full z-50 hidden w-full flex-1 flex-col justify-center rounded-md border shadow-xs sm:static sm:z-auto sm:flex',
-                !mobileSelectedAssessment && 'flex'
-              )}
-            >
-              <div className='flex flex-col items-center space-y-6'>
-                <div className='border-border flex size-16 items-center justify-center rounded-full border-2'>
-                  <Pencil className='size-8' />
-                </div>
-                <div className='space-y-2 text-center'>
-                  <h1 className='text-xl font-semibold'>
-                    Select or Create an Assessment
-                  </h1>
-                  <p className='text-muted-foreground text-sm'>
-                    Select an assessment from the list to edit its content and details.
-                  </p>
-                </div>
-              </div>
-            </div>
+          {view === 'list' && (
+            <Button onClick={handleCreateNew}>
+              <PlusCircle className="mr-2 h-4 w-4" /> Create Assessment
+            </Button>
           )}
-        </section>
+        </div>
+
+        {view === 'editor' ? (
+            <AssessmentEditor 
+                assessment={selectedAssessment} 
+                onUpdateAssessment={handleSave} 
+                onBack={handleBack} 
+            />
+        ) : (
+            <Tabs defaultValue="manage" className="space-y-4">
+                {/* Tabs List */}
+                <TabsList>
+                    <TabsTrigger value="browse" className="gap-2">
+                        <LayoutGrid size={16} /> Browse
+                    </TabsTrigger>
+                    <TabsTrigger value="manage" className="gap-2">
+                        <ClipboardList size={16} /> Manage
+                    </TabsTrigger>
+                </TabsList>
+
+                {/* Tabs Content */}
+                <TabsContent value="browse">
+                    <div className="p-8 text-center text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
+                        <p>Browse view coming soon...</p>
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="manage">
+                    {isLoading ? (
+                        <div className="space-y-2">
+                            <Skeleton className="h-16 w-full" />
+                            <Skeleton className="h-16 w-full" />
+                        </div>
+                    ) : (
+                        <div className="bg-card rounded-md border p-2">
+                            <div className="flex items-center mb-3">
+                                {/* Search input */}
+                                <input
+                                    type='text'
+                                    className='w-full flex-1 bg-inherit text-sm focus-visible:outline-hidden border rounded-md h-10 px-3'
+                                    placeholder='Filter assessments by title...'
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                />
+                            </div>
+                            <AssessmentList 
+                                // [FIX] Passing filtered list and correct handlers
+                                assessments={filteredAssessments}
+                                selectedAssessment={selectedAssessment}
+                                onSelectAssessment={handleSelect}
+                                onNewAssessment={handleCreateNew} // This is used to handle creation from the list view if needed
+                            />
+                        </div>
+                    )}
+                </TabsContent>
+            </Tabs>
+        )}
       </Main>
     </>
   )

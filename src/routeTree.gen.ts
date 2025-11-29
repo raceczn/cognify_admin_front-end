@@ -35,7 +35,10 @@ import { Route as AuthenticatedSettingsDisplayRouteImport } from './routes/_auth
 import { Route as AuthenticatedSettingsAppearanceRouteImport } from './routes/_authenticated/settings/appearance'
 import { Route as AuthenticatedSettingsAccountRouteImport } from './routes/_authenticated/settings/account'
 import { Route as AuthenticatedErrorsErrorRouteImport } from './routes/_authenticated/errors/$error'
+import { Route as AuthenticatedAdminWhitelistingRouteImport } from './routes/_authenticated/admin/whitelisting'
+import { Route as AuthenticatedAdminVerificationRouteImport } from './routes/_authenticated/admin/verification'
 import { Route as AuthenticatedFacultyDashboardIndexRouteImport } from './routes/_authenticated/faculty/dashboard/index'
+import { Route as AuthenticatedUsersUserIdEditRouteImport } from './routes/_authenticated/users/$userId.edit'
 import { Route as AuthenticatedAnalyticsStudentStudentIdRouteImport } from './routes/_authenticated/analytics/student.$studentId'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -178,10 +181,28 @@ const AuthenticatedErrorsErrorRoute =
     path: '/errors/$error',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminWhitelistingRoute =
+  AuthenticatedAdminWhitelistingRouteImport.update({
+    id: '/admin/whitelisting',
+    path: '/admin/whitelisting',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminVerificationRoute =
+  AuthenticatedAdminVerificationRouteImport.update({
+    id: '/admin/verification',
+    path: '/admin/verification',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedFacultyDashboardIndexRoute =
   AuthenticatedFacultyDashboardIndexRouteImport.update({
     id: '/faculty/dashboard/',
     path: '/faculty/dashboard/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedUsersUserIdEditRoute =
+  AuthenticatedUsersUserIdEditRouteImport.update({
+    id: '/users/$userId/edit',
+    path: '/users/$userId/edit',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAnalyticsStudentStudentIdRoute =
@@ -206,6 +227,8 @@ export interface FileRoutesByFullPath {
   '/modules': typeof AuthenticatedModulesRoute
   '/subjects': typeof AuthenticatedSubjectsRoute
   '/': typeof AuthenticatedIndexRoute
+  '/admin/verification': typeof AuthenticatedAdminVerificationRoute
+  '/admin/whitelisting': typeof AuthenticatedAdminWhitelistingRoute
   '/errors/$error': typeof AuthenticatedErrorsErrorRoute
   '/settings/account': typeof AuthenticatedSettingsAccountRoute
   '/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
@@ -218,6 +241,7 @@ export interface FileRoutesByFullPath {
   '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/users': typeof AuthenticatedUsersIndexRoute
   '/analytics/student/$studentId': typeof AuthenticatedAnalyticsStudentStudentIdRoute
+  '/users/$userId/edit': typeof AuthenticatedUsersUserIdEditRoute
   '/faculty/dashboard': typeof AuthenticatedFacultyDashboardIndexRoute
 }
 export interface FileRoutesByTo {
@@ -234,6 +258,8 @@ export interface FileRoutesByTo {
   '/modules': typeof AuthenticatedModulesRoute
   '/subjects': typeof AuthenticatedSubjectsRoute
   '/': typeof AuthenticatedIndexRoute
+  '/admin/verification': typeof AuthenticatedAdminVerificationRoute
+  '/admin/whitelisting': typeof AuthenticatedAdminWhitelistingRoute
   '/errors/$error': typeof AuthenticatedErrorsErrorRoute
   '/settings/account': typeof AuthenticatedSettingsAccountRoute
   '/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
@@ -246,6 +272,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsIndexRoute
   '/users': typeof AuthenticatedUsersIndexRoute
   '/analytics/student/$studentId': typeof AuthenticatedAnalyticsStudentStudentIdRoute
+  '/users/$userId/edit': typeof AuthenticatedUsersUserIdEditRoute
   '/faculty/dashboard': typeof AuthenticatedFacultyDashboardIndexRoute
 }
 export interface FileRoutesById {
@@ -265,6 +292,8 @@ export interface FileRoutesById {
   '/_authenticated/modules': typeof AuthenticatedModulesRoute
   '/_authenticated/subjects': typeof AuthenticatedSubjectsRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/admin/verification': typeof AuthenticatedAdminVerificationRoute
+  '/_authenticated/admin/whitelisting': typeof AuthenticatedAdminWhitelistingRoute
   '/_authenticated/errors/$error': typeof AuthenticatedErrorsErrorRoute
   '/_authenticated/settings/account': typeof AuthenticatedSettingsAccountRoute
   '/_authenticated/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
@@ -277,6 +306,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/_authenticated/users/': typeof AuthenticatedUsersIndexRoute
   '/_authenticated/analytics/student/$studentId': typeof AuthenticatedAnalyticsStudentStudentIdRoute
+  '/_authenticated/users/$userId/edit': typeof AuthenticatedUsersUserIdEditRoute
   '/_authenticated/faculty/dashboard/': typeof AuthenticatedFacultyDashboardIndexRoute
 }
 export interface FileRouteTypes {
@@ -296,6 +326,8 @@ export interface FileRouteTypes {
     | '/modules'
     | '/subjects'
     | '/'
+    | '/admin/verification'
+    | '/admin/whitelisting'
     | '/errors/$error'
     | '/settings/account'
     | '/settings/appearance'
@@ -308,6 +340,7 @@ export interface FileRouteTypes {
     | '/settings/'
     | '/users'
     | '/analytics/student/$studentId'
+    | '/users/$userId/edit'
     | '/faculty/dashboard'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -324,6 +357,8 @@ export interface FileRouteTypes {
     | '/modules'
     | '/subjects'
     | '/'
+    | '/admin/verification'
+    | '/admin/whitelisting'
     | '/errors/$error'
     | '/settings/account'
     | '/settings/appearance'
@@ -336,6 +371,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/users'
     | '/analytics/student/$studentId'
+    | '/users/$userId/edit'
     | '/faculty/dashboard'
   id:
     | '__root__'
@@ -354,6 +390,8 @@ export interface FileRouteTypes {
     | '/_authenticated/modules'
     | '/_authenticated/subjects'
     | '/_authenticated/'
+    | '/_authenticated/admin/verification'
+    | '/_authenticated/admin/whitelisting'
     | '/_authenticated/errors/$error'
     | '/_authenticated/settings/account'
     | '/_authenticated/settings/appearance'
@@ -366,6 +404,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/'
     | '/_authenticated/users/'
     | '/_authenticated/analytics/student/$studentId'
+    | '/_authenticated/users/$userId/edit'
     | '/_authenticated/faculty/dashboard/'
   fileRoutesById: FileRoutesById
 }
@@ -567,11 +606,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedErrorsErrorRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/whitelisting': {
+      id: '/_authenticated/admin/whitelisting'
+      path: '/admin/whitelisting'
+      fullPath: '/admin/whitelisting'
+      preLoaderRoute: typeof AuthenticatedAdminWhitelistingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/verification': {
+      id: '/_authenticated/admin/verification'
+      path: '/admin/verification'
+      fullPath: '/admin/verification'
+      preLoaderRoute: typeof AuthenticatedAdminVerificationRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/faculty/dashboard/': {
       id: '/_authenticated/faculty/dashboard/'
       path: '/faculty/dashboard'
       fullPath: '/faculty/dashboard'
       preLoaderRoute: typeof AuthenticatedFacultyDashboardIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/users/$userId/edit': {
+      id: '/_authenticated/users/$userId/edit'
+      path: '/users/$userId/edit'
+      fullPath: '/users/$userId/edit'
+      preLoaderRoute: typeof AuthenticatedUsersUserIdEditRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/analytics/student/$studentId': {
@@ -612,6 +672,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedModulesRoute: typeof AuthenticatedModulesRoute
   AuthenticatedSubjectsRoute: typeof AuthenticatedSubjectsRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedAdminVerificationRoute: typeof AuthenticatedAdminVerificationRoute
+  AuthenticatedAdminWhitelistingRoute: typeof AuthenticatedAdminWhitelistingRoute
   AuthenticatedErrorsErrorRoute: typeof AuthenticatedErrorsErrorRoute
   AuthenticatedAnalyticsIndexRoute: typeof AuthenticatedAnalyticsIndexRoute
   AuthenticatedAssessmentsIndexRoute: typeof AuthenticatedAssessmentsIndexRoute
@@ -619,6 +681,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedReportsIndexRoute: typeof AuthenticatedReportsIndexRoute
   AuthenticatedUsersIndexRoute: typeof AuthenticatedUsersIndexRoute
   AuthenticatedAnalyticsStudentStudentIdRoute: typeof AuthenticatedAnalyticsStudentStudentIdRoute
+  AuthenticatedUsersUserIdEditRoute: typeof AuthenticatedUsersUserIdEditRoute
   AuthenticatedFacultyDashboardIndexRoute: typeof AuthenticatedFacultyDashboardIndexRoute
 }
 
@@ -627,6 +690,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedModulesRoute: AuthenticatedModulesRoute,
   AuthenticatedSubjectsRoute: AuthenticatedSubjectsRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedAdminVerificationRoute: AuthenticatedAdminVerificationRoute,
+  AuthenticatedAdminWhitelistingRoute: AuthenticatedAdminWhitelistingRoute,
   AuthenticatedErrorsErrorRoute: AuthenticatedErrorsErrorRoute,
   AuthenticatedAnalyticsIndexRoute: AuthenticatedAnalyticsIndexRoute,
   AuthenticatedAssessmentsIndexRoute: AuthenticatedAssessmentsIndexRoute,
@@ -635,6 +700,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedUsersIndexRoute: AuthenticatedUsersIndexRoute,
   AuthenticatedAnalyticsStudentStudentIdRoute:
     AuthenticatedAnalyticsStudentStudentIdRoute,
+  AuthenticatedUsersUserIdEditRoute: AuthenticatedUsersUserIdEditRoute,
   AuthenticatedFacultyDashboardIndexRoute:
     AuthenticatedFacultyDashboardIndexRoute,
 }

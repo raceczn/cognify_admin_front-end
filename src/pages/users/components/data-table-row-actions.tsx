@@ -1,6 +1,7 @@
 import { DotsHorizontalIcon } from '@radix-ui/react-icons'
 import { type Row } from '@tanstack/react-table'
 import { Trash2, UserPen, ShieldAlert } from 'lucide-react'
+import { useNavigate } from '@tanstack/react-router' // Import this
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -19,6 +20,8 @@ type DataTableRowActionsProps = {
 
 export function DataTableRowActions({ row }: DataTableRowActionsProps) {
   const { setOpen, setCurrentRow } = useUsers()
+  const navigate = useNavigate() // Hook for navigation
+
   return (
     <>
       <DropdownMenu modal={false}>
@@ -34,8 +37,8 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
         <DropdownMenuContent align='end' className='w-[160px]'>
           <DropdownMenuItem
             onClick={() => {
-              setCurrentRow(row.original)
-              setOpen('edit')
+              // Navigate to the new edit page
+              navigate({ to: '/users/$userId/edit', params: { userId: row.original.id } })
             }}
           >
             Edit
@@ -43,13 +46,16 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
               <UserPen size={16} />
             </DropdownMenuShortcut>
           </DropdownMenuItem>
+          
           <DropdownMenuSeparator />
+          
+          {/* Keep Delete/Purge as modals for safety */}
           <DropdownMenuItem
             onClick={() => {
               setCurrentRow(row.original)
               setOpen('delete')
             }}
-            className='text-red-500!'
+            className='text-red-500'
           >
             Delete
             <DropdownMenuShortcut>
@@ -63,9 +69,8 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
               setOpen('purge')
             }}
             className='text-destructive'
-            data-variant='destructive'
           >
-            Purge (Permanent)
+            Purge
             <DropdownMenuShortcut>
               <ShieldAlert size={16} />
             </DropdownMenuShortcut>

@@ -35,11 +35,14 @@ export function DataTableBulkActions<TData>({
           user_id: user.id,
         })
 
-        // Transform and update local state
+        // [FIXED] Date conversion
         const updatedUser: User = {
           ...user,
           status: status,
           ...(response || {}),
+          created_at: new Date(response?.created_at || user.created_at),
+          updated_at: new Date(),
+          role: response?.role || user.role, 
         }
         updateLocalUsers(updatedUser, 'edit')
         return updatedUser
@@ -68,11 +71,14 @@ export function DataTableBulkActions<TData>({
           user_id: user.id,
         })
 
-        // Transform and update local state
+        // [FIXED] Date conversion
         const updatedUser: User = {
           ...user,
           invite_sent: true,
           ...(response || {}),
+          created_at: new Date(response?.created_at || user.created_at),
+          updated_at: new Date(),
+          role: response?.role || user.role,
         }
         updateLocalUsers(updatedUser, 'edit')
         return updatedUser

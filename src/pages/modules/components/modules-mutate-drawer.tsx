@@ -73,8 +73,8 @@ export function ModulesMutateDrawer({
   const [isUploading, setIsUploading] = useState(false)
 
   const subjectOptions = subjects.map((s) => ({
-    label: s.subject_name,
-    value: s.subject_id,
+    label: s.title, // Changed from s.subject_name
+    value: s.id,    // Changed from s.subject_id
   }))
 
   const form = useForm<ModuleForm>({
@@ -99,7 +99,6 @@ export function ModulesMutateDrawer({
           subject_id: currentRow.subject_id || '',
           purpose: currentRow.purpose || null,
           bloom_level: currentRow.bloom_level || null,
-          estimated_time: currentRow.estimated_time || null,
           material_url: currentRow.material_url || null,
         })
       } else {

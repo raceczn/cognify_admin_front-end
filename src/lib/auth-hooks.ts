@@ -1,7 +1,7 @@
 // src/lib/auth-hooks.ts
 import { sendPasswordResetEmail } from 'firebase/auth'
 import { toast } from 'sonner'
-import api, { setAccessToken } from '@/lib/axios-client'
+import api from '@/lib/axios-client'
 import { auth } from '@/lib/firebase-config'
 
 // =============== AUTH =================
@@ -19,20 +19,19 @@ export async function signup(payload: {
 
 // Login (backend sets refresh cookie; returns access token and uid)
 export async function login(payload: { email: string; password: string }) {
-  const res = await api.post('/auth/login', payload, { withCredentials: true })
+  const res = await api.post('/auth/login', payload)
   return res.data
 }
 
 // Refresh (backend reads refresh cookie; returns new access token)
 export async function refresh() {
-  const res = await api.post('/auth/refresh', {}, { withCredentials: true })
+  const res = await api.post('/auth/refresh', {})
   return res.data
 }
 
 // Logout (clears server-side refresh cookie; clear local access token)
 export async function logout() {
-  await api.post('/auth/logout', {}, { withCredentials: true })
-  setAccessToken(null)
+  await api.post('/auth/logout', {})
 }
 
 // Password reset via Firebase (client-side)

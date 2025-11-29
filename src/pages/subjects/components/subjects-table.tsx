@@ -6,8 +6,6 @@ import {
   type PaginationState,
   flexRender,
   getCoreRowModel,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
@@ -24,13 +22,13 @@ import {
 } from '@/components/ui/table'
 import { DataTablePagination, DataTableToolbar } from '@/components/data-table'
 import { type Subject } from '../data/schema'
-import { subjectsColumns as columns } from './subjects-columns'
 
-type DataTableProps = {
+interface DataTableProps {
   data: Subject[]
+  columns: any[] // passed from parent or imported
 }
 
-export function SubjectsTable({ data }: DataTableProps) {
+export function DataTable({ data, columns }: DataTableProps) {
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [sorting, setSorting] = useState<SortingState>([])
@@ -60,30 +58,23 @@ export function SubjectsTable({ data }: DataTableProps) {
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
   })
 
   return (
     <div className='space-y-4'>
       <DataTableToolbar
         table={table}
-        searchPlaceholder='Filter by name...'
-        searchKey='name' 
-        /* FIXED: Changed 'subject_name' to 'name' to match schema */
+        searchPlaceholder='Filter subjects...'
+        searchKey='title' // [FIX] Updated to 'title'
       />
-      <div className='overflow-hidden rounded-md border'>
+      <div className='rounded-md border'>
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className='group/row'>
+              <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead
-                      key={header.id}
-                      colSpan={header.colSpan}
-                      className='bg-muted/50'
-                    >
+                    <TableHead key={header.id} colSpan={header.colSpan}>
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -99,24 +90,18 @@ export function SubjectsTable({ data }: DataTableProps) {
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} className='group/row'>
+                <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className='h-24 text-center'
-                >
-                  No subjects found.
+                <TableCell colSpan={columns.length} className='h-24 text-center'>
+                  No results.
                 </TableCell>
               </TableRow>
             )}

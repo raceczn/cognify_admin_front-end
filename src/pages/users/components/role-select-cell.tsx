@@ -21,36 +21,37 @@ export function RoleSelectCell({
   role_id: string
   currentUser: User
 }) {
-  const [currentRoleId, setCurrentRoleId] = useState(role_id)
+  const initialValue = roles.find(r => r.value === currentUser.role)?.value || currentUser.role || role_id
+
+  const [currentRoleValue, setCurrentRoleValue] = useState(initialValue)
   const [isUpdating, setIsUpdating] = useState(false)
   const { updateLocalUsers } = useUsers()
 
-  const userType = roles.find((r) => r.value === currentRoleId)
+  const userType = roles.find((r) => r.value === currentRoleValue)
 
   const handleRoleChange = async (newRoleId: string) => {
     if (isUpdating) return
 
     setIsUpdating(true)
-    const prev = currentRoleId
-    setCurrentRoleId(newRoleId) // optimistic update
+    const prev = currentRoleValue
+    setCurrentRoleValue(newRoleId) 
 
     try {
       const response = await updateProfile(userId, { role_id: newRoleId })
 
-      // Update the user in the global context
+      // [FIXED] Explicitly handle Date conversion
       const updatedUser: User = {
         ...currentUser,
         ...response,
-        role:
-          roles.find((r) => r.value === response.role_id)?.designation ||
-          'unknown',
+        created_at: new Date(response.created_at || currentUser.created_at),
+        updated_at: new Date(),
+        role: response.role || newRoleId || 'unknown',
       }
 
       updateLocalUsers(updatedUser, 'edit')
       toast.success('Role updated successfully')
     } catch (err) {
-      // Revert optimistic update on error
-      setCurrentRoleId(prev)
+      setCurrentRoleValue(prev)
       toast.error('Update failed. Try again.')
     } finally {
       setIsUpdating(false)
@@ -59,7 +60,7 @@ export function RoleSelectCell({
 
   return (
     <Select
-      value={currentRoleId}
+      value={currentRoleValue}
       onValueChange={handleRoleChange}
       disabled={isUpdating}
     >

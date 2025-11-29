@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
-import { useUsers } from './components/users-provider' // Adjust path if needed
-import { columns } from './components/columns' // Assuming you have columns defined
-import { DataTable } from './components/users-table' // Assuming you have a DataTable component
+import { useUsers } from './components/users-provider'
+import { usersColumns } from './components/users-columns' // Corrected import name
+import { DataTable } from './components/users-table'
 import { UsersPrimaryButtons } from './components/users-primary-buttons'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
@@ -10,18 +10,18 @@ import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 
-export default function UsersPage() {
-  // 1. Get the load function from our provider
-  const { users, loadUsers, isLoading } = useUsers()
+const topNavLinks = [
+  { title: 'Overview', href: '/', isActive: false, disabled: false },
+  { title: 'Users', href: '/users', isActive: true, disabled: false },
+  { title: 'Analytics', href: '/analytics', isActive: false, disabled: false },
+  { title: 'Settings', href: '/settings', isActive: false, disabled: false },
+]
 
-  // 2. [FIX] Trigger the fetch ONLY when this page mounts
-  useEffect(() => {
-    loadUsers() 
-  }, [loadUsers])
+export default function UsersPage() {
+  const { users, isLoading } = useUsers()
 
   return (
     <>
-      {/* Header Section */}
       <Header>
         <TopNav links={topNavLinks} />
         <div className='ms-auto flex items-center space-x-4'>
@@ -42,42 +42,14 @@ export default function UsersPage() {
           <UsersPrimaryButtons />
         </div>
         
-        {/* User Table Section */}
         <div className='-mx-4 flex-1 overflow-auto px-4 py-1 lg:flex-row lg:space-x-12 lg:space-y-0'>
           <DataTable 
             data={users} 
-            columns={columns} 
-            loading={isLoading} // Pass loading state if your table supports it
+            columns={usersColumns} 
+            loading={isLoading} 
           />
         </div>
       </Main>
     </>
   )
 }
-
-const topNavLinks = [
-  {
-    title: 'Overview',
-    href: '/',
-    isActive: false,
-    disabled: false,
-  },
-  {
-    title: 'Users',
-    href: '/users',
-    isActive: true,
-    disabled: false,
-  },
-  {
-    title: 'Analytics',
-    href: '/analytics',
-    isActive: false,
-    disabled: false,
-  },
-  {
-    title: 'Settings',
-    href: '/settings',
-    isActive: false,
-    disabled: false,
-  },
-]
