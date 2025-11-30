@@ -9,23 +9,28 @@ export type UserStatus = z.infer<typeof userStatusSchema>
 
 const userSchema = z.object({
   id: z.string(),
-  first_name: z.string().nullable(),
-  middle_name: z.string().nullable(),
-  last_name: z.string().nullable(), 
-  user_name: z.string(), 
+  first_name: z.string().nullable().optional(),
+  middle_name: z.string().nullable().optional(),
+  last_name: z.string().nullable().optional(), 
+  user_name: z.string().optional(), 
   email: z.string(),
-  nickname: z.string().nullable(),
+  nickname: z.string().nullable().optional(),
+  
+  // Status maps to 'is_active' visually (online=active, offline=inactive)
   status: userStatusSchema.catch('offline'), 
   role_id: z.string(),
   
-  // [FIX] Added missing fields that are used in the UI
+  // [FIX] Added missing fields required by the UI and Provider
   role: z.string().optional(), 
+  is_verified: z.boolean().optional().default(false),
+  is_active: z.boolean().optional().default(true),
+  
   deleted: z.boolean().optional(),
   
   created_at: z.coerce.date(),
-  updated_at: z.coerce.date().nullable(),
+  updated_at: z.coerce.date().nullable().optional(),
   deleted_at: z.coerce.date().nullable().optional(),
-  profile_picture: z.coerce.string().nullable()
+  profile_picture: z.coerce.string().nullable().optional()
 })
 
 export type User = z.infer<typeof userSchema>

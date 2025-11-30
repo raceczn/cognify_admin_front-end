@@ -72,7 +72,7 @@ function ModulesPageContent() {
                                 </p>
                                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                                     <span className="capitalize bg-secondary px-2 py-1 rounded">
-                                        {m.bloom_level || 'General'}
+                                        {m.bloom_levels || 'General'}
                                     </span>
                                     <span>PDF</span>
                                 </div>

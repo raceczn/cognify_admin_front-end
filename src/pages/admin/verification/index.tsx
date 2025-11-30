@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { format } from 'date-fns'
-import { Check, X, Eye, FileText, HelpCircle, ClipboardList, Loader2 } from 'lucide-react'
+import { Check, X, Eye, FileText, HelpCircle, ClipboardList, Loader2, BookOpen } from 'lucide-react'
 import { useVerificationQueue, useVerifyItem, useRejectItem } from '@/lib/admin-hooks'
 import { Button } from '@/components/ui/button'
 import {
@@ -20,24 +20,29 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { ProfileDropdown } from '@/components/profile-dropdown'
-import { useSearch } from '@tanstack/react-router'
+import { useSearch, useNavigate } from '@tanstack/react-router'
 
 export default function VerificationPage() {
   const { data: queue, isLoading } = useVerificationQueue()
   const search = useSearch({ from: '/_authenticated/admin/verification' }) as { type?: string }
+  const navigate = useNavigate({ from: '/admin/verification' })
+  
   const verifyMutation = useVerifyItem()
   const rejectMutation = useRejectItem()
   
   const [processingId, setProcessingId] = useState<string | null>(null)
 
   const filterType = search?.type
+  
+  // Logic is correct here
   const filteredQueue = queue?.filter(item => {
-    if (!filterType) return true // Show all if no filter
+    if (!filterType || filterType === 'all') return true 
     return item.type === filterType
   })
 
@@ -71,8 +76,8 @@ export default function VerificationPage() {
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'module': return <FileText className="h-4 w-4 text-blue-500" />
-      case 'question': return <HelpCircle className="h-4 w-4 text-orange-500" />
       case 'assessment': return <ClipboardList className="h-4 w-4 text-purple-500" />
+      case 'subject': return <BookOpen className="h-4 w-4 text-green-500" />
       default: return <Eye className="h-4 w-4" />
     }
   }
@@ -94,6 +99,20 @@ export default function VerificationPage() {
             </p>
         </div>
 
+        <Tabs 
+          defaultValue="all" 
+          value={filterType || 'all'}
+          onValueChange={(val) => navigate({ search: (prev) => ({ ...prev, type: val === 'all' ? undefined : val }) })}
+          className="mb-4"
+        >
+          <TabsList>
+            <TabsTrigger value="all">All Pending</TabsTrigger>
+            <TabsTrigger value="module">Modules</TabsTrigger>
+            <TabsTrigger value="subject">Subjects</TabsTrigger>
+            <TabsTrigger value="assessment">Assessments</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
         <Card>
           <CardHeader>
             <CardTitle>Verification Queue</CardTitle>
@@ -105,10 +124,10 @@ export default function VerificationPage() {
                 <Loader2 className="h-8 w-8 animate-spin mb-2" />
                 <p>Loading queue...</p>
               </div>
-            ) : !queue || queue.length === 0 ? (
+            ) : !filteredQueue || filteredQueue.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-muted/10 rounded-lg border border-dashed">
                 <Check className="h-10 w-10 mb-2 text-green-500 opacity-50" />
-                <p>All caught up! No pending items.</p>
+                <p>No pending items found for this filter.</p>
               </div>
             ) : (
               <div className="rounded-md border">
@@ -123,7 +142,8 @@ export default function VerificationPage() {
                     </TableRow>
                     </TableHeader>
                     <TableBody>
-                    {queue.map((item) => (
+                    {/* [FIX] Use filteredQueue instead of queue here */}
+                    {filteredQueue.map((item) => (
                         <TableRow key={item.item_id}>
                         <TableCell>
                             <div className="flex items-center gap-2 font-medium capitalize">

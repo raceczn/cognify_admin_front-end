@@ -1,7 +1,11 @@
 // src/pages/modules/components/data-table-row-actions.tsx
+import { useState } from 'react'
 import { DotsHorizontalIcon } from '@radix-ui/react-icons'
+import { useNavigate } from '@tanstack/react-router'
 import { type Row } from '@tanstack/react-table'
 import { Trash2, FilePenLine, Sparkles, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
+import { triggerAiGeneration } from '@/lib/content-hooks'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -13,9 +17,6 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { type Module } from '../data/schema'
 import { useModules } from './modules-provider'
-import { triggerAiGeneration } from '@/lib/content-hooks'
-import { toast } from 'sonner'
-import { useState } from 'react'
 
 type DataTableRowActionsProps = {
   row: Row<Module>
@@ -23,6 +24,7 @@ type DataTableRowActionsProps = {
 
 export function DataTableRowActions({ row }: DataTableRowActionsProps) {
   const { setOpen, setCurrentRow } = useModules()
+  const navigate = useNavigate()
   const [isGenerating, setIsGenerating] = useState(false)
   const module = row.original
 
@@ -30,14 +32,12 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
     setIsGenerating(true)
     toast.loading(`Starting AI generation for "${module.title}"...`)
     try {
-      await triggerAiGeneration(module.id)
+      await triggerAiGeneration(module.id, 'summary')
       toast.success(
         `AI generation complete for "${module.title}". Content is ready.`
       )
     } catch (error: any) {
-      toast.error(
-        error.response?.data?.detail || 'AI generation failed.'
-      )
+      toast.error(error.response?.data?.detail || 'AI generation failed.')
     } finally {
       setIsGenerating(false)
     }
@@ -69,10 +69,12 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            onClick={() => {
-              setCurrentRow(row.original)
-              setOpen('edit')
-            }}
+            onClick={() =>
+              navigate({
+                to: '/modules/$moduleId',
+                params: { moduleId: module.id },
+              })
+            }
           >
             Edit
             <DropdownMenuShortcut>

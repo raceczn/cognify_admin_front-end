@@ -1,6 +1,6 @@
 // src/routes/_authenticated/route.tsx
 
-import { Outlet, createFileRoute } from '@tanstack/react-router'
+import { Outlet, createFileRoute, Navigate } from '@tanstack/react-router'
 import { AuthenticatedLayout } from '@/components/layout/authenticated-layout'
 import { usePermissions } from '@/hooks/use-permissions'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -29,21 +29,10 @@ function AuthenticatedRouteComponent() {
     );
   }
   
-  // 2. Access Denied if the request failed or the role is unauthenticated
+  // 2. Redirect to Sign In if the request failed or the role is unauthenticated
+  // This handles cases where the token is missing or invalid.
   if (isError || userRole === 'unauthenticated') {
-      // In a real app, this should force a redirect to the sign-in page,
-      // but for component structure, we show the forbidden error page.
-      // Assuming a general error page component exists for unauthorized access:
-      return (
-          <div className="h-screen flex items-center justify-center">
-              <div className="text-center p-8">
-                <h1 className="text-4xl font-bold text-destructive">403</h1>
-                <p className="text-xl text-muted-foreground mt-2">Access Denied</p>
-                <p className="mt-4 text-sm">Your session is invalid or your role does not permit access.</p>
-                {/* Add link/button to redirect to /sign-in */}
-              </div>
-          </div>
-      )
+      return <Navigate to="/sign-in" />
   }
 
   // 3. Render the application once permissions are verified

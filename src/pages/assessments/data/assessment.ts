@@ -10,7 +10,6 @@ export const ASSESSMENT_PURPOSES = [
     'Diagnostic',
 ] as const;
 
-// [FIX] Export AssessmentPurpose Type
 export type AssessmentPurpose = typeof ASSESSMENT_PURPOSES[number];
 
 // --- 2. Question Types ---
@@ -37,9 +36,8 @@ export const questionSchema = z.object({
     text: z.string(),
     type: z.enum(QUESTION_TYPES),
     points: z.number().min(1).default(1),
-    options: z.array(optionSchema), // Options for MC/MR
-    answer: z.string().optional(), // Used for True/False or Essay (Correct Answer text)
-    // Backend metadata (non-form fields)
+    options: z.array(optionSchema), 
+    answer: z.string().optional(), 
     topic_title: z.string().optional(),
     bloom_level: z.string().optional(),
 });
@@ -56,8 +54,10 @@ export const assessmentSchema = z.object({
     total_items: z.number().optional(),
     questions: z.array(questionSchema).optional(),
     
-    // [FIX] Ensure is_verified is included for all instances, defaulting to false for new ones
-    is_verified: z.boolean().default(false), // <-- Added default
+    // [FIX] Added bloom_levels for multi-selection
+    bloom_levels: z.array(z.string()).optional().default([]), 
+    
+    is_verified: z.boolean().default(false),
     created_at: z.coerce.date().optional(),
 });
 

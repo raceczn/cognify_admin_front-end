@@ -2,22 +2,20 @@ import { AxiosError } from 'axios'
 import { toast } from 'sonner'
 
 export function handleServerError(error: unknown) {
-  // eslint-disable-next-line no-console
-  console.log(error)
-
   let errMsg = 'Something went wrong!'
 
-  if (
-    error &&
-    typeof error === 'object' &&
-    'status' in error &&
-    Number(error.status) === 204
-  ) {
-    errMsg = 'Content not found.'
-  }
-
   if (error instanceof AxiosError) {
-    errMsg = error.response?.data.title
+    const data = error.response?.data
+    const detail = data?.detail ?? data?.title ?? data?.message
+    if (typeof detail === 'string') {
+      errMsg = detail
+    } else if (Array.isArray(detail)) {
+      errMsg = detail.map((d: any) => d?.msg || d?.message || String(d)).join('; ')
+    } else if (detail && typeof detail === 'object') {
+      errMsg = (detail as any).msg || JSON.stringify(detail)
+    } else {
+      errMsg = error.message || errMsg
+    }
   }
 
   toast.error(errMsg)

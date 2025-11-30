@@ -6,17 +6,17 @@ import { DataTableRowActions } from './data-table-row-actions'
 
 export const subjectsColumns: ColumnDef<Subject>[] = [
   {
-    accessorKey: 'subject_name',
+    accessorKey: 'title',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Subject Name' />
+      <DataTableColumnHeader column={column} title='Subject' />
     ),
     cell: ({ row }) => (
       <div className="flex flex-col space-y-1">
         <span className="font-medium max-w-[300px] truncate">
-          {row.getValue('subject_name')}
+          {row.getValue('title')}
         </span>
         <span className="text-xs text-muted-foreground font-mono">
-          {row.original.subject_id}
+          {row.original.id}
         </span>
       </div>
     ),
@@ -37,9 +37,8 @@ export const subjectsColumns: ColumnDef<Subject>[] = [
     id: 'visuals',
     header: 'Style',
     cell: ({ row }) => {
-      const iconColor = row.original.icon_color || '#000';
-      const iconBg = row.original.icon_bg_color || '#eee';
-      
+      const iconColor = row.original.icon_color || '#000'
+      const iconBg = row.original.icon_bg_color || '#eee'
       return (
         <div className="flex items-center gap-2">
           <div 
@@ -47,13 +46,12 @@ export const subjectsColumns: ColumnDef<Subject>[] = [
             style={{ backgroundColor: iconBg, color: iconColor }}
             title={`Icon: ${row.original.icon_name}`}
           >
-            {/* Simple initial as placeholder for actual icon */}
             {row.original.icon_name?.charAt(0).toUpperCase() || 'I'}
           </div>
           <span className="text-xs text-muted-foreground">{row.original.icon_name}</span>
         </div>
       )
-    }
+    },
   },
   {
     accessorKey: 'pqf_level',
@@ -66,17 +64,6 @@ export const subjectsColumns: ColumnDef<Subject>[] = [
           {row.getValue('pqf_level') || 'N/A'}
         </span>
       </div>
-    ),
-  },
-  {
-    accessorKey: 'active_tos_id',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Active TOS' />
-    ),
-    cell: ({ row }) => (
-      <LongText className='max-w-[150px] text-muted-foreground text-xs'>
-        {row.getValue('active_tos_id') || 'None'}
-      </LongText>
     ),
   },
   {

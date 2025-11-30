@@ -1,33 +1,21 @@
 // src/pages/subjects/components/subjects-dialogs.tsx
 import { useSubjects } from './subjects-provider'
-import { SubjectsMutateDrawer } from './subjects-mutate-drawer'
-// Delete dialog is intentionally omitted
+import { SubjectDeleteDialog } from './subjects-delete-dialog'
 
 export function SubjectsDialogs() {
-  const { open, setOpen, currentRow, loadSubjects } = useSubjects()
+  const { open, setOpen, currentRow } = useSubjects()
 
   return (
     <>
-      <SubjectsMutateDrawer
-        key='subject-add'
-        open={open === 'add'}
-        onOpenChange={(value) => setOpen(value ? 'add' : null)}
-        onSuccess={loadSubjects}
-      />
-
       {currentRow && (
         <>
-          <SubjectsMutateDrawer
-            key={`subject-edit-${currentRow?.subject_id}`}
-            open={open === 'edit'}
+          <SubjectDeleteDialog
+            open={open === 'delete'}
             onOpenChange={() => {
-              setOpen(null) // Close by setting to null
+              setOpen(null)
             }}
             currentRow={currentRow}
-            onSuccess={loadSubjects}
           />
-
-          {/* No Delete Dialog */}
         </>
       )}
     </>

@@ -1,6 +1,8 @@
 import { Button } from '@/components/ui/button'
+import { useNavigate } from '@tanstack/react-router'
 
 export function MaintenanceError() {
+  const navigate = useNavigate()
   return (
     <div className='h-svh'>
       <div className='m-auto flex h-full w-full flex-col items-center justify-center gap-2'>
@@ -12,6 +14,9 @@ export function MaintenanceError() {
         </p>
         <div className='mt-6 flex gap-4'>
           <Button variant='outline'>Learn more</Button>
+          <Button onClick={async () => await navigate({ to: '/sign-in' })}>
+            Sign In
+          </Button>
         </div>
       </div>
     </div>

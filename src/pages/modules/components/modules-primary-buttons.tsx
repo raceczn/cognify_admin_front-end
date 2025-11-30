@@ -1,11 +1,11 @@
+import { useNavigate } from '@tanstack/react-router'
 import { Plus } from 'lucide-react'
+import { usePermissions } from '@/hooks/use-permissions'
 import { Button } from '@/components/ui/button'
-import { useModules } from './modules-provider'
-import { usePermissions } from '@/hooks/use-permissions' // <-- Import permissions
 
 export function ModulesPrimaryButtons() {
-  const { setOpen } = useModules()
-  const { canCreateModule } = usePermissions() // <-- Check Faculty Member permission for Module creation
+  const navigate = useNavigate()
+  const { canCreateModule } = usePermissions()
 
   if (!canCreateModule) {
     return null
@@ -13,7 +13,15 @@ export function ModulesPrimaryButtons() {
 
   return (
     <div className='flex gap-2'>
-      <Button className='space-x-1' onClick={() => setOpen('add')}>
+      <Button
+        className='space-x-1'
+        onClick={() =>
+          navigate({
+            to: '/modules/$moduleId',
+            params: { moduleId: 'new' },
+          })
+        }
+      >
         <span>Add Module</span>
         <Plus size={18} />
       </Button>

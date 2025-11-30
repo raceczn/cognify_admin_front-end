@@ -8,7 +8,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ConfirmDialog } from '@/components/confirm-dialog'
-import { roles } from '../data/data'
 import { type User } from '../data/schema'
 import { useUsers } from './users-provider'
 

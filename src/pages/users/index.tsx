@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import { useUsers } from './components/users-provider'
 import { usersColumns } from './components/users-columns' // Corrected import name
 import { DataTable } from './components/users-table'

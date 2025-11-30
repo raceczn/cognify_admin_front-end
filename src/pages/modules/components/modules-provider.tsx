@@ -1,13 +1,17 @@
-// src/pages/modules/components/modules-provider.tsx
 import React, { useState, useCallback, useEffect } from 'react'
-import { getModules } from '@/lib/content-hooks'
-import { getAllSubjects } from '@/lib/subjects-hooks' // This now returns full Subject objects
+import { 
+  getModules, 
+  createModule, 
+  updateModule, 
+  deleteModule 
+} from '@/lib/modules-hooks'
+import { getAllSubjects } from '@/lib/subjects-hooks'
 import useDialogState from '@/hooks/use-dialog-state'
 import { type Module } from '../data/schema'
+import { useMutation, useQueryClient, UseMutationResult } from '@tanstack/react-query'
+import { toast } from 'sonner'
 
 type ModulesDialogType = 'add' | 'edit' | 'delete'
-
-// [FIX] Update local Subject definition to match the new Hook return
 type SubjectOption = { id: string; title: string }
 
 type ModulesContextType = {
@@ -20,6 +24,11 @@ type ModulesContextType = {
   loadModules: () => Promise<void>
   isLoading: boolean
   isLoadingSubjects: boolean
+
+  // Expose Mutations
+  createModuleMutation: UseMutationResult<any, Error, Partial<Module>>
+  updateModuleMutation: UseMutationResult<any, Error, { id: string; data: Partial<Module> }>
+  deleteModuleMutation: UseMutationResult<any, Error, string>
 }
 
 const ModulesContext = React.createContext<ModulesContextType | null>(null)
@@ -32,15 +41,13 @@ export function ModulesProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(false)
 
+  const queryClient = useQueryClient()
+
   const loadModules = useCallback(async () => {
     try {
       setIsLoading(true)
       const res = await getModules()
-      if (res && Array.isArray(res.items)) {
-        setModules(res.items)
-      } else {
-        setModules([])
-      }
+      setModules(Array.isArray(res) ? res : res.items || [])
     } catch (err) {
       console.error('Failed to load modules:', err)
     } finally {
@@ -52,11 +59,7 @@ export function ModulesProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoadingSubjects(true)
       const res = await getAllSubjects()
-      // [FIX] Map the full Subject object to the simpler shape needed here
-      const options = res.items.map(s => ({
-        id: s.id,
-        title: s.title
-      }))
+      const options = res.items.map(s => ({ id: s.id, title: s.title }))
       setSubjects(options)
     } catch (err) {
       console.error('Failed to load subjects:', err)
@@ -64,6 +67,32 @@ export function ModulesProvider({ children }: { children: React.ReactNode }) {
       setIsLoadingSubjects(false)
     }
   }, [])
+
+  // --- Mutations ---
+  const createModuleMutation = useMutation({
+    mutationFn: createModule,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['modules'] })
+      loadModules()
+    }
+  })
+
+  const updateModuleMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Module> }) => updateModule({ id, data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['modules'] })
+      loadModules()
+    }
+  })
+
+  const deleteModuleMutation = useMutation({
+    mutationFn: deleteModule,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['modules'] })
+      loadModules()
+      toast.success("Module deleted")
+    }
+  })
 
   useEffect(() => {
     loadModules()
@@ -82,6 +111,9 @@ export function ModulesProvider({ children }: { children: React.ReactNode }) {
         loadModules,
         isLoading,
         isLoadingSubjects,
+        createModuleMutation,
+        updateModuleMutation,
+        deleteModuleMutation
       }}
     >
       {children}

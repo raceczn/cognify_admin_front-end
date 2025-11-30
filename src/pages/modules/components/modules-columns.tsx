@@ -1,11 +1,15 @@
-// src/pages/modules/components/modules-columns.tsx
 import { type ColumnDef } from '@tanstack/react-table'
-import { FileText } from 'lucide-react'
+import { FileText, MoreHorizontal } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { DataTableColumnHeader } from '@/components/data-table'
 import { LongText } from '@/components/long-text'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import { type Module } from '../data/schema'
 import { DataTableRowActions } from './data-table-row-actions'
 import { useModules } from './modules-provider'
@@ -13,8 +17,8 @@ import { useModules } from './modules-provider'
 // Helper component to display subject name from ID
 const SubjectName = ({ subjectId }: { subjectId: string }) => {
   const { subjects } = useModules()
-  const subject = subjects.find((s) => s.subject_id === subjectId)
-  return <span>{subject?.subject_name || subjectId}</span>
+  const subject = subjects.find((s) => s.id === subjectId)
+  return <span>{subject?.title || subjectId}</span>
 }
 
 export const modulesColumns: ColumnDef<Module>[] = [
@@ -70,10 +74,12 @@ export const modulesColumns: ColumnDef<Module>[] = [
     },
   },
   {
-    accessorKey: 'bloom_level',
-    header: 'Bloom Level',
+    // [FIX] Use plural 'bloom_levels' to match schema and backend
+    accessorKey: 'bloom_levels', 
+    header: 'Bloom Taxonomy',
     cell: ({ row }) => {
-      const level = row.getValue('bloom_level') as string
+      // Safely cast to array, defaulting to empty if null/undefined
+      const levels = (row.getValue('bloom_levels') as string[]) || []
 
       const bloomColors: Record<string, string> = {
         remembering: 'bg-blue-500',
@@ -84,91 +90,73 @@ export const modulesColumns: ColumnDef<Module>[] = [
         creating: 'bg-pink-500',
       }
 
-      const dotColor = bloomColors[level] || 'bg-gray-400'
+      if (levels.length === 0) {
+        return <span className="text-muted-foreground text-xs">-</span>
+      }
+
+      // [FIX] Logic to maintain row height: Show 2, hide the rest behind a Popover
+      const MAX_VISIBLE = 2
+      const visibleLevels = levels.slice(0, MAX_VISIBLE)
+      const hiddenLevels = levels.slice(MAX_VISIBLE)
+      const hasMore = hiddenLevels.length > 0
 
       return (
-        <Badge
-          variant='outline'
-          className='flex items-center gap-2 whitespace-normal'
-        >
-          <span className={`h-2 w-2 rounded-full ${dotColor}`} />
-          {level}
-        </Badge>
+        <div className="flex items-center gap-1">
+          {visibleLevels.map((level) => {
+            const lowerLevel = level.toLowerCase()
+            const dotColor = bloomColors[lowerLevel] || 'bg-gray-400'
+            return (
+              <Badge
+                key={level}
+                variant='outline'
+                className='flex items-center gap-1.5 whitespace-nowrap px-2 py-0.5 text-[10px]'
+              >
+                <span className={`h-1.5 w-1.5 rounded-full ${dotColor}`} />
+                {level}
+              </Badge>
+            )
+          })}
+          
+          {hasMore && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Badge 
+                  variant="secondary" 
+                  className="cursor-pointer px-1.5 text-[10px] hover:bg-muted"
+                  title="View all tags"
+                >
+                  +{hiddenLevels.length}
+                </Badge>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-3" align="start">
+                <div className="space-y-2">
+                  <h4 className="font-medium leading-none text-xs text-muted-foreground mb-2">
+                    All Taxonomy Levels
+                  </h4>
+                  <div className="flex flex-col gap-2">
+                    {levels.map((level) => {
+                      const lowerLevel = level.toLowerCase()
+                      const dotColor = bloomColors[lowerLevel] || 'bg-gray-400'
+                      return (
+                        <Badge
+                          key={level}
+                          variant='outline'
+                          className='w-fit flex items-center gap-2 whitespace-nowrap'
+                        >
+                          <span className={`h-2 w-2 rounded-full ${dotColor}`} />
+                          {level}
+                        </Badge>
+                      )
+                    })}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
+        </div>
       )
     },
   },
-
-    // {
-
-  //   id: 'ai_status',
-
-  //   header: 'AI Content',
-
-  //   cell: ({ row }) => {
-
-  //     const {
-
-  //       generated_summary_id,
-
-  //       generated_quiz_id,
-
-  //       generated_flashcards_id,
-
-  //     } = row.original
-
-  //     const hasAll =
-
-  //       generated_summary_id && generated_quiz_id && generated_flashcards_id
-
-  //     const hasSome =
-
-  //       generated_summary_id || generated_quiz_id || generated_flashcards_id
-
-
-
-  //     if (hasAll) {
-
-  //       return (
-
-  //         <Badge variant='success'>
-
-  //                       <Check className='mr-1 h-3 w-3' /> Generated
-
-  //            {' '}
-
-  //         </Badge>
-
-  //       )
-
-  //     }
-
-  //     if (hasSome) {
-
-  //       return (
-
-  //         <Badge variant='secondary'>
-
-  //                       <Bot className='mr-1 h-3 w-3' /> Partial          {' '}
-
-  //         </Badge>
-
-  //       )
-
-  //     }
-
-  //     return (
-
-  //       <Badge variant='outline'>
-
-  //                   <X className='mr-1 h-3 w-3' /> None        {' '}
-
-  //       </Badge>
-
-  //     )
-
-  //   },
-
-  // },
   {
     accessorKey: 'material_url',
     header: 'Material',
@@ -176,8 +164,13 @@ export const modulesColumns: ColumnDef<Module>[] = [
       const url = row.getValue('material_url') as string | null
       if (url) {
         return (
-          <Button variant='link' asChild className='p-0 h-auto'>
-            <a href={url} target='_blank' rel='noopener noreferrer' className='flex items-center'>
+          <Button variant='link' asChild className='h-auto p-0'>
+            <a
+              href={url}
+              target='_blank'
+              rel='noopener noreferrer'
+              className='flex items-center'
+            >
               <FileText className='mr-2 h-4 w-4' />
               View
             </a>

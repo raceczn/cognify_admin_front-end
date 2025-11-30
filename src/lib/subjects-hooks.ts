@@ -1,6 +1,5 @@
-// src/lib/subjects-hooks.ts
-import api from '@/lib/axios-client'
 import { type Subject } from '@/pages/subjects/data/schema'
+import api from '@/lib/axios-client'
 
 type PaginatedSubjectsResponse = {
   items: Subject[]
@@ -9,44 +8,27 @@ type PaginatedSubjectsResponse = {
 
 export async function getAllSubjects(): Promise<PaginatedSubjectsResponse> {
   try {
-    // Attempt to fetch from a dedicated subjects endpoint first
-    // If you haven't created GET /subjects yet, use the admin queue as fallback or return empty
-    // Ideally: const res = await api.get('/subjects')
+    const res = await api.get('/subjects/')
+    const raw = res.data
     
-    // For now, using a fallback or admin endpoint if your backend setup isn't fully ready for /subjects
-    const res = await api.get('/admin/verification-queue') 
-    
-    // Normalize data to match the Subject Schema
-    const rawItems = Array.isArray(res.data) ? res.data : (res.data?.items || [])
-    
-    // Filter only subjects from the queue or list
-    const subjectItems = rawItems.filter((i: any) => i.type === 'subject' || !i.type)
-
-    const items: Subject[] = subjectItems.map((s: any) => {
-        const data = s.data || s
-        return {
-            id: s.id || s.item_id || '',
-            title: data.title || s.title || 'Untitled',
-            pqf_level: data.pqf_level ?? 6,
-            description: data.description,
-            // Defaults for UI fields
-            icon_name: 'book',
-            icon_color: '#000000',
-            icon_bg_color: '#ffffff',
-            card_bg_color: '#ffffff',
-            is_verified: !!data.is_verified,
-            created_at: data.created_at ? new Date(data.created_at) : undefined
-        }
-    })
-    
+    // [FIX] Added check for 'raw.subjects' which is what Python backend returns
+    const items: Subject[] = Array.isArray(raw)
+      ? raw
+      : Array.isArray(raw?.items)
+        ? raw.items
+        : Array.isArray(raw?.subjects) 
+          ? raw.subjects 
+          : []
+          
     return { items, last_doc_id: null }
   } catch (err) {
-    console.error("Error fetching subjects:", err)
+    console.error('Error fetching subjects:', err)
     return { items: [], last_doc_id: null }
   }
 }
 
-// [FIX] Added missing CRUD operations
+// ... rest of the file (createSubject, etc.) remains the same ...
+// Ensure you keep the CRUD functions I added in previous turns!
 export async function createSubject(data: Partial<Subject>) {
   const res = await api.post('/subjects/', data)
   return res.data
@@ -59,5 +41,28 @@ export async function updateSubject(id: string, data: Partial<Subject>) {
 
 export async function deleteSubject(id: string) {
   const res = await api.delete(`/subjects/${id}`)
+  return res.data
+}
+
+export async function getSubject(id: string): Promise<Subject> {
+  const res = await api.get(`/subjects/${id}`)
+  return res.data
+}
+
+export async function uploadSubjectImage(file: File) {
+  const formData = new FormData()
+  formData.append('file', file)
+  const res = await api.post('/subjects/upload-image', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return res.data
+}
+
+export async function createSubjectFromTos(file: File) {
+  const formData = new FormData()
+  formData.append('file', file)
+  const res = await api.post('/tos/upload-tos', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
   return res.data
 }

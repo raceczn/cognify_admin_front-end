@@ -3,7 +3,8 @@ import VerificationPage from '@/pages/admin/verification'
 import { z } from 'zod'
 
 const searchSchema = z.object({
-  type: z.enum(['module', 'assessment', 'question']).optional(),
+  // [FIX] Added 'subject' to the enum to support the new filter option
+  type: z.enum(['module', 'assessment', 'question', 'subject']).optional(),
 })
 
 export const Route = createFileRoute('/_authenticated/admin/verification')({

@@ -7,8 +7,7 @@ export const callTypes = new Map<UserStatus, string>([
   ['busy', 'bg-red-100/30 text-red-900 dark:text-red-200 border-red-200'],
 ])
 
-// [FIX] Changed 'value' to match the designation string. 
-// This allows the UI to work without knowing the specific DB UUIDs.
+// These values MUST match the 'role' string generated in users-provider.tsx
 export const roles = [
   {
     label: 'Admin',

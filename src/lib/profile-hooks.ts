@@ -15,6 +15,9 @@ export interface UserProfile {
   role_id: string
   profile_picture?: string
   is_verified?: boolean
+  // [FIX] Added is_active to interface
+  is_active?: boolean 
+  
   pre_assessment_score?: number
   ai_confidence?: number
   current_module?: string
@@ -29,7 +32,7 @@ type PaginatedUsersResponse = {
   last_doc_id: string | null
 }
 
-// [FIX] Helper to find the actual profile object inside nested responses
+// Helper to find the actual profile object inside nested responses
 const extractProfileData = (data: any) => {
   if (!data) return {}
   if (data.data?.profile) return data.data.profile
@@ -53,6 +56,7 @@ const normalizeProfile = (p: any): UserProfile => {
     role_id: String(raw.role_id ?? ''),
     profile_picture: raw.profile_picture ?? raw.profile_image,
     is_verified: !!raw.is_verified,
+    is_active: raw.is_active ?? true, // Default to true if missing
     pre_assessment_score: raw.pre_assessment_score,
     ai_confidence: raw.ai_confidence,
     current_module: raw.current_module,
@@ -62,6 +66,8 @@ const normalizeProfile = (p: any): UserProfile => {
     deleted_at: raw.deleted_at ?? null,
   }
 }
+
+// ... (Rest of the file remains unchanged: getMyProfile, updateProfile, etc.)
 
 // ===== Profiles (current user) =====
 export async function getMyProfile(): Promise<UserProfile> {
@@ -154,7 +160,6 @@ export async function adminSystemOverview(): Promise<any> {
   return res.data
 }
 
-// [FIX] Restored this function which was missing
 export async function getUserGrowthStats(): Promise<{ date: string; new_users: number; total_users: number }[]> {
   const res = await api.get('/admin/users/growth')
   return res.data

@@ -18,6 +18,9 @@ export function ForbiddenError() {
             Go Back
           </Button>
           <Button onClick={() => navigate({ to: '/' })}>Back to Home</Button>
+          <Button onClick={async () => await navigate({ to: '/sign-in' })}>
+            Sign In
+          </Button>
         </div>
       </div>
     </div>

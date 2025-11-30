@@ -4,7 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 export interface VerificationItem {
   item_id: string
-  type: 'module' | 'question' | 'assessment'
+  // [FIX] Added 'subject' to the type union
+  type: 'module' | 'question' | 'assessment' | 'subject'
   title: string
   submitted_by: string
   submitted_at: string
@@ -66,9 +67,7 @@ export function useWhitelist() {
       const res = await api.get('/admin/whitelist')
       const rawUsers = res.data.users || []
       
-      // [FIX] Normalize the nested data structure
       return rawUsers.map((item: any) => {
-        // Handle cases where item might already be flat or nested
         const data = item.data || item
         return {
           id: item.id || data.id,

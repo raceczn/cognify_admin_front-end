@@ -1,32 +1,14 @@
 // src/pages/modules/components/modules-dialogs.tsx
-import { useModules } from './modules-provider'
-import { ModulesMutateDrawer } from './modules-mutate-drawer'
 import { ModuleDeleteDialog } from './modules-delete-dialog'
+import { useModules } from './modules-provider'
 
 export function ModulesDialogs() {
-  const { open, setOpen, currentRow, loadModules } = useModules()
+  const { open, setOpen, currentRow } = useModules()
 
   return (
     <>
-      <ModulesMutateDrawer
-        key='module-add'
-        open={open === 'add'}
-        onOpenChange={(value) => setOpen(value ? 'add' : null)}
-        onSuccess={loadModules}
-      />
-
       {currentRow && (
         <>
-          <ModulesMutateDrawer
-            key={`module-edit-${currentRow?.id}`}
-            open={open === 'edit'}
-            onOpenChange={() => {
-              setOpen(null) // Close by setting to null
-            }}
-            currentRow={currentRow}
-            onSuccess={loadModules}
-          />
-
           <ModuleDeleteDialog
             key={`module-delete-${currentRow?.id}`}
             open={open === 'delete'}
