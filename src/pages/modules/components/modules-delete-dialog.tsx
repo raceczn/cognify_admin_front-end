@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
-import { deleteModule } from '@/lib/modules-hooks'
+import { deleteModule } from '@/lib/content-hooks'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { type Module } from '../data/schema'
 import { useModules } from './modules-provider'

@@ -108,3 +108,22 @@ export function useRemoveWhitelist() {
     },
   })
 }
+
+// --- ADD THIS NEW HOOK ---
+export function useBulkWhitelist() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData()
+      formData.append('file', file)
+      
+      const res = await api.post('/admin/whitelist/bulk', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      return res.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-whitelist'] })
+    },
+  })
+}

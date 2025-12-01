@@ -1,52 +1,29 @@
-import { Assessment } from '@/pages/assessments/data/assessment';
+import api from '@/lib/axios-client'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import api from './axios-client';
+import { Assessment } from '@/pages/assessments/data/schema'
 
-// --- Query Keys ---
-export const assessmentKeys = {
-  all: ['assessments'] as const,
-  lists: () => [...assessmentKeys.all, 'list'] as const,
-  details: () => [...assessmentKeys.all, 'detail'] as const,
-  detail: (id: string) => [...assessmentKeys.details(), id] as const,
-}
-
-// --- Hooks ---
-
-// 1. Fetch All Assessments
-export function useAssessmentsQuery() {
+export function useAssessmentsQuery(subjectId?: string) {
   return useQuery({
-    queryKey: assessmentKeys.lists(),
+    queryKey: ['assessments', subjectId],
     queryFn: async () => {
-      const res = await api.get('/assessments/')
-      
-      // Handle PaginatedResponse { items: [...], last_doc_id: ... }
-      if (res.data && Array.isArray(res.data.items)) {
-        return res.data.items as Assessment[]
-      }
-      
-      // Fallback for simple array response
-      if (Array.isArray(res.data)) {
-        return res.data as Assessment[]
-      }
-      
-      return []
+      const params = subjectId ? { subject_id: subjectId } : {}
+      const res = await api.get('/assessments/', { params })
+      return res.data as Assessment[]
     },
   })
 }
 
-// 2. Fetch Single Assessment
-export function useAssessmentQuery(id: string) {
+export function useAssessmentQuery(assessmentId: string) {
   return useQuery({
-    queryKey: assessmentKeys.detail(id),
+    queryKey: ['assessment', assessmentId],
     queryFn: async () => {
-      const res = await api.get(`/assessments/${id}`)
+      const res = await api.get(`/assessments/${assessmentId}`)
       return res.data as Assessment
     },
-    enabled: !!id,
+    enabled: !!assessmentId,
   })
 }
 
-// 3. Create Assessment
 export function useCreateAssessmentMutation() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -55,12 +32,11 @@ export function useCreateAssessmentMutation() {
       return res.data
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: assessmentKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: ['assessments'] })
     },
   })
 }
 
-// 4. Update Assessment
 export function useUpdateAssessmentMutation() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -68,9 +44,34 @@ export function useUpdateAssessmentMutation() {
       const res = await api.put(`/assessments/${id}`, data)
       return res.data
     },
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: assessmentKeys.detail(id) })
-      queryClient.invalidateQueries({ queryKey: assessmentKeys.lists() })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['assessments'] })
+    },
+  })
+}
+
+export function useVerifyAssessmentMutation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.post(`/assessments/${id}/verify`)
+      return res.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['assessments'] })
+    },
+  })
+}
+
+// [FIX] Added missing export
+export function useDeleteAssessmentMutation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/assessments/${id}`)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['assessments'] })
     },
   })
 }

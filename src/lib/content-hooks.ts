@@ -1,4 +1,3 @@
-// src/lib/content-hooks.ts
 import api from '@/lib/axios-client'
 import { type Module } from '@/pages/modules/data/schema'
 
@@ -6,7 +5,6 @@ export async function getModules(subjectId?: string) {
   const params = subjectId ? { subject_id: subjectId } : {}
   const res = await api.get('/modules/', { params })
   
-  // [FIX] Handle backend response structure { items: [...] } or raw array
   const rawItems = Array.isArray(res.data) ? res.data : res.data.items || []
   return { items: rawItems.map(normalizeModule) }
 }
@@ -64,25 +62,45 @@ function normalizeModule(record: any): Module {
   const data = record.data || record
   const id = record.id || data.id
   
+  // 1. Get raw array or single string from backend
+  const rawLevels = Array.isArray(data.bloom_levels) 
+    ? data.bloom_levels 
+    : (data.bloom_level ? [data.bloom_level] : [])
+
+  // 2. [FIX] Force Title Case (e.g., "remembering" -> "Remembering")
+  // This matches the UI constants in your Edit Form
+  const bloomLevels = rawLevels.map((l: string) => {
+    if (!l) return 'Remembering'
+    return l.charAt(0).toUpperCase() + l.slice(1).toLowerCase()
+  })
+
+  // 3. Fallback if empty
+  if (bloomLevels.length === 0) {
+    bloomLevels.push('Remembering')
+  }
+
   return {
     id: id,
     subject_id: data.subject_id || '',
     title: data.title || 'Untitled',
     purpose: data.purpose,
     
-    // [FIX] Map to 'bloom_levels' array. Handle legacy singular 'bloom_level' if present.
-    bloom_levels: data.bloom_levels || (data.bloom_level ? [data.bloom_level] : []),
+    // Ensure strict type compliance
+    bloom_levels: bloomLevels,
+    bloom_level: bloomLevels[0], 
     
     material_type: data.material_type,
     material_url: data.material_url,
     cover_image_url: data.cover_image_url,
     
+    input_type: data.content ? 'text' : 'file',
+    content: data.content,
+
     is_verified: !!data.is_verified,
     verified_at: data.verified_at ? new Date(data.verified_at) : null,
     created_by: data.created_by,
     
     created_at: new Date(data.created_at || new Date()),
     deleted: !!data.deleted,
-    // removed deleted_at if not in interface, or keep if optional
   }
 }

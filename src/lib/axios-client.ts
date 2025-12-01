@@ -47,8 +47,6 @@ api.interceptors.response.use(
             console.warn('User does not have required permissions.')
             throw new Error('Access Denied: You do not have permission to access this system.')
           }
-          // [FIX] REMOVED window.location.href = '/'
-          // We simply return the response and let the calling component (UserAuthForm) handle navigation.
         } 
         
         if (data.role_designation) {
@@ -57,7 +55,6 @@ api.interceptors.response.use(
           }))
         }
       } catch (err) {
-        // If permission check fails, reject the promise so UserAuthForm catches it
         return Promise.reject(err)
       }
     }
@@ -65,18 +62,34 @@ api.interceptors.response.use(
     return response
   },
   async (error) => {
+    const originalRequest = error.config
+
     // Handle 401 Unauthorized (Token Expiry)
-    if (error.response?.status === 401 && !error.config._retry) {
-      error.config._retry = true
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+      
+      // CRITICAL FIX: Prevent infinite loop
+      // Don't retry if the failed request is already the refresh endpoint or login endpoint
+      if (
+        originalRequest.url?.includes('/auth/refresh') || 
+        originalRequest.url?.includes('/auth/login')
+      ) {
+        return Promise.reject(error)
+      }
+
+      originalRequest._retry = true
       
       try {
         await api.post('/auth/refresh') // Backend reads refresh cookie
-        return api(error.config) // Retry original request
+        return api(originalRequest) // Retry original request
       } catch (refreshError) {
-        // Only redirect to login if refresh fails and we are not already there
+        // Refresh failed (Session expired or invalid)
+  
+
+        // 2. Redirect to Login if not already there
         if (window.location.pathname !== '/sign-in') {
              window.location.href = '/sign-in'
         }
+        
         return Promise.reject(refreshError)
       }
     }

@@ -1,3 +1,4 @@
+// src/lib/subjects-hooks.ts
 import { type Subject } from '@/pages/subjects/data/schema'
 import api from '@/lib/axios-client'
 
@@ -9,26 +10,33 @@ type PaginatedSubjectsResponse = {
 export async function getAllSubjects(): Promise<PaginatedSubjectsResponse> {
   try {
     const res = await api.get('/subjects/')
-    const raw = res.data
-    
-    // [FIX] Added check for 'raw.subjects' which is what Python backend returns
-    const items: Subject[] = Array.isArray(raw)
-      ? raw
-      : Array.isArray(raw?.items)
-        ? raw.items
-        : Array.isArray(raw?.subjects) 
-          ? raw.subjects 
-          : []
-          
-    return { items, last_doc_id: null }
+
+    const rawItems = Array.isArray(res.data) ? res.data : res.data?.items || []
+
+    const items: Subject[] = rawItems.map((s: any) => {
+      const data = s.data || s
+      return {
+        id: s.id || data.id || '',
+        title: data.title || 'Untitled',
+        pqf_level: data.pqf_level ?? 6,
+        description: data.description,
+        icon_name: data.icon_name ?? 'book',
+        icon_color: data.icon_color ?? '#000000',
+        icon_bg_color: data.icon_bg_color ?? '#ffffff',
+        card_bg_color: data.card_bg_color ?? '#ffffff',
+        is_verified: !!data.is_verified,
+        created_at: data.created_at ? new Date(data.created_at) : undefined,
+      }
+    })
+
+    return { items, last_doc_id: res.data?.last_doc_id ?? null }
   } catch (err) {
     console.error('Error fetching subjects:', err)
     return { items: [], last_doc_id: null }
   }
 }
 
-// ... rest of the file (createSubject, etc.) remains the same ...
-// Ensure you keep the CRUD functions I added in previous turns!
+// [FIX] Added missing CRUD operations
 export async function createSubject(data: Partial<Subject>) {
   const res = await api.post('/subjects/', data)
   return res.data
@@ -46,23 +54,5 @@ export async function deleteSubject(id: string) {
 
 export async function getSubject(id: string): Promise<Subject> {
   const res = await api.get(`/subjects/${id}`)
-  return res.data
-}
-
-export async function uploadSubjectImage(file: File) {
-  const formData = new FormData()
-  formData.append('file', file)
-  const res = await api.post('/subjects/upload-image', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  })
-  return res.data
-}
-
-export async function createSubjectFromTos(file: File) {
-  const formData = new FormData()
-  formData.append('file', file)
-  const res = await api.post('/tos/upload-tos', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  })
   return res.data
 }

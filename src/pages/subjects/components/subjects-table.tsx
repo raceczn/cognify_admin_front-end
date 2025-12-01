@@ -4,6 +4,7 @@ import {
   type VisibilityState,
   type ColumnFiltersState,
   type PaginationState,
+  type ColumnDef,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
@@ -25,7 +26,7 @@ import { type Subject } from '../data/schema'
 
 interface DataTableProps {
   data: Subject[]
-  columns: any[] // passed from parent or imported
+  columns: ColumnDef<Subject, unknown>[]
 }
 
 export function DataTable({ data, columns }: DataTableProps) {

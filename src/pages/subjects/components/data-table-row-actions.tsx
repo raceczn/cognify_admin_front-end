@@ -10,7 +10,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Subject } from '../data/schema'
-import { useSubjects } from './subjects-provider'
 
 interface DataTableRowActionsProps<TData> {
   row: Row<TData>
@@ -20,7 +19,6 @@ export function DataTableRowActions<TData>({
   row,
 }: DataTableRowActionsProps<TData>) {
   const subject = row.original as Subject
-  const { setOpen, setCurrentRow } = useSubjects()
   const navigate = useNavigate()
 
   return (
@@ -38,7 +36,7 @@ export function DataTableRowActions<TData>({
         <DropdownMenuItem
           onClick={() =>
             navigate({
-              to: '/subjects/$subjectId',
+              to: '/subjects/$subjectId/edit',
               params: { subjectId: subject.id },
             })
           }
@@ -47,10 +45,12 @@ export function DataTableRowActions<TData>({
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          onClick={() => {
-            setCurrentRow(subject)
-            setOpen('delete')
-          }}
+          onClick={() =>
+            navigate({
+              to: '/subjects/$subjectId/edit',
+              params: { subjectId: subject.id },
+            })
+          }
         >
           Delete
         </DropdownMenuItem>

@@ -1,10 +1,10 @@
-'use client'
-
-import { useState } from 'react'
 import { format } from 'date-fns'
-import { Check, X, Eye, FileText, HelpCircle, ClipboardList, Loader2, BookOpen } from 'lucide-react'
-import { useVerificationQueue, useVerifyItem, useRejectItem } from '@/lib/admin-hooks'
+import { 
+  Eye, FileText, HelpCircle, ClipboardList, Loader2, BookOpen, Ban
+} from 'lucide-react'
+import { useVerificationQueue } from '@/lib/admin-hooks'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import {
   Card,
   CardContent,
@@ -20,8 +20,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { toast } from 'sonner'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ThemeSwitch } from '@/components/theme-switch'
@@ -31,51 +29,19 @@ import { useSearch, useNavigate } from '@tanstack/react-router'
 export default function VerificationPage() {
   const { data: queue, isLoading } = useVerificationQueue()
   const search = useSearch({ from: '/_authenticated/admin/verification' }) as { type?: string }
-  const navigate = useNavigate({ from: '/admin/verification' })
+  const navigate = useNavigate()
   
-  const verifyMutation = useVerifyItem()
-  const rejectMutation = useRejectItem()
-  
-  const [processingId, setProcessingId] = useState<string | null>(null)
-
   const filterType = search?.type
   
-  // Logic is correct here
   const filteredQueue = queue?.filter(item => {
-    if (!filterType || filterType === 'all') return true 
+    if (!filterType) return true
     return item.type === filterType
-  })
-
-  const handleVerify = async (id: string, type: string) => {
-    setProcessingId(id)
-    try {
-      await verifyMutation.mutateAsync({ id, type })
-      toast.success('Item verified successfully')
-    } catch (err) {
-      toast.error('Failed to verify item')
-    } finally {
-      setProcessingId(null)
-    }
-  }
-
-  const handleReject = async (id: string, type: string) => {
-    const reason = prompt("Enter rejection reason:")
-    if (!reason) return
-
-    setProcessingId(id)
-    try {
-      await rejectMutation.mutateAsync({ id, type, reason })
-      toast.success('Item rejected')
-    } catch (err) {
-      toast.error('Failed to reject item')
-    } finally {
-      setProcessingId(null)
-    }
-  }
+  }) || []
 
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'module': return <FileText className="h-4 w-4 text-blue-500" />
+      case 'question': return <HelpCircle className="h-4 w-4 text-orange-500" />
       case 'assessment': return <ClipboardList className="h-4 w-4 text-purple-500" />
       case 'subject': return <BookOpen className="h-4 w-4 text-green-500" />
       default: return <Eye className="h-4 w-4" />
@@ -95,28 +61,21 @@ export default function VerificationPage() {
         <div className="mb-6">
             <h1 className='text-2xl font-bold tracking-tight'>Pending Approvals</h1>
             <p className='text-muted-foreground'>
-                Review content submitted by faculty members.
+                Review content submitted by faculty members. Click "Review" to edit and verify.
             </p>
         </div>
 
-        <Tabs 
-          defaultValue="all" 
-          value={filterType || 'all'}
-          onValueChange={(val) => navigate({ search: (prev) => ({ ...prev, type: val === 'all' ? undefined : val }) })}
-          className="mb-4"
-        >
-          <TabsList>
-            <TabsTrigger value="all">All Pending</TabsTrigger>
-            <TabsTrigger value="module">Modules</TabsTrigger>
-            <TabsTrigger value="subject">Subjects</TabsTrigger>
-            <TabsTrigger value="assessment">Assessments</TabsTrigger>
-          </TabsList>
-        </Tabs>
-
         <Card>
           <CardHeader>
-            <CardTitle>Verification Queue</CardTitle>
-            <CardDescription>{filteredQueue?.length || 0} items waiting...</CardDescription>
+            <div className="flex items-center justify-between">
+              <CardTitle>Verification Queue</CardTitle>
+              {filterType && (
+                <Badge variant="secondary" className="capitalize">
+                  Filtering by: {filterType}s
+                </Badge>
+              )}
+            </div>
+            <CardDescription>{filteredQueue.length} items waiting...</CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -124,10 +83,16 @@ export default function VerificationPage() {
                 <Loader2 className="h-8 w-8 animate-spin mb-2" />
                 <p>Loading queue...</p>
               </div>
-            ) : !filteredQueue || filteredQueue.length === 0 ? (
+            ) : filteredQueue.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-muted/10 rounded-lg border border-dashed">
-                <Check className="h-10 w-10 mb-2 text-green-500 opacity-50" />
-                <p>No pending items found for this filter.</p>
+                {filterType ? (
+                   <>
+                     <Ban className="h-10 w-10 mb-2 text-muted-foreground opacity-50" />
+                     <p>No pending {filterType}s found.</p>
+                   </>
+                ) : (
+                   <p>All caught up! No pending items.</p>
+                )}
               </div>
             ) : (
               <div className="rounded-md border">
@@ -142,7 +107,6 @@ export default function VerificationPage() {
                     </TableRow>
                     </TableHeader>
                     <TableBody>
-                    {/* [FIX] Use filteredQueue instead of queue here */}
                     {filteredQueue.map((item) => (
                         <TableRow key={item.item_id}>
                         <TableCell>
@@ -159,31 +123,25 @@ export default function VerificationPage() {
                             </span>
                             </div>
                         </TableCell>
-                        <TableCell>{item.submitted_by}</TableCell>
+                        <TableCell>
+                            <div className="flex flex-col text-sm">
+                                <span>{item.submitted_by}</span>
+                            </div>
+                        </TableCell>
                         <TableCell className="text-muted-foreground text-sm">
                             {format(new Date(item.submitted_at), 'MMM d, yyyy')}
                         </TableCell>
                         <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
                             <Button 
                                 size="sm" 
-                                variant="outline" 
-                                className="text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200"
-                                disabled={processingId === item.item_id}
-                                onClick={() => handleVerify(item.item_id, item.type)}
+                                variant="secondary"
+                                onClick={() => navigate({
+                                    to: `/admin/verification/$type/$itemId`,
+                                    params: { type: item.type, itemId: item.item_id }
+                                })}
                             >
-                                <Check className="h-4 w-4 mr-1" /> Approve
+                                <Eye className="h-4 w-4 mr-2" /> Review
                             </Button>
-                            <Button 
-                                size="sm" 
-                                variant="outline" 
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                                disabled={processingId === item.item_id}
-                                onClick={() => handleReject(item.item_id, item.type)}
-                            >
-                                <X className="h-4 w-4 mr-1" /> Reject
-                            </Button>
-                            </div>
                         </TableCell>
                         </TableRow>
                     ))}

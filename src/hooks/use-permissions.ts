@@ -56,7 +56,7 @@ export function usePermissions() {
     // NEW RULE: Modules are Faculty-made
     canCreateModule: isFacultyMember,      
     // Default: Assessments are made by Admin OR Faculty (if rule hasn't changed)
-    canCreateAssessment: isAdmin || isFacultyMember, 
+    canCreateAssessment: isFacultyMember, 
     
     // Management: Admin Only (for all content Edit, Delete, Verify)
     canManageContent: isAdmin,             

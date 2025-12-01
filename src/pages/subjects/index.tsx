@@ -7,7 +7,7 @@ import { ThemeSwitch } from '@/components/theme-switch'
 import { SubjectsProvider, useSubjects } from './components/subjects-provider'
 import { SubjectsDialogs } from './components/subjects-dialogs'
 import { SubjectsPrimaryButtons } from './components/subjects-primary-buttons'
-import { DataTable } from './components/subjects-table' // [FIX] This import now works
+import { DataTable } from './components/subjects-table'
 import { subjectsColumns } from './components/subjects-columns'
 import { Library, Table as TableIcon } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
@@ -23,6 +23,11 @@ export default function Subjects() {
 function SubjectsPageContent() {
   const { subjects } = useSubjects()
   
+  // [FIX] Separate verified vs all subjects
+  // "Manage" tab needs to see EVERYTHING (pending, verified, rejected)
+  // "Browse" tab shows only the approved library
+  const verifiedSubjects = subjects.filter(s => s.is_verified)
+
   return (
     <>
       <Header>
@@ -56,7 +61,7 @@ function SubjectsPageContent() {
 
           <TabsContent value="browse">
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {subjects.map(s => (
+                {verifiedSubjects.map(s => (
                     <Card key={s.id} className="hover:shadow-md transition-shadow cursor-pointer">
                         <CardContent className="p-6">
                             <h3 className="font-semibold text-lg mb-1">{s.title}</h3>
@@ -69,11 +74,17 @@ function SubjectsPageContent() {
                         </CardContent>
                     </Card>
                 ))}
+                {verifiedSubjects.length === 0 && (
+                    <div className="col-span-full py-12 text-center text-muted-foreground">
+                        No verified subjects available.
+                    </div>
+                )}
              </div>
           </TabsContent>
 
           <TabsContent value="manage">
             <div className='-mx-4 flex-1 overflow-auto px-4 py-1 lg:flex-row lg:space-x-12 lg:space-y-0'>
+              {/* [FIX] Pass ALL subjects here, not just verified ones */}
               <DataTable data={subjects} columns={subjectsColumns} />
             </div>
           </TabsContent>

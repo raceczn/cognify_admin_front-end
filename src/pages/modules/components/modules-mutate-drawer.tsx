@@ -1,11 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useNavigate, useParams } from '@tanstack/react-router'
-import { ArrowLeft, Loader2, Check, ChevronsUpDown } from 'lucide-react'
+import { useNavigate } from '@tanstack/react-router'
+import { ArrowLeft, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
-
+import { getModule } from '@/lib/modules-hooks'
 import { Button } from '@/components/ui/button'
 import {
   Drawer,
@@ -30,30 +29,16 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command'
-
-// Layout Components
-import { Header } from '@/components/layout/header'
-import { Main } from '@/components/layout/main'
-import { ProfileDropdown } from '@/components/profile-dropdown'
-import { Search } from '@/components/search'
-import { ThemeSwitch } from '@/components/theme-switch'
-
-import { getModule } from '@/lib/modules-hooks'
-import { useModules, ModulesProvider } from './modules-provider'
+import { Checkbox } from '@/components/ui/checkbox'
 import { ModuleFormValues, moduleFormSchema } from '../data/schema'
+import { useModules } from './modules-provider'
+
+interface ModuleMutateFormProps {
+  moduleId?: string
+  isVerificationMode?: boolean
+  onApprove?: (data: ModuleFormValues) => void
+  onReject?: () => void
+}
 
 const BLOOM_LEVELS = [
   'Remembering',
@@ -64,11 +49,12 @@ const BLOOM_LEVELS = [
   'Creating',
 ]
 
-interface ModuleMutateFormProps {
-  moduleId?: string
-}
-
-export function ModuleMutateForm({ moduleId }: ModuleMutateFormProps) {
+export function ModuleMutateForm({
+  moduleId,
+  isVerificationMode,
+  onApprove,
+  onReject,
+}: ModuleMutateFormProps) {
   const {
     createModuleMutation,
     updateModuleMutation,
@@ -77,13 +63,14 @@ export function ModuleMutateForm({ moduleId }: ModuleMutateFormProps) {
   } = useModules()
   const navigate = useNavigate()
   const isEdit = !!moduleId
-  const [openBloom, setOpenBloom] = useState(false)
 
   const form = useForm<ModuleFormValues>({
     resolver: zodResolver(moduleFormSchema),
+    mode: 'onChange',
     defaultValues: {
       title: '',
       purpose: '',
+      // [FIX] Initializing to empty array for multi-select
       bloom_levels: [], 
       subject_id: '',
       material_url: '',
@@ -91,40 +78,68 @@ export function ModuleMutateForm({ moduleId }: ModuleMutateFormProps) {
     },
   })
 
+  // Check if only "Remembering" is selected (should disable material_url)
+  const watchedBloomLevels = form.watch('bloom_levels')
+  const isQuestionOnly =
+    watchedBloomLevels.length > 0 &&
+    watchedBloomLevels.every((l) => l === 'Remembering')
+
+  // Clear material_url if the user switches to 'Remembering' ONLY mode
+  useEffect(() => {
+    if (isQuestionOnly) {
+      form.setValue('material_url', '', { shouldDirty: false })
+    }
+  }, [isQuestionOnly, form])
+
   useEffect(() => {
     if (isEdit && moduleId) {
       getModule(moduleId)
         .then((data) => {
-          const rawData = data as any
-          const currentBlooms = 
-            rawData.bloom_levels || 
-            (rawData.bloom_level ? [rawData.bloom_level] : [])
-
           form.reset({
-            title: data.title,
+            title: data.title || '',
             purpose: data.purpose || '',
-            bloom_levels: currentBlooms, 
-            subject_id: data.subject_id,
+            // [FIX] Handle single string ('bloom_level') or array ('bloom_levels') from API
+            bloom_levels: Array.isArray(data.bloom_levels) 
+                ? data.bloom_levels 
+                : (data.bloom_level ? [data.bloom_level] : []),
+            subject_id: data.subject_id || '',
             material_url: data.material_url || '',
             is_verified: !!data.is_verified,
           })
         })
         .catch(() => toast.error('Could not load module'))
     }
-  }, [isEdit, moduleId, form])
+  }, [isEdit, moduleId])
 
   async function onSubmit(data: ModuleFormValues) {
     try {
+      const payload: Partial<ModuleFormValues> = { ...data }
+
+      // Enforce: If "Remembering" is set, material_url must be cleared.
+      if (isQuestionOnly) {
+        payload.material_url = ''
+      }
+      
+      // Ensure single bloom_level is sent for backend compatibility if needed, using the first element
+      const dataToSend = {
+          ...payload, 
+          bloom_level: payload.bloom_levels[0] || 'Remembering' 
+      }
+
       if (isEdit && moduleId) {
-        await updateModuleMutation.mutateAsync({ id: moduleId, data })
+        await updateModuleMutation.mutateAsync({ id: moduleId, data: dataToSend })
         toast.success('Module updated successfully.')
       } else {
-        await createModuleMutation.mutateAsync(data)
+        await createModuleMutation.mutateAsync(dataToSend)
         toast.success('Module created successfully.')
+      }
+      if (isVerificationMode && onApprove) {
+        await onApprove(data)
+        return
       }
       navigate({ to: '/modules' })
     } catch (error) {
-      toast.error('Failed to save module.')
+      toast.error(`Failed to save module.`)
     }
   }
 
@@ -204,102 +219,70 @@ export function ModuleMutateForm({ moduleId }: ModuleMutateFormProps) {
             )}
           />
 
+          {/* [FIX] Multi-select for Bloom's Taxonomy */}
           <FormField
             control={form.control}
-            name='material_url'
+            name='bloom_levels'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Material File (PDF/Word)</FormLabel>
-                <FormControl>
-                  <Input
-                    type='file'
-                    accept='.pdf,.doc,.docx'
-                    onChange={async (e) => {
-                      // Logic for file upload placeholder
-                    }}
-                  />
-                </FormControl>
+                <div className='mb-4'>
+                  <FormLabel>Bloom's Taxonomy Levels (Select Multiple)</FormLabel>
+                </div>
+                <div className="space-y-2">
+                  {BLOOM_LEVELS.map((level) => (
+                    <FormField
+                      key={level}
+                      control={form.control}
+                      name='bloom_levels'
+                      render={({ field: innerField }) => (
+                        <FormItem
+                          key={level}
+                          className='flex flex-row items-start space-x-3 space-y-0'
+                        >
+                          <FormControl>
+                            <Checkbox
+                              checked={innerField.value?.includes(level)}
+                              onCheckedChange={(checked) => {
+                                return checked
+                                  ? innerField.onChange([...innerField.value, level])
+                                  : innerField.onChange(
+                                      innerField.value?.filter((value) => value !== level)
+                                    )
+                              }}
+                            />
+                          </FormControl>
+                          <FormLabel className="font-normal cursor-pointer">
+                            {level}
+                          </FormLabel>
+                        </FormItem>
+                      )}
+                    />
+                  ))}
+                </div>
                 <FormMessage />
               </FormItem>
             )}
           />
 
-          {/* [FIX] Multi-Select Dropdown (Combobox) for Bloom Levels */}
           <FormField
             control={form.control}
-            name="bloom_levels"
+            name='material_url'
             render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Bloom's Taxonomy Levels</FormLabel>
-                <Popover open={openBloom} onOpenChange={setOpenBloom}>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={openBloom}
-                        className={cn(
-                          "w-full justify-between",
-                          !field.value || field.value.length === 0 ? "text-muted-foreground" : ""
-                        )}
-                      >
-                        {field.value && field.value.length > 0
-                          ? `${field.value.length} selected`
-                          : "Select levels..."}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[300px] p-0" align="start">
-                    <Command>
-                      <CommandInput placeholder="Search levels..." />
-                      <CommandList>
-                        <CommandEmpty>No level found.</CommandEmpty>
-                        <CommandGroup>
-                          {BLOOM_LEVELS.map((level) => (
-                            <CommandItem
-                              key={level}
-                              value={level}
-                              onSelect={() => {
-                                const current = field.value || []
-                                const isSelected = current.includes(level)
-                                if (isSelected) {
-                                  field.onChange(current.filter((l) => l !== level))
-                                } else {
-                                  field.onChange([...current, level])
-                                }
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  field.value?.includes(level)
-                                    ? "opacity-100"
-                                    : "opacity-0"
-                                )}
-                              />
-                              {level}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+              <FormItem>
+                <FormLabel>Source Material URL</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder={
+                      isQuestionOnly
+                        ? 'N/A - This module is intended for multiple-choice questions.'
+                        : 'e.g., https://link-to-lecture.pdf'
+                    }
+                    {...field}
+                    value={field.value || ''}
+                    disabled={isQuestionOnly}
+                  />
+                </FormControl>
                 <FormMessage />
-                {/* Selected Tags Preview */}
-                {field.value && field.value.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {field.value.map((level) => (
-                      <div 
-                        key={level} 
-                        className="bg-secondary text-secondary-foreground text-xs px-2 py-1 rounded-md"
-                      >
-                        {level}
-                      </div>
-                    ))}
-                  </div>
-                )}
               </FormItem>
             )}
           />
@@ -312,18 +295,38 @@ export function ModuleMutateForm({ moduleId }: ModuleMutateFormProps) {
             >
               <ArrowLeft className='mr-2 h-4 w-4' /> Back to List
             </Button>
-            <Button type='submit' disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? (
+            <div className='flex gap-2'>
+              <Button type='submit' disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? (
+                  <>
+                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                    Saving...
+                  </>
+                ) : isEdit ? (
+                  'Save Changes'
+                ) : (
+                  'Create Module'
+                )}
+              </Button>
+              {isVerificationMode && (
                 <>
-                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                  Saving...
+                  <Button
+                    type='button'
+                    variant='secondary'
+                    onClick={() => onApprove?.(form.getValues())}
+                  >
+                    Approve
+                  </Button>
+                  <Button
+                    type='button'
+                    variant='destructive'
+                    onClick={() => onReject?.()}
+                  >
+                    Reject
+                  </Button>
                 </>
-              ) : isEdit ? (
-                'Save Changes'
-              ) : (
-                'Create Module'
               )}
-            </Button>
+            </div>
           </div>
         </form>
       </Form>
@@ -334,7 +337,7 @@ export function ModuleMutateForm({ moduleId }: ModuleMutateFormProps) {
 type ModulesMutateDrawerProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  currentRow?: { id: string; title?: string } | null
+  currentRow?: { id: string }
   onSuccess?: () => void
 }
 
@@ -343,38 +346,18 @@ export function ModulesMutateDrawer({
   onOpenChange,
   currentRow,
 }: ModulesMutateDrawerProps) {
-  const moduleId = currentRow?.id
-  const isEdit = !!moduleId
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent>
+      <DrawerContent className='h-[95vh]'>
         <DrawerHeader>
-          <DrawerTitle>{isEdit ? 'Edit Module' : 'Add Module'}</DrawerTitle>
+          <DrawerTitle>
+            {currentRow ? 'Edit Module' : 'Create Module'}
+          </DrawerTitle>
         </DrawerHeader>
-        <ModuleMutateForm moduleId={moduleId} />
+        <div className='flex-1 overflow-y-auto px-4 pb-10'>
+          <ModuleMutateForm moduleId={currentRow?.id} />
+        </div>
       </DrawerContent>
     </Drawer>
-  )
-}
-
-export function ModuleMutatePage() {
-  const params = useParams({ from: '/_authenticated/modules/$moduleId' }) as any
-  const moduleId = params.moduleId
-
-  return (
-    <ModulesProvider>
-      <Header>
-        <Search />
-        <div className='ms-auto flex items-center space-x-4'>
-          <ThemeSwitch />
-          <ProfileDropdown />
-        </div>
-      </Header>
-      <Main>
-        <ModuleMutateForm
-          moduleId={moduleId === 'new' ? undefined : moduleId}
-        />
-      </Main>
-    </ModulesProvider>
   )
 }

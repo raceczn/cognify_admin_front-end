@@ -5,7 +5,7 @@ import {
   QuestionType,
   AssessmentPurpose,
   Option,
-} from '@/pages/assessments/data/assessment'
+} from '@/pages/assessments/data/schema'
 import { Pencil, ListOrdered, Loader2, ArrowLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -35,6 +35,10 @@ interface AssessmentEditorProps {
   assessment: Assessment | null | undefined
   onUpdateAssessment: (assessment: Assessment) => void
   onBack?: () => void
+  subjects?: { id: string; title: string }[]
+  isVerificationMode?: boolean
+  onApprove?: (assessment: Assessment) => void
+  onReject?: () => void
 }
 
 const SUBJECT_IDS = [
@@ -47,11 +51,10 @@ const SUBJECT_IDS = [
 const MODULE_IDS = ['MOD_COG101', 'MOD_PERS202', 'MOD_MOTIVATION302']
 
 const ASSESSMENT_PURPOSES: AssessmentPurpose[] = [
-  'Pre-Test',
-  'Quiz',
-  'Post-Test',
-  'Practice_Exam',
-  'Diagnostic',
+  'pre-assessment',
+  'quiz',
+  'post-assessment',
+  'diagnostic',
 ]
 
 const BLOOM_LEVELS = [
@@ -67,15 +70,13 @@ const CLEAR_VALUE = 'clear-selection'
 
 const getPurposeDotColor = (purpose: AssessmentPurpose): string => {
   switch (purpose) {
-    case 'Practice_Exam':
-      return 'bg-[#63A361]'
-    case 'Post-Test':
-      return 'bg-[#8CA9FF]'
-    case 'Pre-Test':
-      return 'bg-[#FFA239]'
-    case 'Diagnostic':
+    case 'diagnostic':
       return 'bg-[#D34E4E]'
-    case 'Quiz':
+    case 'post-assessment':
+      return 'bg-[#8CA9FF]'
+    case 'pre-assessment':
+      return 'bg-[#FFA239]'
+    case 'quiz':
       return 'bg-gray-400'
     default:
       return 'bg-gray-500'
@@ -86,6 +87,10 @@ export function AssessmentEditor({
   assessment: initialAssessment,
   onUpdateAssessment,
   onBack,
+  subjects = [],
+  isVerificationMode,
+  onApprove,
+  onReject,
 }: AssessmentEditorProps) {
   const [assessment, setAssessment] = useState<Assessment | null | undefined>(
     initialAssessment
@@ -135,12 +140,14 @@ export function AssessmentEditor({
 
   const handleSave = () => {
     if (!assessment) return
-    const payloadQuestions = (assessment.questions || []).map((q) => {
-      const correctOpt = q.options.find((opt) => opt.is_correct)
+    const payloadQuestions = (assessment.questions || []).map((q: Question) => {
+      const correctOpt = (q.options || []).find(
+        (opt: Option) => !!opt.is_correct
+      )
       return {
         ...q,
         question: q.text,
-        options: q.options.map((opt) => opt.text),
+        options: (q.options || []).map((opt: Option) => opt.text),
         answer: correctOpt ? correctOpt.text : '',
         topic_title: (q as any).topic_title,
         bloom_level: (q as any).bloom_level,
@@ -152,16 +159,19 @@ export function AssessmentEditor({
       updated_at: new Date().toISOString(),
     }
     onUpdateAssessment(payload as any)
+    if (isVerificationMode && onApprove) {
+      onApprove(payload as any)
+    }
   }
 
   // [FIX] Handler for Bloom Checkboxes
   const handleBloomChange = (level: string, checked: boolean) => {
-    setAssessment((prev) => {
+    setAssessment((prev: Assessment | null | undefined) => {
       if (!prev) return prev
       const currentLevels = prev.bloom_levels || []
       const newLevels = checked
         ? [...currentLevels, level]
-        : currentLevels.filter((l) => l !== level)
+        : currentLevels.filter((l: string) => l !== level)
       return { ...prev, bloom_levels: newLevels }
     })
   }
@@ -177,7 +187,9 @@ export function AssessmentEditor({
 
   const handleUpdateDetails = (field: keyof Assessment, value: any) => {
     const finalValue = value === CLEAR_VALUE ? undefined : value
-    setAssessment((prev) => (prev ? { ...prev, [field]: finalValue } : prev))
+    setAssessment((prev: Assessment | null | undefined) =>
+      prev ? { ...prev, [field]: finalValue } : prev
+    )
   }
   const handleAddQuestion = (type: QuestionType) => {
     const newQuestion: Question = {
@@ -197,26 +209,31 @@ export function AssessmentEditor({
     )
   }
   const handleUpdateQuestion = (updatedQuestion: Question) => {
-    setAssessment((prev) => {
+    setAssessment((prev: Assessment | null | undefined) => {
       if (!prev) return prev
-      const newQuestions = (prev.questions || []).map((q) =>
+      const newQuestions = (prev.questions || []).map((q: Question) =>
         q.question_id === updatedQuestion.question_id ? updatedQuestion : q
       )
       return { ...prev, questions: newQuestions }
     })
   }
-  const handleDeleteQuestion = (qId: string) => {
-    setAssessment((prev) => {
+  const handleDeleteQuestion = (qId?: string) => {
+    setAssessment((prev: Assessment | null | undefined) => {
       if (!prev) return prev
       return {
         ...prev,
-        questions: (prev.questions || []).filter((q) => q.question_id !== qId),
+        questions: (prev.questions || []).filter(
+          (q: Question) => q.question_id !== qId
+        ),
       }
     })
   }
 
-  const questions = assessment.questions || []
-  const totalPoints = questions.reduce((sum, q) => sum + (q.points || 0), 0)
+  const questions: Question[] = assessment.questions || []
+  const totalPoints = questions.reduce(
+    (sum: number, q: Question) => sum + (q.points || 0),
+    0
+  )
   const getSelectValue = (value: string | null | undefined): string =>
     value == null ? CLEAR_VALUE : value
 
@@ -283,7 +300,7 @@ export function AssessmentEditor({
                             getPurposeDotColor(p)
                           )}
                         />
-                        <span>{p.replace('_', ' ')}</span>
+                        <span>{p.replace('-', ' ')}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -301,7 +318,10 @@ export function AssessmentEditor({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={CLEAR_VALUE}>Select Subject</SelectItem>
-                  {SUBJECT_IDS.map((id) => (
+                  {(subjects.length > 0
+                    ? subjects.map((s) => s.id)
+                    : SUBJECT_IDS
+                  ).map((id) => (
                     <SelectItem key={id} value={id}>
                       {id}
                     </SelectItem>
@@ -398,6 +418,24 @@ export function AssessmentEditor({
               Save Changes
             </Button>
           </div>
+          {isVerificationMode && (
+            <div className='flex w-full gap-2'>
+              <Button
+                variant='secondary'
+                className='flex-1'
+                onClick={() => assessment && onApprove?.(assessment)}
+              >
+                Approve
+              </Button>
+              <Button
+                variant='destructive'
+                className='flex-1'
+                onClick={() => onReject?.()}
+              >
+                Reject
+              </Button>
+            </div>
+          )}
         </CardFooter>
       </Card>
     </div>

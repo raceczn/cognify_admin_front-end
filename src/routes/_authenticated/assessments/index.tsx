@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Assessments } from '@/pages/assessments/index'
+// IMPORT THE DEFAULT EXPORT from your pages folder
+import { Assessments } from '@/pages/assessments' 
 
 export const Route = createFileRoute('/_authenticated/assessments/')({
   component: Assessments,

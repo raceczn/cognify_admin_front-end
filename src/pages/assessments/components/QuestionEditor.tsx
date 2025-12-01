@@ -1,16 +1,11 @@
+import { Question, QuestionType, Option } from '@/pages/assessments/data/schema'
 import { Trash2, ListOrdered, PlusCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Question, QuestionType, Option } from '@/pages/assessments/data/assessment'
 
 interface QuestionEditorProps {
   question: Question
@@ -19,7 +14,6 @@ interface QuestionEditorProps {
 }
 
 export function QuestionEditor({ question, onUpdate, onDelete }: QuestionEditorProps) {
-  
   const getTypeIcon = (type: QuestionType) => {
     const safeType = type || 'multiple_choice';
     switch (safeType) {
@@ -38,33 +32,32 @@ export function QuestionEditor({ question, onUpdate, onDelete }: QuestionEditorP
   }
 
   const handleOptionChange = (optionId: string, newText: string) => {
-    const newOptions = question.options.map(opt => 
+    const newOptions = question.options?.map(opt => 
       opt.id === optionId ? { ...opt, text: newText } : opt
-    )
+    ) || []
     onUpdate({ ...question, options: newOptions })
   }
 
-  // --- CRITICAL: Logic to toggle only one correct answer ---
   const handleCorrectOptionChange = (optionId: string) => {
-    const newOptions = question.options.map(opt => ({ 
+    const newOptions = question.options?.map(opt => ({ 
       ...opt,
-      is_correct: opt.id === optionId, // True for selected, false for others
-    }))
+      is_correct: opt.id === optionId, 
+    })) || []
     onUpdate({ ...question, options: newOptions })
   }
 
   const handleDeleteOption = (optionId: string) => {
-    const newOptions = question.options.filter(opt => opt.id !== optionId) 
+    const newOptions = question.options?.filter(opt => opt.id !== optionId) || []
     onUpdate({ ...question, options: newOptions })
   }
 
   const handleAddOption = () => {
     const newOption: Option = {
       id: Math.random().toString(36).substring(2, 9),
-      text: `New Option ${question.options.length + 1}`,
+      text: `New Option ${(question.options?.length || 0) + 1}`,
       is_correct: false,
     }
-    onUpdate({ ...question, options: [...question.options, newOption] })
+    onUpdate({ ...question, options: [...(question.options || []), newOption] })
   }
 
   const currentType = question.type || 'multiple_choice';
@@ -92,10 +85,9 @@ export function QuestionEditor({ question, onUpdate, onDelete }: QuestionEditorP
             </div>
             {question.options && question.options.map((option: Option, index: number) => ( 
               <div key={option.id || index} className='flex items-center space-x-3'>
-                {/* Correct Answer Radio Button */}
                 <input
                   type='radio'
-                  name={`correct-option-${question.question_id}`} // Unique Group Name
+                  name={`correct-option-${question.question_id}`}
                   checked={option.is_correct}
                   onChange={() => handleCorrectOptionChange(option.id)}
                   className='h-4 w-4 cursor-pointer text-primary focus:ring-primary'

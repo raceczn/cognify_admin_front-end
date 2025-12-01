@@ -15,12 +15,7 @@ export function ModulesPrimaryButtons() {
     <div className='flex gap-2'>
       <Button
         className='space-x-1'
-        onClick={() =>
-          navigate({
-            to: '/modules/$moduleId',
-            params: { moduleId: 'new' },
-          })
-        }
+        onClick={() => navigate({ to: '/modules/new' })}
       >
         <span>Add Module</span>
         <Plus size={18} />

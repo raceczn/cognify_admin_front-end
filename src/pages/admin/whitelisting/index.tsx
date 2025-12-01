@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Plus, UploadCloud, Trash2, CheckCircle2, XCircle } from 'lucide-react'
+import { Plus, UploadCloud, Trash2, CheckCircle2, XCircle, Loader2 } from 'lucide-react' // Added Loader2
 import { toast } from 'sonner'
-import { useWhitelist, useAddWhitelist, useRemoveWhitelist } from '@/lib/admin-hooks'
+// [FIX] Import the new hook
+import { useWhitelist, useAddWhitelist, useRemoveWhitelist, useBulkWhitelist } from '@/lib/admin-hooks'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -57,7 +58,11 @@ export default function WhitelistingPage() {
   const { data: whitelist, isLoading } = useWhitelist()
   const addMutation = useAddWhitelist()
   const removeMutation = useRemoveWhitelist()
+  const bulkMutation = useBulkWhitelist() // [FIX] Use the new hook
   
+  // [FIX] Ref for hidden file input
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -82,6 +87,34 @@ export default function WhitelistingPage() {
       toast.success('Removed from whitelist')
     } catch (error) {
       toast.error('Failed to remove user')
+    }
+  }
+  
+  // [FIX] Handle File Upload
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
+      toast.error('Please upload a CSV file.')
+      return
+    }
+
+    try {
+      toast.loading('Processing CSV...')
+      const res = await bulkMutation.mutateAsync(file)
+      toast.dismiss()
+      toast.success(`Bulk upload complete! Added: ${res.added}, Skipped: ${res.skipped}`)
+      
+      if (res.errors && res.errors.length > 0) {
+         toast.warning(`Some rows failed: ${res.errors[0]}...`)
+      }
+    } catch (error: any) {
+      toast.dismiss()
+      toast.error(error.response?.data?.detail || 'Bulk upload failed.')
+    } finally {
+        // Reset input
+        if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
 
@@ -154,18 +187,35 @@ export default function WhitelistingPage() {
             </CardContent>
           </Card>
 
-          {/* RIGHT: Bulk Upload (Placeholder) */}
+          {/* RIGHT: Bulk Upload (IMPLEMENTED) */}
           <Card>
             <CardHeader>
               <CardTitle>Bulk Upload</CardTitle>
               <CardDescription>Upload a CSV file containing emails and roles.</CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center border-2 border-dashed rounded-md h-[130px] bg-muted/10">
-              <UploadCloud className="h-8 w-8 text-muted-foreground mb-2" />
-              <p className="text-sm text-muted-foreground mb-4">Drag and drop CSV or click to browse</p>
-              <Button variant="outline" size="sm" disabled>
-                Upload CSV (Coming Soon)
-              </Button>
+            <CardContent className="flex flex-col items-center justify-center border-2 border-dashed rounded-md h-[130px] bg-muted/10 hover:bg-muted/20 transition-colors cursor-pointer"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                accept=".csv" 
+                onChange={handleFileUpload}
+              />
+              
+              {bulkMutation.isPending ? (
+                 <div className="flex flex-col items-center">
+                    <Loader2 className="h-8 w-8 text-primary animate-spin mb-2" />
+                    <p className="text-sm text-muted-foreground">Uploading...</p>
+                 </div>
+              ) : (
+                 <>
+                    <UploadCloud className="h-8 w-8 text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground mb-2">Drag and drop CSV or click to browse</p>
+                    <p className="text-xs text-muted-foreground font-mono">Format: email, role</p>
+                 </>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -194,11 +244,10 @@ export default function WhitelistingPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {whitelist?.map((user) => (
+                  {whitelist?.map((user: any) => (
                     <TableRow key={user.id}>
                       <TableCell className="font-medium">{user.email}</TableCell>
                       <TableCell className="capitalize">
-                        {/* [FIX] Safe access: Fallback to 'Unknown' if role is missing */}
                         {(user.assigned_role || 'unknown').replace('_', ' ')}
                       </TableCell>
                       <TableCell>

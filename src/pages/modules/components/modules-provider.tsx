@@ -59,7 +59,7 @@ export function ModulesProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoadingSubjects(true)
       const res = await getAllSubjects()
-      const options = res.items.map(s => ({ id: s.id, title: s.title }))
+      const options = res.items.map((s: any) => ({ id: s.id, title: s.title }))
       setSubjects(options)
     } catch (err) {
       console.error('Failed to load subjects:', err)

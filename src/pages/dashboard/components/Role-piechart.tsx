@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { TrendingUp } from 'lucide-react'
 import { Pie, PieChart } from 'recharts'
 import { getAllProfiles } from '@/lib/profile-hooks'

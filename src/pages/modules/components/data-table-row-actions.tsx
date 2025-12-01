@@ -16,14 +16,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { type Module } from '../data/schema'
-import { useModules } from './modules-provider'
 
 type DataTableRowActionsProps = {
   row: Row<Module>
 }
 
 export function DataTableRowActions({ row }: DataTableRowActionsProps) {
-  const { setOpen, setCurrentRow } = useModules()
   const navigate = useNavigate()
   const [isGenerating, setIsGenerating] = useState(false)
   const module = row.original
@@ -71,7 +69,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           <DropdownMenuItem
             onClick={() =>
               navigate({
-                to: '/modules/$moduleId',
+                to: '/modules/$moduleId/edit',
                 params: { moduleId: module.id },
               })
             }
@@ -83,10 +81,12 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            onClick={() => {
-              setCurrentRow(row.original)
-              setOpen('delete')
-            }}
+            onClick={() =>
+              navigate({
+                to: '/modules/$moduleId/edit',
+                params: { moduleId: module.id },
+              })
+            }
             className='text-destructive'
             data-variant='destructive'
           >
