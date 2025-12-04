@@ -2,7 +2,6 @@
 import {
   LayoutDashboard,
   Monitor,
-  HelpCircle,
   Bell,
   Package,
   Palette,
@@ -10,7 +9,6 @@ import {
   Wrench,
   UserCog,
   Users,
-  MessagesSquare,
   Command,
   BookOpen,
   Clipboard,
@@ -154,10 +152,11 @@ export const staticSidebarData: Omit<SidebarData, 'user'> = {
 }
 
 // ... (Keep getFilteredSidebarData helper) ...
-export function getFilteredSidebarData(userRole: string) {
+export function getFilteredSidebarData(userRole: string): SidebarData {
   const normalizedRole = userRole.toLowerCase();
   return {
     ...staticSidebarData,
+    user: { name: '', email: '', avatar: '' },
     navGroups: staticSidebarData.navGroups
       .map((group) => ({
         ...group,
@@ -166,22 +165,27 @@ export function getFilteredSidebarData(userRole: string) {
             if (!item.allowedRoles) return true
             return item.allowedRoles.includes(normalizedRole as any)
           })
-          .map((item) => {
-            if (normalizedRole === ROLES.FACULTY_MEMBER && item.title === 'Dashboard') {
-              return { ...item, url: '/faculty/dashboard' }
-            }
-            if (item.items) {
+          .map((item): import('../types').NavItem => {
+            if (isCollapsible(item)) {
+              const { url, items, ...rest } = item as any
               return {
-                ...item,
-                items: item.items.filter((subItem) => {
+                ...rest,
+                items: items.filter((subItem: any) => {
                   if (!subItem.allowedRoles) return true
                   return subItem.allowedRoles.includes(normalizedRole as any)
                 }),
               }
+            }
+            if (normalizedRole === ROLES.FACULTY_MEMBER && item.title === 'Dashboard') {
+              return { ...item, url: '/faculty/dashboard' }
             }
             return item
           }),
       }))
       .filter((group) => group.items.length > 0),
   }
+}
+
+function isCollapsible(item: import('../types').NavItem): item is import('../types').NavCollapsible {
+  return Array.isArray((item as any).items)
 }

@@ -27,6 +27,8 @@ import { ThemeSwitch } from '@/components/theme-switch'
 import { RolePieChart } from './components/Role-piechart'
 import { UserGrowth } from './components/Usergrowth'
 import { getSystemUserStatistics } from '@/lib/profile-hooks'
+import { useWhitelist } from '@/lib/admin-hooks'
+import type { WhitelistedUser } from '@/lib/admin-hooks'
 
 type DashboardStats = {
   // User Counts
@@ -63,6 +65,7 @@ export function Dashboard() {
   const { isAdmin } = usePermissions()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
+  const { data: whitelist } = useWhitelist()
 
   useEffect(() => {
     async function fetchDashboardStats() {
@@ -102,37 +105,52 @@ export function Dashboard() {
     loading || val === undefined ? <span className='animate-pulse-dots'>...</span> : val
   )
 
-  const getRoleBadge = (role: string, icon: React.ElementType, badgeVariant: 'default' | 'secondary' | 'destructive' | 'success' | 'outline' = 'outline') => (
-    <Badge variant={badgeVariant} className={`text-xs capitalize`}>
-      <span className='mr-1 size-4 flex items-center'>{React.createElement(icon)}</span>
-      {role}
-    </Badge>
-  )
+  const getRoleBadge = (
+    role: string,
+    icon: React.ElementType,
+    badgeVariant: 'default' | 'secondary' | 'destructive' | 'success' | 'outline' = 'outline'
+  ) => {
+    const r = role.toLowerCase()
+    const colorClass = r.includes('faculty')
+      ? 'bg-green-500/10 text-green-600 border-0'
+      : r.includes('student')
+      ? 'bg-violet-500/10 text-violet-600 border-0'
+      : ''
+    return (
+      <Badge variant={badgeVariant} className={`text-xs capitalize ${colorClass}`}>
+        <span className='mr-1 size-4 flex items-center'>{React.createElement(icon)}</span>
+        {role}
+      </Badge>
+    )
+  }
 
   const getSystemStatusBadge = (count: number, icon: React.ElementType, title: string) => {
-    const isCritical = count > 0;
+    const isCritical = count > 0
     return (
       <Card className={isCritical ? 'border-amber-500/50 bg-amber-500/5' : ''}>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardDescription>{title}</CardDescription>
-            <CardAction>
-              {isCritical ? 
-                <Badge variant="destructive" className="bg-amber-500 hover:bg-amber-600 border-none">Review ({count})</Badge> : 
-                <Badge variant='outline'><IconClipboardCheck className='size-4 text-green-500' /></Badge>
-              }
-            </CardAction>
-          </div>
+          <CardDescription>{title}</CardDescription>
           <CardTitle className='text-3xl font-semibold'>
             <Val val={count} />
           </CardTitle>
+          <CardAction>
+            {isCritical ? (
+              <Badge variant='destructive' className='bg-amber-500 hover:bg-amber-600 border-none'>
+                Review ({count})
+              </Badge>
+            ) : (
+              <Badge variant='outline'>
+                {React.createElement(icon, { className: 'size-4 text-green-500' })}
+              </Badge>
+            )}
+          </CardAction>
         </CardHeader>
         <CardFooter className='text-muted-foreground text-xs'>
           Items waiting for approval
         </CardFooter>
       </Card>
-    );
-  };
+    )
+  }
   
   return (
     <>
@@ -173,7 +191,7 @@ export function Dashboard() {
 
           <Card>
             <CardHeader>
-              <CardDescription>Enrolled Students</CardDescription>
+              <CardDescription>Registered Students</CardDescription>
               <CardTitle className='text-3xl font-semibold'><Val val={stats?.activeStudents} /></CardTitle>
               <CardAction>
                 {getRoleBadge('Student', IconUsers, 'secondary')}
@@ -184,10 +202,12 @@ export function Dashboard() {
             </CardFooter>
           </Card>
 
-           <Card className="bg-primary/5 border-primary/20">
+          <Card className="bg-primary/5 border-primary/20">
             <CardHeader>
               <CardDescription>Whitelisted Students</CardDescription>
-              <CardTitle className='text-3xl font-semibold'><Val val={stats?.whitelistStudents} /></CardTitle>
+              <CardTitle className='text-3xl font-semibold'>
+                <Val val={(whitelist?.filter((w: WhitelistedUser) => w.assigned_role === 'student' && !w.is_registered).length) ?? stats?.whitelistStudents} />
+              </CardTitle>
               <CardAction>
                 <Badge variant='default' className='bg-primary text-primary-foreground'>
                   <IconMailForward className='size-4' /> Pending
@@ -214,7 +234,7 @@ export function Dashboard() {
 
           <Card>
             <CardHeader>
-              <CardDescription>Active Faculty</CardDescription>
+              <CardDescription>Registered Faculty</CardDescription>
               <CardTitle className='text-3xl font-semibold'><Val val={stats?.facultyMembers} /></CardTitle>
               <CardAction>
                 {getRoleBadge('Faculty', IconUsers, 'outline')}
@@ -228,7 +248,9 @@ export function Dashboard() {
           <Card className="bg-secondary/5 border-secondary/20">
             <CardHeader>
               <CardDescription>Whitelisted Faculty</CardDescription>
-              <CardTitle className='text-3xl font-semibold'><Val val={stats?.whitelistFaculty} /></CardTitle>
+              <CardTitle className='text-3xl font-semibold'>
+                <Val val={(whitelist?.filter((w: WhitelistedUser) => w.assigned_role === 'faculty_member' && !w.is_registered).length) ?? stats?.whitelistFaculty} />
+              </CardTitle>
               <CardAction>
                 <Badge variant='secondary'>
                   <IconMailForward className='size-4' /> Pending

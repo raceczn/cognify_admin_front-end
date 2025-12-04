@@ -4,7 +4,6 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { DataTableColumnHeader } from '@/components/data-table'
 import { LongText } from '@/components/long-text'
-import { callTypes } from '../data/data'
 import { type User } from '../data/schema'
 import { RoleSelectCell } from './role-select-cell'
 import { DataTableRowActions } from './data-table-row-actions'
@@ -68,17 +67,18 @@ export const usersColumns: ColumnDef<User>[] = [
     },
   },
   {
-    accessorKey: 'status',
+    accessorKey: 'is_verified',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Status' />
     ),
     cell: ({ row }) => {
-      const { status } = row.original
-      const badgeColor = callTypes.get(status) || 'bg-neutral-300/40 border-neutral-300'
+      const { is_verified } = row.original
+      if (!is_verified) return null
+      const badgeColor = 'bg-green-500/10 text-green-600'
       return (
         <div className='flex space-x-2'>
           <Badge variant='outline' className={cn('capitalize', badgeColor)}>
-            {status}
+            Registered
           </Badge>
         </div>
       )

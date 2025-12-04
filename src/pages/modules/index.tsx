@@ -1,91 +1,140 @@
-import { Plus, Loader2 } from "lucide-react"
-import { columns } from "./components/modules-columns"
-import { ModulesDataTable } from "./components/modules-table"
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
-import { ModulesProvider, useModules } from "./components/modules-provider" 
-import { Module } from "./data/schema" 
-import { ModulesDialogs } from "./components/modules-dialogs" // <--- NEW IMPORT
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Header } from '@/components/layout/header'
+import { Main } from '@/components/layout/main'
+import { ProfileDropdown } from '@/components/profile-dropdown'
+import { Search } from '@/components/search'
+import { ThemeSwitch } from '@/components/theme-switch'
+import { Library, Table as TableIcon, Loader2 } from 'lucide-react'
+import { ModulesProvider, useModules } from './components/modules-provider'
+import { ModulesDialogs } from './components/modules-dialogs'
+import { ModulesPrimaryButtons } from './components/modules-primary-buttons'
+import { ModulesDataTable } from './components/modules-table'
+import { columns } from './components/modules-columns'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
+import { Module } from './data/schema'
 
 // The page content is placed inside a wrapper component
 function ModulesPageContent() {
-  // Use data and setters from the provider
-  const { 
-    modules: data, // Use 'modules' from provider as 'data'
-    isLoading, 
-    setCurrentRow, 
-    setOpen, 
+  const {
+    modules,
+    isLoading,
+    setCurrentRow,
+    setOpen,
+    subjects,
   } = useModules()
-  
-  // Function to handle opening the drawer for creation
-  const handleAddModule = () => {
-    setCurrentRow(null) 
-    setOpen('add')
-  }
 
-  // Function passed to the table columns for editing a row
+  const verifiedModules = modules.filter((m) => m.is_verified)
+
   const handleEditModule = (module: Module) => {
     setCurrentRow(module)
     setOpen('edit')
   }
-  
-  // The delete handler should use the delete dialog
+
   const handleDeleteModule = (module: Module) => {
     setCurrentRow(module)
     setOpen('delete')
   }
 
-  // Combine the columns and pass the edit/delete handlers.
-  const moduleColumns = columns(handleEditModule, handleDeleteModule) 
+  const getSubjectTitle = (id: string) => subjects.find((s) => s.id === id)?.title || id
+  const moduleColumns = columns(handleEditModule, handleDeleteModule, getSubjectTitle)
+
+  const subjectBadgeColor = (title: string) => {
+    const palette = [
+      'bg-blue-500/10 text-blue-600',
+      'bg-green-500/10 text-green-600',
+      'bg-amber-500/10 text-amber-600',
+      'bg-violet-500/10 text-violet-600',
+      'bg-rose-500/10 text-rose-600',
+      'bg-cyan-500/10 text-cyan-600',
+      'bg-fuchsia-500/10 text-fuchsia-600',
+    ]
+    const hash = Array.from(title).reduce((acc, ch) => acc + ch.charCodeAt(0), 0)
+    return palette[hash % palette.length]
+  }
 
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Modules</h2>
-          <p className="text-muted-foreground">
-            Manage learning materials, lectures, and resource files.
-          </p>
+    <>
+      <Header>
+        <Search />
+        <div className='ms-auto flex items-center space-x-4'>
+          <ThemeSwitch />
+          <ProfileDropdown />
         </div>
-        <div className="flex items-center space-x-2">
-          <Button onClick={handleAddModule}>
-            <Plus className="mr-2 h-4 w-4" /> Add Module
-          </Button>
+      </Header>
+
+      <Main>
+        <div className='mb-2 flex items-center justify-between space-y-2'>
+          <div>
+            <h2 className='text-2xl font-bold tracking-tight'>Modules</h2>
+            <p className='text-muted-foreground'>
+              Manage learning materials, lectures, and resource files.
+            </p>
+          </div>
+          <ModulesPrimaryButtons />
         </div>
-      </div>
-      
-      <Separator />
 
-      <div className="grid gap-4 md:grid-cols-1">
-        <Card>
-          <CardHeader>
-            <CardTitle>All Modules</CardTitle>
-            <CardDescription>
-              A list of all educational modules available in the system.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="flex items-center justify-center py-10">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : (
-              <ModulesDataTable columns={moduleColumns} data={data} />
-            )}
-          </CardContent>
-        </Card>
-      </div>
+        <Tabs defaultValue='manage' className='space-y-4'>
+          <TabsList>
+            <TabsTrigger value='browse' className='gap-2'>
+              <Library size={16} /> Browse
+            </TabsTrigger>
+            <TabsTrigger value='manage' className='gap-2'>
+              <TableIcon size={16} /> Manage
+            </TabsTrigger>
+          </TabsList>
 
-      {/* Renders all dialogs/drawers based on provider state */}
+          <TabsContent value='browse'>
+            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 '>
+              {verifiedModules.map((m) => (
+                <Card key={m.id} className='hover:shadow-md transition-shadow cursor-pointer'>
+                  <CardContent className='p-6'>
+                    <h3 className='font-semibold text-lg mb-1'>{m.title}</h3>
+                    {(() => {
+                      const title = getSubjectTitle(m.subject_id)
+                      const color = subjectBadgeColor(title)
+                      return (
+                        <div className='mb-2'>
+                          <Badge variant='outline' className={cn('text-xs uppercase', color)}>
+                            {title}
+                          </Badge>
+                        </div>
+                      )
+                    })()}
+                    <p className='text-xs text-muted-foreground uppercase tracking-wider mb-4'>
+                      {m.bloom_level ? `Bloom: ${m.bloom_level}` : 'Unspecified Bloom'}
+                    </p>
+                    <p className='text-sm text-muted-foreground line-clamp-2'>
+                      {m.purpose || 'No description available.'}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+              {verifiedModules.length === 0 && (
+                <div className='col-span-full py-12 text-center text-muted-foreground'>
+                  No verified modules available.
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value='manage'>
+            <div className='-mx-4 flex-1 overflow-auto px-4 py-1 lg:flex-row lg:space-x-12 lg:space-y-0'>
+              {isLoading ? (
+                <div className='flex items-center justify-center py-10'>
+                  <Loader2 className='h-6 w-6 animate-spin text-muted-foreground' />
+                </div>
+              ) : (
+                <ModulesDataTable data={modules} columns={moduleColumns} subjectOptions={subjects} />
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
+      </Main>
+
       <ModulesDialogs />
-    </div>
+    </>
   )
 }
 

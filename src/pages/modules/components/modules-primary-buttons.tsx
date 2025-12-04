@@ -5,9 +5,9 @@ import { Button } from '@/components/ui/button'
 
 export function ModulesPrimaryButtons() {
   const navigate = useNavigate()
-  const { canCreateModule } = usePermissions()
+  const { canCreateModule, isAdmin } = usePermissions()
 
-  if (!canCreateModule) {
+  if (!(canCreateModule || isAdmin)) {
     return null
   }
 

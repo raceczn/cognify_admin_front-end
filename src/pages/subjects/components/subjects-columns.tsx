@@ -3,8 +3,33 @@ import { DataTableColumnHeader } from '@/components/data-table'
 import { LongText } from '@/components/long-text'
 import { type Subject } from '../data/schema'
 import { DataTableRowActions } from './data-table-row-actions'
+import { Checkbox } from '@/components/ui/checkbox'
 
 export const subjectsColumns: ColumnDef<Subject>[] = [
+   {
+    id: 'select',
+    header: ({ table }) => (
+      <Checkbox
+        checked={
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && 'indeterminate')
+        }
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        aria-label='Select all'
+        className='translate-y-[2px]'
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        aria-label='Select row'
+        className='translate-y-[2px]'
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+  },
   {
     accessorKey: 'title',
     header: ({ column }) => (
@@ -60,7 +85,7 @@ export const subjectsColumns: ColumnDef<Subject>[] = [
   {
     accessorKey: 'pqf_level',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='PQF' />
+      <DataTableColumnHeader column={column} title='PQF level' />
     ),
     cell: ({ row }) => (
       <div className='flex items-center justify-center'>
@@ -70,19 +95,22 @@ export const subjectsColumns: ColumnDef<Subject>[] = [
       </div>
     ),
   },
-  {
-    accessorKey: 'active_tos_id',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Active TOS' />
-    ),
-    cell: ({ row }) => (
-      <LongText className='text-muted-foreground max-w-[150px] text-xs'>
-        {row.getValue('active_tos_id') || 'None'}
-      </LongText>
-    ),
-  },
+  // {
+  //   accessorKey: 'active_tos_id',
+  //   header: ({ column }) => (
+  //     <DataTableColumnHeader column={column} title='Active TOS' />
+  //   ),
+  //   cell: ({ row }) => (
+  //     <LongText className='text-muted-foreground max-w-[150px] text-xs'>
+  //       {row.getValue('active_tos_id') || 'None'}
+  //     </LongText>
+  //   ),
+  // },
   {
     id: 'actions',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Actions' />
+    ),
     cell: DataTableRowActions,
   },
 ]

@@ -65,7 +65,20 @@ export function UserAuthForm({
         uid: loginResult.uid,
         email: profile.email,
         role_id: profile.role_id,
-        profile: profile,
+        profile: {
+          id: profile.id,
+          first_name: profile.first_name ?? undefined,
+          middle_name: profile.middle_name ?? null,
+          last_name: profile.last_name ?? undefined,
+          nickname: profile.nickname ?? undefined,
+          user_name: profile.user_name ?? profile.email,
+          role: (profile as any).role ?? 'student',
+          role_id: profile.role_id,
+          email: profile.email,
+          created_at: String(profile.created_at ?? new Date().toISOString()),
+          deleted: false,
+          deleted_at: null,
+        },
       })
 
       toast.success(`Welcome back, ${profile.first_name || profile.email}!`)

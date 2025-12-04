@@ -146,11 +146,18 @@ export function UsersMutateDrawer({
 
         const response = await updateProfile(currentRow.id, updatePayload)
 
-        // [FIX] Use response.role directly
         const updatedUser: User = {
           ...currentRow,
           ...response,
-          role_id: response.role_id || 'unknown',
+          role_id: response.role_id || currentRow.role_id,
+          is_verified: !!response.is_verified,
+          is_active: response.is_active ?? currentRow.is_active ?? true,
+          created_at: new Date(response.created_at || currentRow.created_at),
+          updated_at: response.updated_at ? new Date(response.updated_at) : new Date(),
+          deleted_at:
+            typeof (response as any)?.deleted_at === 'string'
+              ? new Date((response as any).deleted_at)
+              : (response as any)?.deleted_at ?? currentRow.deleted_at ?? null,
         }
 
         updateLocalUsers(updatedUser, 'edit')
@@ -174,6 +181,8 @@ export function UsersMutateDrawer({
           role: response.role || 'unknown',
           status: 'offline',
           created_at: new Date(response.created_at),
+          is_verified: !!response.is_verified,
+          is_active: response.is_active ?? true,
           deleted: false,
           deleted_at: null,
         }

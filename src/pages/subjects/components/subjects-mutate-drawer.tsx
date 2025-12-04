@@ -38,7 +38,7 @@ export function SubjectMutateForm({
 
   // 1. Setup Form with FORM SCHEMA type
   const form = useForm<SubjectFormValues>({
-    resolver: zodResolver(subjectFormSchema),
+    resolver: zodResolver(subjectFormSchema) as any,
     mode: 'onChange', // Validate as user types
     defaultValues: {
       title: '',
@@ -127,11 +127,8 @@ export function SubjectMutateForm({
                     max={8}
                     placeholder='e.g., 6'
                     {...field}
-                    value={field.value ?? ''}
-                    onChange={(e) => {
-                      const v = e.target.value
-                      field.onChange(v === '' ? undefined : Number(v))
-                    }}
+                    value={typeof field.value === 'number' ? field.value : 6}
+                    onChange={(e) => field.onChange(e.currentTarget.valueAsNumber)}
                   />
                 </FormControl>
                 <FormMessage />

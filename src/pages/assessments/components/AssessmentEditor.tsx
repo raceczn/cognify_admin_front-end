@@ -30,6 +30,8 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { QuestionEditor } from './QuestionEditor'
+import { useQuery } from '@tanstack/react-query'
+import { getAllSubjects } from '@/lib/subjects-hooks'
 
 interface AssessmentEditorProps {
   assessment: Assessment | null | undefined
@@ -41,13 +43,7 @@ interface AssessmentEditorProps {
   onReject?: () => void
 }
 
-const SUBJECT_IDS = [
-  'SUBJ_PSYCH',
-  'SUBJ_DEV_PSYCH',
-  'SUBJ_ABNORMAL_PSYCH',
-  'SUBJ_IO_PSYCH',
-  'SUBJ_PSYC_ASSESS',
-]
+
 const MODULE_IDS = ['MOD_COG101', 'MOD_PERS202', 'MOD_MOTIVATION302']
 
 const ASSESSMENT_PURPOSES: AssessmentPurpose[] = [
@@ -67,6 +63,20 @@ const BLOOM_LEVELS = [
 ]
 
 const CLEAR_VALUE = 'clear-selection'
+
+function normalizePurpose(val?: string): AssessmentPurpose | undefined {
+  const s = (val ?? '').toString().trim().toLowerCase()
+  let hy = s.replace(/[_\s]+/g, '-')
+  if (hy === 'preassessment') hy = 'pre-assessment'
+  if (hy === 'postassessment') hy = 'post-assessment'
+  const allowed: AssessmentPurpose[] = [
+    'pre-assessment',
+    'quiz',
+    'post-assessment',
+    'diagnostic',
+  ]
+  return allowed.includes(hy as AssessmentPurpose) ? (hy as AssessmentPurpose) : undefined
+}
 
 const getPurposeDotColor = (purpose: AssessmentPurpose): string => {
   switch (purpose) {
@@ -100,20 +110,7 @@ export function AssessmentEditor({
     if (initialAssessment) {
       const normalizedQuestions = (initialAssessment.questions || []).map(
         (q: any) => {
-          let normalizedOptions: Option[] = []
-          if (Array.isArray(q.options) && q.options.length > 0) {
-            if (typeof q.options[0] === 'string') {
-              normalizedOptions = q.options.map(
-                (optText: string, idx: number) => ({
-                  id: `opt-${q.question_id}-${idx}`,
-                  text: optText,
-                  is_correct: optText === q.answer,
-                })
-              )
-            } else {
-              normalizedOptions = q.options
-            }
-          }
+          const normalizedOptions = normalizeOptions(q)
           return {
             ...q,
             question_id:
@@ -127,10 +124,20 @@ export function AssessmentEditor({
           }
         }
       )
+      // Normalize bloom levels: lowercase + unique
+      const initLevels = Array.isArray(initialAssessment.bloom_levels)
+        ? initialAssessment.bloom_levels
+        : []
+      const normalizedLevels = Array.from(
+        new Set(initLevels.map((l: string) => String(l).toLowerCase()))
+      )
+      const normalizedPurpose = normalizePurpose(
+        (initialAssessment as any).purpose ?? (initialAssessment as any).type
+      )
       setAssessment({
         ...initialAssessment,
-        // [FIX] Ensure bloom_levels exists
-        bloom_levels: initialAssessment.bloom_levels || [],
+        purpose: normalizedPurpose ?? initialAssessment.purpose,
+        bloom_levels: normalizedLevels,
         questions: normalizedQuestions,
       })
     } else {
@@ -144,11 +151,16 @@ export function AssessmentEditor({
       const correctOpt = (q.options || []).find(
         (opt: Option) => !!opt.is_correct
       )
+      const optionTexts = (q.options || []).map((opt: Option) => opt.text)
+      const correctIndex = correctOpt ? optionTexts.findIndex((t) => t === correctOpt.text) : -1
+      const correctLetter = correctIndex >= 0 ? String.fromCharCode('A'.charCodeAt(0) + correctIndex) : ''
       return {
         ...q,
         question: q.text,
-        options: (q.options || []).map((opt: Option) => opt.text),
+        options: optionTexts,
         answer: correctOpt ? correctOpt.text : '',
+        choices: optionTexts,
+        correct: correctLetter,
         topic_title: (q as any).topic_title,
         bloom_level: (q as any).bloom_level,
       }
@@ -168,10 +180,11 @@ export function AssessmentEditor({
   const handleBloomChange = (level: string, checked: boolean) => {
     setAssessment((prev: Assessment | null | undefined) => {
       if (!prev) return prev
-      const currentLevels = prev.bloom_levels || []
+      const currentLevels = (prev.bloom_levels || []).map((l: string) => String(l).toLowerCase())
+      const key = level.toLowerCase()
       const newLevels = checked
-        ? [...currentLevels, level]
-        : currentLevels.filter((l: string) => l !== level)
+        ? Array.from(new Set([...currentLevels, key]))
+        : currentLevels.filter((l: string) => l !== key)
       return { ...prev, bloom_levels: newLevels }
     })
   }
@@ -236,6 +249,16 @@ export function AssessmentEditor({
   )
   const getSelectValue = (value: string | null | undefined): string =>
     value == null ? CLEAR_VALUE : value
+
+  // Subject options: prefer provided props, else fetch
+  const { data: subjectsRes } = useQuery({
+    queryKey: ['subjects:list'],
+    queryFn: getAllSubjects,
+    enabled: !subjects || subjects.length === 0,
+  })
+  const subjectOptions = (subjects && subjects.length > 0)
+    ? subjects
+    : (subjectsRes?.items || []).map((s: any) => ({ id: s.id, title: s.title }))
 
   return (
     <div className='space-y-6 p-4'>
@@ -318,12 +341,9 @@ export function AssessmentEditor({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={CLEAR_VALUE}>Select Subject</SelectItem>
-                  {(subjects.length > 0
-                    ? subjects.map((s) => s.id)
-                    : SUBJECT_IDS
-                  ).map((id) => (
-                    <SelectItem key={id} value={id}>
-                      {id}
+                  {subjectOptions.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.title}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -358,7 +378,7 @@ export function AssessmentEditor({
                 <div key={level} className='flex items-center space-x-2'>
                   <Checkbox
                     id={`bloom-${level}`}
-                    checked={assessment.bloom_levels?.includes(level)}
+                    checked={(assessment.bloom_levels || []).map((l) => String(l).toLowerCase()).includes(level.toLowerCase())}
                     onCheckedChange={(checked) =>
                       handleBloomChange(level, checked as boolean)
                     }
@@ -440,4 +460,71 @@ export function AssessmentEditor({
       </Card>
     </div>
   )
+}
+
+function toStringArray(src: any): string[] {
+  if (!src) return []
+  if (Array.isArray(src)) return src.map((x: any) => String(x))
+  const s = String(src)
+  const parts = s.split(/\r?\n|\|/).map((x) => x.trim()).filter(Boolean)
+  if (parts.length > 0) return parts
+  return s.split(',').map((x) => x.trim()).filter(Boolean)
+}
+
+function normalizeOptions(rawQ: any): Option[] {
+  const arrStrings = toStringArray(
+    rawQ?.options ?? rawQ?.choices ?? rawQ?.choice_list ?? rawQ?.options_text
+  )
+  const fromObjects =
+    Array.isArray(rawQ?.options) && typeof rawQ.options[0] === 'object'
+      ? (rawQ.options as any[]).map((o: any) => ({
+          id: String(o.id ?? Math.random().toString(36).slice(2)),
+          text: String(o.text ?? o.value ?? ''),
+          is_correct: !!o.is_correct,
+        }))
+      : []
+  const base =
+    fromObjects.length > 0
+      ? fromObjects
+      : arrStrings.map((optText: string, idx: number) => ({
+          id: `opt-${rawQ?.question_id ?? rawQ?.id ?? 'q'}-${idx}`,
+          text: optText,
+          is_correct: false,
+        }))
+
+  const correctFromLetter = (() => {
+    const raw = rawQ?.correct
+    if (typeof raw !== 'string') return undefined
+    const s = raw.trim()
+    const m = s.match(/^[A-Za-z]/)
+    const letter = m ? m[0].toUpperCase() : undefined
+    if (!letter) return undefined
+    const idx = letter.charCodeAt(0) - 'A'.charCodeAt(0)
+    return idx >= 0 && idx < base.length ? idx : undefined
+  })()
+
+  const answerText =
+    typeof rawQ?.answer === 'string'
+      ? String(rawQ.answer)
+      : typeof rawQ?.correct_answer === 'string'
+      ? String(rawQ.correct_answer)
+      : typeof rawQ?.correct_index === 'number' && base[rawQ.correct_index]
+      ? base[rawQ.correct_index].text
+      : undefined
+
+  const seen = new Set<string>()
+  const deduped = base.filter((o) => {
+    const key = o.text.toLowerCase()
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+
+  return deduped.map((o, i) => ({
+    ...o,
+    is_correct:
+      o.is_correct ||
+      (correctFromLetter !== undefined ? i === correctFromLetter : false) ||
+      (answerText ? o.text === answerText : false),
+  }))
 }

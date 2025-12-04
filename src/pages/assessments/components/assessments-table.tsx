@@ -45,7 +45,7 @@ export function AssessmentsDataTable<TData, TValue>({
     <div>
       <div className="rounded-md border">
         <Table>
-          <TableHeader>
+          <TableHeader className='bg-[#fced99] dark:bg-[#2c2c2c]'>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {

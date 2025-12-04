@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -45,6 +45,13 @@ import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { ProfileDropdown } from '@/components/profile-dropdown'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { roles } from '@/pages/users/data/data'
 
 const formSchema = z.object({
   email: z.string().email('Invalid email address').refine(
@@ -59,6 +66,7 @@ export default function WhitelistingPage() {
   const addMutation = useAddWhitelist()
   const removeMutation = useRemoveWhitelist()
   const bulkMutation = useBulkWhitelist() // [FIX] Use the new hook
+  const [roleFilter, setRoleFilter] = useState<string>('')
   
   // [FIX] Ref for hidden file input
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -225,17 +233,34 @@ export default function WhitelistingPage() {
         {/* BOTTOM: List */}
         <Card>
           <CardHeader>
-            <CardTitle>Whitelisted Users</CardTitle>
-            <CardDescription>
-              Users currently allowed to register.
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Whitelisted Users</CardTitle>
+                <CardDescription>Users currently allowed to register.</CardDescription>
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8">
+                    Role: {roles.find(r => r.value === roleFilter)?.label ?? 'All Roles'}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-[180px]">
+                  <DropdownMenuItem onClick={() => setRoleFilter('')}>All Roles</DropdownMenuItem>
+                  {roles.map(r => (
+                    <DropdownMenuItem key={r.value} onClick={() => setRoleFilter(r.value)}>
+                      {r.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </CardHeader>
           <CardContent>
             {isLoading ? (
               <div className="py-8 text-center text-muted-foreground">Loading...</div>
             ) : (
-              <Table>
-                <TableHeader>
+              <Table className='w-full border-1 border-[#c7c7c7] dark:border-[#FDCFFA]/10'>
+                <TableHeader className='bg-[#fcd3d3] dark:bg-[#FDCFFA]/10'>
                   <TableRow>
                     <TableHead>Email</TableHead>
                     <TableHead>Assigned Role</TableHead>
@@ -244,7 +269,10 @@ export default function WhitelistingPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {whitelist?.map((user: any) => (
+                  {(whitelist
+                    ?.filter((user: any) => !user.is_registered || user.status === 'pending')
+                    ?.filter((user: any) => roleFilter === '' || user.assigned_role === roleFilter) || [])
+                    .map((user: any) => (
                     <TableRow key={user.id}>
                       <TableCell className="font-medium">{user.email}</TableCell>
                       <TableCell className="capitalize">
@@ -256,7 +284,7 @@ export default function WhitelistingPage() {
                             <CheckCircle2 className="h-3 w-3" /> Registered
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-yellow-600 bg-yellow-50 border-yellow-200 gap-1">
+                          <Badge variant="outline" className="text-yellow-700 bg-yellow-100 border-yellow-200 gap-1">
                             <XCircle className="h-3 w-3" /> Pending
                           </Badge>
                         )}
@@ -275,7 +303,10 @@ export default function WhitelistingPage() {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {whitelist?.length === 0 && (
+                  {(whitelist
+                    ?.filter((user: any) => !user.is_registered || user.status === 'pending')
+                    ?.filter((user: any) => roleFilter === '' || user.assigned_role === roleFilter) || [])
+                    .length === 0 && (
                     <TableRow>
                       <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
                         No users whitelisted yet.

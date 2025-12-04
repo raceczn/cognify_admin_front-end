@@ -1,8 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useAuthStore } from '@/stores/auth-store'
 
-type UserStatus = 'online' | 'offline' | 'busy'
-
 // Heartbeat and status reporting are disabled to avoid backend 404s
 // and unnecessary network chatter. This hook now safely no-ops.
 

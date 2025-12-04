@@ -25,6 +25,7 @@ import {
   CardDescription,
 } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
+import { Input } from '@/components/ui/input'
 import {
   Table,
   TableBody,
@@ -73,6 +74,15 @@ export function PredictionsTable({
   const [rowSelection, setRowSelection] = React.useState({})
 
   const columns: ColumnDef<Prediction>[] = [
+    {
+      id: 'search',
+      accessorFn: (row) => `${row.student_id} ${row.first_name ?? ''} ${row.last_name ?? ''}`.trim(),
+      filterFn: 'includesString',
+      enableSorting: false,
+      enableHiding: true,
+      header: () => null,
+      cell: () => null,
+    },
     {
       accessorKey: 'student_id',
       header: 'Student',
@@ -196,23 +206,31 @@ export function PredictionsTable({
             Click on a student row to view detailed analytics.
           </CardDescription>
         </div>
-        <div className='mt-3 flex flex-wrap gap-2 md:mt-0'>
-          <Badge variant='outline'>
-            Total: {data.summary.total_students_predicted}
-          </Badge>
-          <Badge variant='success'>
-            Pass: {data.summary.count_predicted_to_pass}
-          </Badge>
-          <Badge variant='destructive'>
-            Fail: {data.summary.count_predicted_to_fail}
-          </Badge>
+        <div className='mt-3 md:mt-0 flex w-full md:w-auto flex-col items-start md:items-end gap-2'>
+          <div className='flex flex-wrap gap-2'>
+            <Badge variant='outline'>
+              Total: {data.summary.total_students_predicted}
+            </Badge>
+            <Badge variant='success'>
+              Pass: {data.summary.count_predicted_to_pass}
+            </Badge>
+            <Badge variant='destructive'>
+              Fail: {data.summary.count_predicted_to_fail}
+            </Badge>
+          </div>
+          <Input
+            placeholder='Search by ID or name...'
+            value={(table.getColumn('search')?.getFilterValue() as string) ?? ''}
+            onChange={(e) => table.getColumn('search')?.setFilterValue(e.target.value)}
+            className='h-9 w-full md:w-[280px] border-1 border-gray-500 dark:border-[#FDCFFA]/10'
+          />
         </div>
       </CardHeader>
 
       <CardContent>
         <div className='overflow-hidden rounded-md border'>
           <Table>
-            <TableHeader className='bg-[#faf1e8]'>
+           <TableHeader className='bg-[#fcd3d3] dark:bg-[#FDCFFA]/10'>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (

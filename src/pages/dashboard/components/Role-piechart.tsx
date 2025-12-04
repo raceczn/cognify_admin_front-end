@@ -1,9 +1,9 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { TrendingUp } from 'lucide-react'
-import { Pie, PieChart } from 'recharts'
-import { getAllProfiles } from '@/lib/profile-hooks'
+import { Pie, PieChart, Cell } from 'recharts'
+import { getAllProfiles, getSystemUserStatistics } from '@/lib/profile-hooks'
 import { roles } from '@/pages/users/data/data'
 
 import {
@@ -21,13 +21,11 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart'
 
-export const description = 'A pie chart showing dynamic user role distribution'
-
 // --- 1. Define types ---
 type UserProfile = {
   id: string
   role_id: string
-  role?: string // The backend /profiles/all adds this
+  role?: string 
   [key: string]: any
 }
 
@@ -41,78 +39,128 @@ export function RolePieChart() {
   const [chartData, setChartData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [topRole, setTopRole] = useState<string>('')
+  const [usingFallback, setUsingFallback] = useState(false)
 
-  // --- THIS IS THE FIX ---
-  // We build the labels from the 'roles' data to ensure they are in sync
-  const roleLabels = roles.reduce((acc, role) => {
-    acc[role.designation] = role.label
-    return acc
-  }, {} as Record<string, string>) // <-- This explicit type cast fixes the error
-  // --- END FIX ---
+  // --- BUILD THE ROLE LABELS AND COLOR MAP ---
+  const roleLabels: Record<string, string> = useMemo(() => {
+    return roles.reduce((acc, role) => {
+      acc[role.designation] = role.label
+      return acc
+    }, {} as Record<string, string>)
+  }, []) // Dependency array is empty since 'roles' is assumed static
 
+  const roleColorMap: Record<string, string> = {
+    Admin: '#ef4444',
+    'Faculty Member': '#22c55e',
+    Student: '#8b5cf6',
+  }
 
   useEffect(() => {
     async function fetchRoles() {
+      setLoading(true)
       try {
-        const response: PaginatedUsersResponse = await getAllProfiles()
-        const profiles: UserProfile[] = response.items || []
+        // --- ATTEMPT 1: Use System Statistics (Preferred for speed/accuracy) ---
+        const stats = await getSystemUserStatistics()
+        
+        // Initialize counts for all known readable roles to ensure they appear even if count is 0
+        const initialCounts: Record<string, number> = Object.values(roleLabels).reduce((acc, label) => {
+            acc[label] = 0;
+            return acc;
+        }, {} as Record<string, number>);
 
-        const roleCounts: Record<string, number> = {}
+        const roleCounts: Record<string, number> = Object.entries(stats.by_role || {}).reduce(
+          (acc, [designation, count]) => {
+            const readableRole = roleLabels[designation] || designation // Use mapped label
+            acc[readableRole] = Number(count) || 0
+            return acc
+          },
+          initialCounts // Start with all known roles at 0
+        )
 
-        // Use the role designation from the profile (which comes from the backend)
-        profiles.forEach((p: UserProfile) => {
-          const roleDesignation = p.role || 'Unknown' // 'role' is the designation string
-          const readableRole = roleLabels[roleDesignation] || roleDesignation
+        let data = Object.entries(roleCounts)
+          .filter(([, count]) => count > 0) // Only include roles with actual users
+          .map(([role, count]) => ({
+            role,
+            count,
+            fill: roleColorMap[role] ?? '#64748b',
+          }))
+
+        if (data.length === 0 && Object.keys(stats.by_role || {}).length === 0) {
+          // --- ATTEMPT 2: Fallback to Profiles Aggregation (ONLY IF STATS IS EMPTY) ---
+          console.warn('System statistics empty, falling back to profiles aggregation.')
+          const response: PaginatedUsersResponse = await getAllProfiles()
           
-          roleCounts[readableRole] = (roleCounts[readableRole] || 0) + 1
-        })
+          const profiles: UserProfile[] = response.items || []
+          
+          const counts: Record<string, number> = Object.values(roleLabels).reduce((acc, label) => {
+              acc[label] = 0;
+              return acc;
+          }, {} as Record<string, number>);
 
-        const data = Object.entries(roleCounts).map(([role, count], i) => ({
-          role,
-          count,
-          fill: `var(--chart-${(i % 5) + 1})`,
-        }))
-
+          profiles.filter((p) => p.is_verified === true).forEach((p: UserProfile) => {
+            const roleDesignation = p.role || 'Unknown'
+            const readableRole = roleLabels[roleDesignation] || roleDesignation
+            counts[readableRole] = (counts[readableRole] || 0) + 1
+          })
+          
+          data = Object.entries(counts)
+            .filter(([, count]) => count > 0) // Only include roles with actual users
+            .map(([role, count]) => ({
+              role,
+              count,
+              fill: roleColorMap[role] ?? '#64748b',
+            }))
+          
+          setUsingFallback(true)
+        } else {
+          setUsingFallback(false)
+        }
+        
         setChartData(data)
-
-        if(data.length > 0) {
+        // Set top role based on the fetched data
+        if (data.length > 0) {
           const top = data.reduce(
             (prev, curr) => (curr.count > prev.count ? curr : prev),
             { role: 'None', count: 0 }
           )
           setTopRole(top.role)
+        } else {
+          setTopRole('N/A')
         }
-
       } catch (error) {
-        console.error('Error fetching role data:', error)
+        console.error("Error fetching user roles:", error)
+        setChartData([])
+        setTopRole('N/A')
       } finally {
         setLoading(false)
       }
     }
 
     fetchRoles()
-  }, [roleLabels]) // roleLabels is stable, so this is fine
+  }, [roleLabels]) // Only need roleLabels as a dependency here
 
-  const chartConfig: ChartConfig = {
-    count: { label: 'Users' },
-  }
-  
-  // Dynamically add role colors to chartConfig
-  chartData.forEach((item) => {
-    chartConfig[item.role] = {
-      label: item.role,
-      color: item.fill,
+  // --- FIX: useMemo for chartConfig remains essential ---
+  const chartConfig: ChartConfig = useMemo(() => {
+    const config: ChartConfig = {
+      count: { label: 'Users' },
     }
-  })
+    // Dynamically add role colors and labels to chartConfig
+    chartData.forEach((item) => {
+      config[item.role] = {
+        label: item.role,
+        color: item.fill,
+      }
+    })
+    return config
+  }, [chartData])
 
+  // --- Render logic remains the same ---
   return (
     <Card className='flex flex-col'>
       <CardHeader className='items-center pb-0'>
         <CardTitle>User Role Distribution</CardTitle>
         <CardDescription>
-          {loading
-            ? 'Fetching user data...'
-            : 'Distribution of users by their assigned roles'}
+          {loading ? 'Fetching user data...' : usingFallback ? 'Showing aggregated role distribution' : 'Distribution of users by their assigned roles'}
         </CardDescription>
       </CardHeader>
 
@@ -121,22 +169,36 @@ export function RolePieChart() {
           <div className='text-muted-foreground flex h-[250px] items-center justify-center'>
             Loading...
           </div>
+        ) : chartData.length === 0 ? (
+          <div className='text-muted-foreground flex h-[250px] items-center justify-center'>
+            No data available
+          </div>
         ) : (
           <ChartContainer
             config={chartConfig}
-            className='[&_.recharts-pie-label-text]:fill-foreground mx-auto aspect-square max-h-[250px] pb-0'
+            className='w-full min-w-0 h-[250px]'
           >
             <PieChart>
               <ChartTooltip
+                cursor={false}
                 content={<ChartTooltipContent nameKey='role' hideLabel />}
               />
               <Pie
                 data={chartData}
                 dataKey='count'
                 nameKey='role'
-                label
+                stroke='0'
                 isAnimationActive
-              />
+                innerRadius={0}
+                outerRadius={110}
+                startAngle={90}
+                endAngle={450}
+                paddingAngle={0}
+              >
+                {chartData.map((item, idx) => (
+                  <Cell key={`cell-${idx}`} fill={item.fill} />
+                ))}
+              </Pie>
             </PieChart>
           </ChartContainer>
         )}

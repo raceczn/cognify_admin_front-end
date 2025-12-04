@@ -20,5 +20,5 @@ export function useAuthEffect(
     }
 
     callback(auth)
-  }, [auth.user, auth.accessToken])
+  }, [auth.user])
 }

@@ -51,7 +51,7 @@ export function NavGroup({ title, items }: NavGroupType) {
 
           if (isCollapsible) {
              // Keep group open if ANY child is active
-             const isChildActive = item.items?.some(sub => isUrlActive(sub.url))
+            const isChildActive = item.items?.some(sub => isUrlActive(sub.url ?? ''))
 
              return (
                <Collapsible
@@ -73,8 +73,8 @@ export function NavGroup({ title, items }: NavGroupType) {
                        {item.items?.map((subItem) => (
                          <SidebarMenuSubItem key={subItem.title}>
                            {/* [FIX] Use new isUrlActive helper */}
-                           <SidebarMenuSubButton asChild isActive={isUrlActive(subItem.url)}>
-                             <Link to={subItem.url}>
+                           <SidebarMenuSubButton asChild isActive={isUrlActive(subItem.url ?? '')}>
+                             <Link to={subItem.url ?? ''}>
                                <span>{subItem.title}</span>
                              </Link>
                            </SidebarMenuSubButton>
@@ -90,8 +90,8 @@ export function NavGroup({ title, items }: NavGroupType) {
           return (
             <SidebarMenuItem key={item.title}>
               {/* [FIX] Use new isUrlActive helper */}
-              <SidebarMenuButton asChild isActive={isUrlActive(item.url)} tooltip={item.title}>
-                <Link to={item.url}>
+              <SidebarMenuButton asChild isActive={isUrlActive(item.url ?? '')} tooltip={item.title}>
+                <Link to={item.url ?? ''}>
                   {item.icon && <item.icon />}
                   <span>{item.title}</span>
                 </Link>

@@ -1,7 +1,7 @@
 import { useNavigate } from '@tanstack/react-router'
 import { ColumnDef } from '@tanstack/react-table'
 import { type Assessment } from '@/pages/assessments/data/schema'
-import { ArrowUpDown, MoreHorizontal, Pencil, Trash } from 'lucide-react'
+import { MoreHorizontal, Pencil, Trash } from 'lucide-react'
 import { useDeleteAssessmentMutation } from '@/lib/assessment-hooks'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -13,57 +13,141 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { DataTableColumnHeader } from '@/components/data-table'
+import { Checkbox } from '@/components/ui/checkbox'
 
-export const assessmentsColumns: ColumnDef<Assessment>[] = [
+export const assessmentsColumns = (
+  getSubjectTitle?: (id: string) => string
+): ColumnDef<Assessment>[] => [
+    {
+    id: 'select',
+    header: ({ table }) => (
+      <Checkbox
+        checked={
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && 'indeterminate')
+        }
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        aria-label='Select all'
+        className='translate-y-[2px]'
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        aria-label='Select row'
+        className='translate-y-[2px]'
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+  },
   {
     accessorKey: 'title',
-    header: ({ column }) => {
+    header: ({ column }) => (
+         <DataTableColumnHeader column={column} title='Assessment Title' />
+       ),
+    cell: ({ row }) => {
+      const title = row.getValue('title') as string
       return (
-        <Button
-          variant='ghost'
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Title
-          <ArrowUpDown className='ml-2 h-4 w-4' />
-        </Button>
+        <div className='max-w-[280px] truncate' title={title}>
+          {title}
+        </div>
       )
+    },
+  },
+   {
+    accessorKey: 'subject_id',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Subject Title' />
+    ),
+
+    cell: ({ row }) => {
+      const id = row.getValue('subject_id') as string
+      const title = getSubjectTitle ? getSubjectTitle(id) : id
+        return (
+          <Badge
+            variant='outline'
+            className='text-xs uppercase max-w-[220px] truncate justify-start'
+            title={title}
+          >
+            {title}
+          </Badge>
+        )
     },
   },
   {
     accessorKey: 'purpose',
-    header: 'Type',
+   header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Type' />
+    ),
     cell: ({ row }) => {
-      const purpose = row.getValue('purpose') as string
+      const raw = (row.getValue('purpose') as string) || ''
+      const val = raw.toLowerCase()
+      const color =
+        val === 'pre-assessment'
+          ? 'bg-amber-500'
+          : val === 'quiz'
+            ? 'bg-blue-500'
+            : val === 'post-assessment'
+              ? 'bg-green-500'
+              : val === 'diagnostic'
+                ? 'bg-rose-500'
+                : 'bg-muted-foreground'
       return (
-        <Badge variant='outline' className='text-xs uppercase'>
-          {purpose}
-        </Badge>
+        <div className='flex items-center gap-2'>
+          <span className={`inline-block h-2.5 w-2.5 rounded-full ${color}`} />
+          <span className='font-medium capitalize'>{raw || 'N/A'}</span>
+        </div>
       )
     },
   },
-  {
-    accessorKey: 'subject_id',
-    header: 'Subject',
-    cell: ({ row }) => (
-      <div className='font-medium'>{row.getValue('subject_id')}</div>
-    ),
-  },
+  
   {
     accessorKey: 'total_items',
-    header: 'Items',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Items' />
+    ),
     cell: ({ row }) => (
       <div className='w-12 text-center'>{row.getValue('total_items')}</div>
     ),
   },
   {
-    id: 'verified',
-    header: 'Status',
+    accessorKey: 'bloom_levels',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Bloom Level' />
+    ),
     cell: ({ row }) => {
-      const isVerified = !!row.original.is_verified
+      const levels = Array.isArray(row.original.bloom_levels)
+        ? row.original.bloom_levels
+        : []
+      const raw = (levels[0] || '') as string
+      const lvl = String(raw).toLowerCase()
+      const unique = Array.from(new Set(levels.map((l) => String(l).toLowerCase())))
+      const additionalCount = Math.max(0, unique.length - (raw ? 1 : 0))
+      const color =
+        lvl === 'remembering'
+          ? 'bg-gray-400'
+          : lvl === 'understanding'
+            ? 'bg-blue-500'
+            : lvl === 'applying'
+              ? 'bg-green-500'
+              : lvl === 'analyzing'
+                ? 'bg-amber-500'
+                : lvl === 'evaluating'
+                  ? 'bg-violet-500'
+                  : lvl === 'creating'
+                    ? 'bg-rose-500'
+                    : 'bg-muted-foreground'
       return (
-        <Badge variant={isVerified ? 'default' : 'secondary'}>
-          {isVerified ? 'Verified' : 'Pending'}
-        </Badge>
+        <div className='flex items-center gap-2'>
+          <span className={`inline-block h-2.5 w-2.5 rounded-full ${color}`} />
+          <span className='font-medium capitalize'>{raw || 'N/A'}</span>
+          {additionalCount > 0 && (
+            <span className='text-muted-foreground text-xs'>+({additionalCount})</span>
+          )}
+        </div>
       )
     },
   },

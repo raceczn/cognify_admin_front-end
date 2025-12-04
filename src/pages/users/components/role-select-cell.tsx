@@ -46,6 +46,10 @@ export function RoleSelectCell({
         created_at: new Date(response.created_at || currentUser.created_at),
         updated_at: new Date(),
         role: response.role || newRoleId || 'unknown',
+        deleted_at:
+          typeof (response as any)?.deleted_at === 'string'
+            ? new Date((response as any).deleted_at)
+            : (response as any)?.deleted_at ?? currentUser.deleted_at ?? null,
       }
 
       updateLocalUsers(updatedUser, 'edit')

@@ -30,7 +30,10 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
-import { ModuleFormValues, moduleFormSchema } from '../data/schema'
+import { moduleFormSchema } from '../data/schema'
+import type { ModuleFormValues } from '../data/schema'
+import type { SubmitHandler } from 'react-hook-form'
+import { z } from 'zod'
 import { useModules } from './modules-provider'
 
 interface ModuleMutateFormProps {
@@ -41,13 +44,13 @@ interface ModuleMutateFormProps {
 }
 
 const BLOOM_LEVELS = [
-  'Remembering',
-  'Understanding',
-  'Applying',
-  'Analyzing',
-  'Evaluating',
-  'Creating',
-]
+  'remembering',
+  'understanding',
+  'applying',
+  'analyzing',
+  'evaluating',
+  'creating',
+] as const
 
 export function ModuleMutateForm({
   moduleId,
@@ -64,7 +67,7 @@ export function ModuleMutateForm({
   const navigate = useNavigate()
   const isEdit = !!moduleId
 
-  const form = useForm<ModuleFormValues>({
+  const form = useForm<z.input<typeof moduleFormSchema>>({
     resolver: zodResolver(moduleFormSchema),
     mode: 'onChange',
     defaultValues: {
@@ -78,11 +81,11 @@ export function ModuleMutateForm({
     },
   })
 
-  // Check if only "Remembering" is selected (should disable material_url)
-  const watchedBloomLevels = form.watch('bloom_levels')
+  // Check if only "remembering" is selected (should disable material_url)
+  const watchedBloomLevels = form.watch('bloom_levels') ?? []
   const isQuestionOnly =
     watchedBloomLevels.length > 0 &&
-    watchedBloomLevels.every((l) => l === 'Remembering')
+    watchedBloomLevels.every((l) => l === 'remembering')
 
   // Clear material_url if the user switches to 'Remembering' ONLY mode
   useEffect(() => {
@@ -111,9 +114,9 @@ export function ModuleMutateForm({
     }
   }, [isEdit, moduleId])
 
-  async function onSubmit(data: ModuleFormValues) {
+  const onSubmit: SubmitHandler<z.input<typeof moduleFormSchema>> = async (data) => {
     try {
-      const payload: Partial<ModuleFormValues> = { ...data }
+      const payload: Partial<z.input<typeof moduleFormSchema>> = { ...data }
 
       // Enforce: If "Remembering" is set, material_url must be cleared.
       if (isQuestionOnly) {
@@ -122,8 +125,9 @@ export function ModuleMutateForm({
       
       // Ensure single bloom_level is sent for backend compatibility if needed, using the first element
       const dataToSend = {
-          ...payload, 
-          bloom_level: payload.bloom_levels[0] || 'Remembering' 
+        ...payload,
+        bloom_levels: payload.bloom_levels ?? [],
+        bloom_level: (data.bloom_levels?.[0]) || 'remembering',
       }
 
       if (isEdit && moduleId) {
@@ -134,7 +138,7 @@ export function ModuleMutateForm({
         toast.success('Module created successfully.')
       }
       if (isVerificationMode && onApprove) {
-        await onApprove(data)
+        await onApprove(moduleFormSchema.parse(data))
         return
       }
       navigate({ to: '/modules' })
@@ -163,7 +167,7 @@ export function ModuleMutateForm({
                 <FormLabel>Title</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder='e.g., Introduction to Python'
+                    placeholder='Enter materials title'
                     {...field}
                     value={field.value || ''}
                   />
@@ -223,7 +227,7 @@ export function ModuleMutateForm({
           <FormField
             control={form.control}
             name='bloom_levels'
-            render={({ field }) => (
+            render={({ field: _ }) => (
               <FormItem>
                 <div className='mb-4'>
                   <FormLabel>Bloom's Taxonomy Levels (Select Multiple)</FormLabel>
@@ -241,18 +245,19 @@ export function ModuleMutateForm({
                         >
                           <FormControl>
                             <Checkbox
-                              checked={innerField.value?.includes(level)}
+                              checked={(innerField.value ?? []).includes(level)}
                               onCheckedChange={(checked) => {
+                                const current = innerField.value ?? []
                                 return checked
-                                  ? innerField.onChange([...innerField.value, level])
+                                  ? innerField.onChange([...current, level])
                                   : innerField.onChange(
-                                      innerField.value?.filter((value) => value !== level)
+                                      current.filter((value) => value !== level)
                                     )
                               }}
                             />
                           </FormControl>
                           <FormLabel className="font-normal cursor-pointer">
-                            {level}
+                            {level.charAt(0).toUpperCase() + level.slice(1)}
                           </FormLabel>
                         </FormItem>
                       )}
@@ -313,7 +318,7 @@ export function ModuleMutateForm({
                   <Button
                     type='button'
                     variant='secondary'
-                    onClick={() => onApprove?.(form.getValues())}
+                    onClick={() => onApprove?.(moduleFormSchema.parse(form.getValues()))}
                   >
                     Approve
                   </Button>

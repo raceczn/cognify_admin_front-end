@@ -79,7 +79,7 @@ function normalizeModule(record: any): Module {
     bloomLevels.push('Remembering')
   }
 
-  return {
+    return {
     id: id,
     subject_id: data.subject_id || '',
     title: data.title || 'Untitled',
@@ -89,12 +89,9 @@ function normalizeModule(record: any): Module {
     bloom_levels: bloomLevels,
     bloom_level: bloomLevels[0], 
     
-    material_type: data.material_type,
     material_url: data.material_url,
-    cover_image_url: data.cover_image_url,
+    // cover_image_url removed to match Module type
     
-    input_type: data.content ? 'text' : 'file',
-    content: data.content,
 
     is_verified: !!data.is_verified,
     verified_at: data.verified_at ? new Date(data.verified_at) : null,

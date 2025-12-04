@@ -18,7 +18,7 @@ export function ModulesDialogs() {
       <ModulesMutateDrawer
         open={open === 'add' || open === 'edit'}
         onOpenChange={(value) => (value ? setOpen('add') : handleClose())} 
-        currentRow={currentRow}
+        currentRow={currentRow ? { id: currentRow.id } : undefined}
       />
       
       {/* Delete Module Dialog */}

@@ -7,7 +7,6 @@ import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AssessmentEditor } from '@/pages/assessments/components/AssessmentEditor'
 import { toast } from 'sonner'
@@ -46,16 +45,12 @@ export default function AssessmentsNewPage() {
       </Header>
 
       <Main>
-        <div className='mb-6'>
+        <div className='mb-1'>
           <h1 className='text-2xl font-bold tracking-tight'>Create Assessment</h1>
           <p className='text-muted-foreground'>Define the assessment details and questions.</p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Assessment Details</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <div>
             {isLoading ? (
               <div className='space-y-4'>
                 <Skeleton className='h-10 w-full' />
@@ -78,8 +73,7 @@ export default function AssessmentsNewPage() {
                 onBack={() => navigate({ to: '/assessments' })}
               />
             )}
-          </CardContent>
-        </Card>
+        </div>
       </Main>
     </>
   )

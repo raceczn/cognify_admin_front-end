@@ -7,7 +7,6 @@ import {
   useUpdateAssessmentMutation,
 } from '@/lib/assessment-hooks'
 import { getAllSubjects } from '@/lib/subjects-hooks'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
@@ -57,18 +56,14 @@ export default function AssessmentsEditPage() {
       </Header>
 
       <Main>
-        <div className='mb-6'>
+        <div className='mb-1'>
           <h1 className='text-2xl font-bold tracking-tight'>Edit Assessment</h1>
           <p className='text-muted-foreground'>
             Update assessment information and questions.
           </p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Assessment Details</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <div>
             {isLoadingAssessment ? (
               <div className='space-y-4'>
                 <Skeleton className='h-10 w-full' />
@@ -87,8 +82,7 @@ export default function AssessmentsEditPage() {
             ) : (
               <p className='text-muted-foreground'>Assessment not found.</p>
             )}
-          </CardContent>
-        </Card>
+          </div>
       </Main>
     </>
   )

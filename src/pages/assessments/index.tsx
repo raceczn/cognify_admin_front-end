@@ -10,10 +10,15 @@ import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { assessmentsColumns } from './components/assessments-columns'
 import { AssessmentsDataTable } from './components/assessments-table'
+import { useQuery } from '@tanstack/react-query'
+import { getAllSubjects } from '@/lib/subjects-hooks'
 
 export function Assessments() {
   const navigate = useNavigate()
   const { data: assessments = [] } = useAssessmentsQuery()
+  const { data: subjectsRes } = useQuery({ queryKey: ['subjects:list'], queryFn: getAllSubjects })
+  const subjectOptions = subjectsRes?.items ?? []
+  const getSubjectTitle = (id: string) => subjectOptions.find(s => s.id === id)?.title || id
 
   return (
     <>
@@ -50,7 +55,7 @@ export function Assessments() {
             <div className='-mx-4 flex-1 overflow-auto px-4 py-1'>
               <AssessmentsDataTable
                 data={assessments}
-                columns={assessmentsColumns}
+                columns={assessmentsColumns(getSubjectTitle)}
               />
             </div>
           </TabsContent>

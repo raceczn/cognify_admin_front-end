@@ -33,15 +33,15 @@ export default function UserEditPage() {
     email: profile.email ?? '',
     nickname: profile.nickname ?? null,
     role: profile.role ?? 'unknown',
-    status: (profile.status === 'online' || profile.status === 'offline' || profile.status === 'busy')
-      ? (profile.status as 'online' | 'offline' | 'busy')
-      : 'offline',
+    status: 'offline',
     profile_picture: profile.profile_picture ?? null,
     created_at: new Date(profile.created_at),
     updated_at: profile.updated_at ? new Date(profile.updated_at) : null,
     deleted: !!profile.deleted,
     deleted_at: profile.deleted_at ? new Date(profile.deleted_at) : undefined,
-    role_id: profile.role_id
+    role_id: profile.role_id,
+    is_verified: !!profile.is_verified,
+    is_active: profile.is_active ?? true,
   } : undefined
 
   return (

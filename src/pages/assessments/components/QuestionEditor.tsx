@@ -32,35 +32,50 @@ export function QuestionEditor({ question, onUpdate, onDelete }: QuestionEditorP
   }
 
   const handleOptionChange = (optionId: string, newText: string) => {
-    const newOptions = question.options?.map(opt => 
+    const baseOptions: Option[] = (question.options && question.options.length > 0)
+      ? (question.options as Option[])
+      : buildOptionsFromChoices(question)
+    const newOptions = baseOptions.map(opt => 
       opt.id === optionId ? { ...opt, text: newText } : opt
-    ) || []
+    )
     onUpdate({ ...question, options: newOptions })
   }
 
   const handleCorrectOptionChange = (optionId: string) => {
-    const newOptions = question.options?.map(opt => ({ 
+    const baseOptions: Option[] = (question.options && question.options.length > 0)
+      ? (question.options as Option[])
+      : buildOptionsFromChoices(question)
+    const newOptions = baseOptions.map(opt => ({ 
       ...opt,
       is_correct: opt.id === optionId, 
-    })) || []
+    }))
     onUpdate({ ...question, options: newOptions })
   }
 
   const handleDeleteOption = (optionId: string) => {
-    const newOptions = question.options?.filter(opt => opt.id !== optionId) || []
+    const baseOptions: Option[] = (question.options && question.options.length > 0)
+      ? (question.options as Option[])
+      : buildOptionsFromChoices(question)
+    const newOptions = baseOptions.filter(opt => opt.id !== optionId)
     onUpdate({ ...question, options: newOptions })
   }
 
   const handleAddOption = () => {
+    const baseOptions: Option[] = (question.options && question.options.length > 0)
+      ? (question.options as Option[])
+      : buildOptionsFromChoices(question)
     const newOption: Option = {
       id: Math.random().toString(36).substring(2, 9),
-      text: `New Option ${(question.options?.length || 0) + 1}`,
+      text: `New Option ${baseOptions.length + 1}`,
       is_correct: false,
     }
-    onUpdate({ ...question, options: [...(question.options || []), newOption] })
+    onUpdate({ ...question, options: [...baseOptions, newOption] })
   }
 
   const currentType = question.type || 'multiple_choice';
+  const displayOptions: Option[] = (question.options && question.options.length > 0)
+    ? (question.options as Option[])
+    : buildOptionsFromChoices(question)
 
   return (
     <Card className='mb-6 shadow-md'>
@@ -83,7 +98,7 @@ export function QuestionEditor({ question, onUpdate, onDelete }: QuestionEditorP
               <Label className='block text-sm font-medium'>Options</Label>
               <span className="text-xs text-muted-foreground">Select the correct answer</span>
             </div>
-            {question.options && question.options.map((option: Option, index: number) => ( 
+            {(displayOptions || []).map((option: Option, index: number) => ( 
               <div key={option.id || index} className='flex items-center space-x-3'>
                 <input
                   type='radio'
@@ -112,4 +127,18 @@ export function QuestionEditor({ question, onUpdate, onDelete }: QuestionEditorP
       </CardContent>
     </Card>
   )
+}
+
+function buildOptionsFromChoices(question: Question): Option[] {
+  const qAny = question as any
+  const choices: string[] = Array.isArray(qAny?.choices) ? qAny.choices.map((c: any) => String(c)) : []
+  if (!choices || choices.length === 0) return []
+  const correctRaw: string | undefined = typeof qAny?.correct === 'string' ? qAny.correct : undefined
+  const letter = correctRaw ? correctRaw.trim().charAt(0).toUpperCase() : undefined
+  const correctIndex = letter ? letter.charCodeAt(0) - 'A'.charCodeAt(0) : -1
+  return choices.map((text: string, idx: number) => ({
+    id: `choice-${question.question_id || 'q'}-${idx}`,
+    text,
+    is_correct: idx === correctIndex,
+  }))
 }

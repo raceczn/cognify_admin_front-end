@@ -1,15 +1,15 @@
 import * as React from 'react'
 import {
-  ColumnDef,
+  type ColumnDef,
+  type SortingState,
+  type ColumnFiltersState,
+  type VisibilityState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
-  SortingState,
-  ColumnFiltersState,
-  VisibilityState,
 } from '@tanstack/react-table'
 
 import {
@@ -28,8 +28,10 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
+  DropdownMenuItem,
 } from '@/components/ui/dropdown-menu'
 import { IconAdjustmentsHorizontal } from '@tabler/icons-react'
+import { roles } from '../data/data'
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -66,6 +68,9 @@ export function DataTable<TData, TValue>({
     },
   })
 
+  const roleFilterValue = (table.getColumn('role')?.getFilterValue() as string) ?? ''
+  const roleFilterLabel = roles.find((r) => r.value === roleFilterValue)?.label ?? 'All Roles'
+
   return (
     <div className='w-full space-y-4'>
       <div className='flex items-center justify-between'>
@@ -78,6 +83,26 @@ export function DataTable<TData, TValue>({
             }
             className='h-8 w-[150px] lg:w-[250px]'
           />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant='outline' size='sm' className='h-8'>
+                Role: {roleFilterLabel}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align='start' className='w-[180px]'>
+              <DropdownMenuItem onClick={() => table.getColumn('role')?.setFilterValue('')}>
+                All Roles
+              </DropdownMenuItem>
+              {roles.map((r) => (
+                <DropdownMenuItem
+                  key={r.value}
+                  onClick={() => table.getColumn('role')?.setFilterValue(r.value)}
+                >
+                  {r.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -107,7 +132,7 @@ export function DataTable<TData, TValue>({
       </div>
       <div className='rounded-md border'>
         <Table>
-          <TableHeader>
+          <TableHeader className='bg-[#fbd6f8] dark:bg-[#FDCFFA]/10'>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
