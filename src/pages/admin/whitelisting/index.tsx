@@ -7,7 +7,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Plus, UploadCloud, Trash2, CheckCircle2, XCircle, Loader2 } from 'lucide-react' // Added Loader2
 import { toast } from 'sonner'
 // [FIX] Import the new hook
-import { useWhitelist, useAddWhitelist, useRemoveWhitelist, useBulkWhitelist } from '@/lib/admin-hooks'
+import { useWhitelist, useAddWhitelist, useRemoveWhitelist } from '@/lib/admin-hooks'
+import { read, utils } from 'xlsx'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -65,11 +66,11 @@ export default function WhitelistingPage() {
   const { data: whitelist, isLoading } = useWhitelist()
   const addMutation = useAddWhitelist()
   const removeMutation = useRemoveWhitelist()
-  const bulkMutation = useBulkWhitelist() // [FIX] Use the new hook
   const [roleFilter, setRoleFilter] = useState<string>('')
   
   // [FIX] Ref for hidden file input
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isBulkUploading, setIsBulkUploading] = useState(false)
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -98,31 +99,211 @@ export default function WhitelistingPage() {
     }
   }
   
-  // [FIX] Handle File Upload
+  function detectDelimiter(line: string) {
+    const candidates = [',', ';', '\t']
+    let best = ','
+    let bestCount = -1
+    for (const d of candidates) {
+      const c = (line.match(new RegExp(`\\${d}`, 'g')) || []).length
+      if (c > bestCount) {
+        best = d
+        bestCount = c
+      }
+    }
+    return best
+  }
+
+  function parseLine(line: string, delimiter: string) {
+    const out: string[] = []
+    let cur = ''
+    let inQuotes = false
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i]
+      if (ch === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          cur += '"'
+          i++
+        } else {
+          inQuotes = !inQuotes
+        }
+      } else if (ch === delimiter && !inQuotes) {
+        out.push(cur)
+        cur = ''
+      } else {
+        cur += ch
+      }
+    }
+    out.push(cur)
+    return out.map((p) => p.trim().replace(/^"|"$/g, ''))
+  }
+
+  function normalizeRole(input: string) {
+    const r = input.toLowerCase().trim().replace(/\s+/g, '_')
+    if (r === 'faculty' || r === 'faculty_member' || r === 'professor' || r === 'teacher' || r === 'faculty-members' || r === 'faculty_members') return 'faculty_member'
+    if (r === 'admin' || r === 'administrator') return 'admin'
+    if (r === 'student' || r === 'students') return 'student'
+    return r
+  }
+
+  function isEmailCandidate(v: string) {
+    const s = (v || '').toLowerCase().trim()
+    return s.endsWith('@cvsu.edu.ph') && s.includes('@')
+  }
+
+  function findEmailRoleIndexes(rows: string[][], allowedRoles: Set<string>) {
+    const sampleRows = rows.slice(0, Math.min(rows.length, 20))
+    const width = sampleRows.reduce((m, r) => Math.max(m, r.length), 0)
+    let emailIdx = -1
+    let roleIdx = -1
+    let emailScore = -1
+    let roleScore = -1
+    for (let c = 0; c < width; c++) {
+      let eScore = 0
+      let rScore = 0
+      for (const r of sampleRows) {
+        const cell = (r[c] || '').toString()
+        if (isEmailCandidate(cell)) eScore++
+        const norm = normalizeRole(cell)
+        if (allowedRoles.has(norm)) rScore++
+      }
+      if (eScore > emailScore) {
+        emailScore = eScore
+        emailIdx = c
+      }
+      if (rScore > roleScore) {
+        roleScore = rScore
+        roleIdx = c
+      }
+    }
+    if (emailIdx === -1) emailIdx = 0
+    if (roleIdx === -1) roleIdx = 1
+    return { emailIdx, roleIdx }
+  }
+
+  // Handle CSV Bulk Upload (client-side parsing)
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
-      toast.error('Please upload a CSV file.')
+    const nameLc = file.name.toLowerCase()
+    const isCSV = nameLc.endsWith('.csv') || file.type === 'text/csv'
+    const isXLSX = nameLc.endsWith('.xlsx') || nameLc.endsWith('.xls') || file.type.includes('spreadsheet')
+    if (!isCSV && !isXLSX) {
+      toast.error('Please upload a CSV or Excel file.')
       return
     }
 
+    setIsBulkUploading(true)
+    const allowedRoles = new Set(['student', 'faculty_member', 'admin'])
+    let added = 0
+    let skipped = 0
+    const errors: string[] = []
+
     try {
-      toast.loading('Processing CSV...')
-      const res = await bulkMutation.mutateAsync(file)
-      toast.dismiss()
-      toast.success(`Bulk upload complete! Added: ${res.added}, Skipped: ${res.skipped}`)
-      
-      if (res.errors && res.errors.length > 0) {
-         toast.warning(`Some rows failed: ${res.errors[0]}...`)
+      const seen = new Set<string>()
+      let rows: string[][] = []
+      if (isCSV) {
+        const textRaw = await file.text()
+        const text = textRaw.replace(/^\uFEFF/, '')
+        const lines = text
+          .split(/\r?\n/)
+          .map((l) => l.trim())
+          .filter((l) => l.length > 0)
+        if (lines.length === 0) {
+          toast.error('File is empty')
+          return
+        }
+        const delimiter = detectDelimiter(lines[0])
+        rows = lines.map((ln) => parseLine(ln, delimiter))
+      } else {
+        const buf = await file.arrayBuffer()
+        const wb = read(buf, { type: 'array' })
+        const wsName = wb.SheetNames[0]
+        const ws = wb.Sheets[wsName]
+        const raw = utils.sheet_to_json(ws, { header: 1 }) as any[]
+        rows = raw.map((r) => (Array.isArray(r) ? r : [r]).map((x) => String(x ?? '').trim()))
+        if (rows.length === 0) {
+          toast.error('File is empty')
+          return
+        }
       }
-    } catch (error: any) {
-      toast.dismiss()
-      toast.error(error.response?.data?.detail || 'Bulk upload failed.')
+
+      const header = rows[0].map((c) => c.toLowerCase().trim())
+      const headerEmailIdx = header.indexOf('email')
+      const headerRoleIdx = header.indexOf('role')
+      const hasHeader = headerEmailIdx !== -1 && headerRoleIdx !== -1
+      const { emailIdx, roleIdx } = hasHeader
+        ? { emailIdx: headerEmailIdx, roleIdx: headerRoleIdx }
+        : findEmailRoleIndexes(rows, allowedRoles)
+      const startIdx = hasHeader ? 1 : 0
+      const existingPending = new Set(
+        (whitelist || [])
+          .filter((u: any) => !u.is_registered)
+          .map((u: any) => String(u.email || '').toLowerCase())
+      )
+      const dupExisting: string[] = []
+      const dupInFile: string[] = []
+
+      for (let i = startIdx; i < rows.length; i++) {
+        const parts = rows[i]
+        const email = parts[emailIdx]?.trim()
+        const roleRaw = parts[roleIdx]?.trim()
+        const role = normalizeRole(roleRaw || '')
+
+        if (!email || !role) {
+          skipped++
+          errors.push(`Row ${i + 1}: missing email or role`)
+          continue
+        }
+        const emailLc = email.toLowerCase()
+        if (existingPending.has(emailLc)) {
+          skipped++
+          dupExisting.push(email)
+          continue
+        }
+        if (seen.has(emailLc)) {
+          skipped++
+          dupInFile.push(email)
+          continue
+        }
+        if (!emailLc.endsWith('@cvsu.edu.ph')) {
+          skipped++
+          errors.push(`Row ${i + 1}: invalid domain`)
+          continue
+        }
+        if (!allowedRoles.has(role)) {
+          skipped++
+          errors.push(`Row ${i + 1}: invalid role "${role}"`)
+          continue
+        }
+
+        if (seen.has(emailLc)) {
+          skipped++
+          continue
+        }
+        seen.add(emailLc)
+
+        try {
+          await addMutation.mutateAsync({ email, role })
+          added++
+        } catch (err: any) {
+          skipped++
+          const detail = err?.response?.data?.detail
+          errors.push(`Row ${i + 1}: ${detail || 'add failed'}`)
+        }
+      }
+
+      toast.success(`Bulk upload complete! Added: ${added}, Skipped: ${skipped}`)
+      if (dupExisting.length || dupInFile.length) {
+        const examples = [...dupExisting, ...dupInFile].slice(0, 3).join(', ')
+        const totalDup = dupExisting.length + dupInFile.length
+        toast.error(`Duplicate emails not added (${totalDup}). Examples: ${examples}`)
+      }
+    } catch (err) {
+      toast.error('Bulk upload failed.')
     } finally {
-        // Reset input
-        if (fileInputRef.current) fileInputRef.current.value = ''
+      setIsBulkUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
 
@@ -199,7 +380,7 @@ export default function WhitelistingPage() {
           <Card>
             <CardHeader>
               <CardTitle>Bulk Upload</CardTitle>
-              <CardDescription>Upload a CSV file containing emails and roles.</CardDescription>
+              <CardDescription>Upload a CSV or Excel file containing emails and roles.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center justify-center border-2 border-dashed rounded-md h-[130px] bg-muted/10 hover:bg-muted/20 transition-colors cursor-pointer"
               onClick={() => fileInputRef.current?.click()}
@@ -208,11 +389,11 @@ export default function WhitelistingPage() {
                 type="file" 
                 ref={fileInputRef} 
                 className="hidden" 
-                accept=".csv" 
+                accept=".csv,.xlsx,.xls" 
                 onChange={handleFileUpload}
               />
               
-              {bulkMutation.isPending ? (
+              {isBulkUploading ? (
                  <div className="flex flex-col items-center">
                     <Loader2 className="h-8 w-8 text-primary animate-spin mb-2" />
                     <p className="text-sm text-muted-foreground">Uploading...</p>
@@ -220,7 +401,7 @@ export default function WhitelistingPage() {
               ) : (
                  <>
                     <UploadCloud className="h-8 w-8 text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground mb-2">Drag and drop CSV or click to browse</p>
+                    <p className="text-sm text-muted-foreground mb-2">Drag and drop CSV/Excel or click to browse</p>
                     <p className="text-xs text-muted-foreground font-mono">Format: email, role</p>
                  </>
               )}
