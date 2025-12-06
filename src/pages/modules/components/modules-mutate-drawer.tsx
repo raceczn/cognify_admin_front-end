@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from '@tanstack/react-router'
 import { 
   ArrowLeft, Loader2, FileUp, FileText, CheckCircle2, 
-  File as FileIcon, Eye, ExternalLink 
+  File as FileIcon, ExternalLink 
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { getModule, uploadModuleMaterial } from '@/lib/modules-hooks'
@@ -448,7 +448,7 @@ export function ModuleMutateForm({
             </div>
 
             {/* TAB 3: VIEW MATERIAL (FIXED) */}
-            <div className={activeTab === 'view' ? 'block animate-fade-in-up w-full h-full min-h-[500px]' : 'hidden'}>
+            <div className={activeTab === 'view' ? 'block animate-fade-in-up w-full h-full' : 'hidden'}>
                <div className="flex flex-col h-full gap-4">
                   <div className="flex items-center justify-between">
                     <h2 className="text-lg font-semibold text-gray-900">Material Preview</h2>
@@ -467,7 +467,8 @@ export function ModuleMutateForm({
 
                   {inputType === 'pdf' ? (
                     materialUrl ? (
-                      <div className="flex-1 border rounded-lg overflow-hidden bg-gray-100 h-[600px] relative">
+                      // Changed from fixed h-[600px] to h-[85vh] for maximum height viewing
+                      <div className="flex-1 border rounded-lg overflow-hidden bg-gray-100 h-[85vh] relative">
                         {/* [FIX] Cloudinary Viewer usually needs no special params */}
                         <iframe 
                           src={materialUrl} 
@@ -483,7 +484,8 @@ export function ModuleMutateForm({
                     )
                   ) : (
                     contentText ? (
-                      <div className="flex-1 p-6 border rounded-lg bg-gray-50 whitespace-pre-wrap font-mono text-sm h-[600px] overflow-y-auto">
+                      // Changed from fixed h-[600px] to h-[85vh] for maximum height viewing
+                      <div className="flex-1 p-6 border rounded-lg bg-gray-50 whitespace-pre-wrap font-mono text-sm h-[85vh] overflow-y-auto">
                         {contentText}
                       </div>
                     ) : (
