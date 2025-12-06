@@ -4,17 +4,16 @@ import * as React from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import {
   ColumnDef,
-  ColumnFiltersState,
   flexRender,
   getCoreRowModel,
-  getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
   SortingState,
   useReactTable,
-  VisibilityState,
+  getFilteredRowModel,
+  ColumnFiltersState,
 } from '@tanstack/react-table'
-import { Loader2, CheckCircle2, XCircle, TrendingUp } from 'lucide-react'
+import { Loader2, TrendingUp, AlertCircle, Search } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -24,7 +23,6 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
 import { Input } from '@/components/ui/input'
 import {
   Table,
@@ -34,15 +32,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { LongText } from '@/components/long-text'
-
-interface Prediction {
-  student_id: string
-  first_name: string | null
-  last_name: string | null
-  predicted_to_pass: boolean
-  overall_score: number
-}
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs' // [NEW] Import Tabs
+import { Prediction } from '@/lib/analytics-hooks'
 
 interface PredictionData {
   summary: {
@@ -66,85 +57,100 @@ export function PredictionsTable({
   error,
 }: PredictionsTableProps) {
   const navigate = useNavigate()
-  
-  // --- FIX 1: Hooks MUST be at the top level (unconditional) ---
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
-  const [rowSelection, setRowSelection] = React.useState({})
+  const [activeTab, setActiveTab] = React.useState('all') // [NEW] Tab State
+
+  // [NEW] Filter Data Logic
+  const filteredPredictions = React.useMemo(() => {
+    if (!data?.predictions) return []
+    
+    switch (activeTab) {
+      case 'passed':
+        // Filter where risk is Low OR passing prob is high
+        return data.predictions.filter(p => 
+          p.predicted_to_pass === true || 
+          (p.passing_probability >= 0.75)
+        )
+      case 'failed':
+        // Filter where risk is NOT Low
+        return data.predictions.filter(p => 
+          p.predicted_to_pass === false || 
+          (p.passing_probability < 0.75)
+        )
+      default:
+        return data.predictions
+    }
+  }, [data?.predictions, activeTab])
 
   const columns: ColumnDef<Prediction>[] = [
     {
-      id: 'search',
-      accessorFn: (row) => `${row.student_id} ${row.first_name ?? ''} ${row.last_name ?? ''}`.trim(),
-      filterFn: 'includesString',
-      enableSorting: false,
-      enableHiding: true,
-      header: () => null,
-      cell: () => null,
-    },
-    {
       accessorKey: 'student_id',
       header: 'Student',
+      cell: ({ row }) => (
+        <div className='flex flex-col'>
+          <span className='font-medium'>
+            {`${row.original.first_name || ''} ${row.original.last_name || ''}`.trim() || 'Unknown'}
+          </span>
+          <span className='text-muted-foreground text-xs'>
+            {row.original.student_id}
+          </span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'risk_level',
+      header: 'Status',
       cell: ({ row }) => {
-        const p = row.original
-        return (
-          <div className='flex flex-col'>
-            <span className='font-medium'>
-              {`${p.first_name || ''} ${p.last_name || ''}`.trim() ||
-                'Unknown User'}
-            </span>
-            <LongText className='text-muted-foreground w-48 text-xs'>
-              {p.student_id}
-            </LongText>
-          </div>
-        )
+        const risk = row.original.risk_level?.toLowerCase() || 'unknown';
+        let variant = "outline";
+        let label = row.original.risk_level || "Unknown";
+        
+        if (risk.includes('low')) { variant = "success"; label = "On Track"; }
+        else if (risk.includes('moderate')) { variant = "secondary"; label = "At Risk"; }
+        else if (risk.includes('high') || risk.includes('critical')) { variant = "destructive"; label = "Critical"; }
+
+        // @ts-ignore - Variant string mapping is safe here
+        return <Badge variant={variant}>{label}</Badge>
       },
     },
     {
-      accessorKey: 'predicted_to_pass',
-      header: 'Prediction',
+      accessorKey: 'passing_probability',
+      header: 'Probability',
       cell: ({ row }) => {
-        const p = row.original
+        const prob = row.original.passing_probability ?? (row.original.overall_score / 100);
+        const pct = Math.round(prob * 100);
+        
+        let color = "bg-red-500";
+        if (pct >= 85) color = "bg-green-500";
+        else if (pct >= 65) color = "bg-blue-500";
+        else if (pct >= 50) color = "bg-yellow-500";
+
         return (
-          <Badge
-            variant='outline'
-            className='text-muted-foreground flex items-center gap-1.5 px-2 py-0.5 text-sm'
-          >
-            {p.predicted_to_pass ? (
-              <CheckCircle2 className='h-4 w-4 text-green-500 dark:text-green-400' />
-            ) : (
-              <XCircle className='h-4 w-4 text-red-500 dark:text-red-400' />
-            )}
-            {p.predicted_to_pass ? 'Predicted to Pass' : 'At Risk'}
-          </Badge>
+          <div className="w-[120px]">
+             <div className="flex justify-between text-xs mb-1">
+               <span>{pct}% Chance</span>
+             </div>
+             <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
+               <div className={`h-full ${color}`} style={{ width: `${pct}%` }} />
+             </div>
+          </div>
         )
-      },
+      }
     },
     {
       accessorKey: 'overall_score',
-      header: () => <div className='text-right'>Overall Score</div>,
-      cell: ({ row }) => {
-        const p = row.original
-        // --- FIX 2: Safe access to score (handle null/undefined) ---
-        const score = typeof p.overall_score === 'number' ? p.overall_score : 0
-        
-        return (
-          <div className='flex flex-col items-end gap-1'>
-            <span className='font-semibold'>{score.toFixed(2)}%</span>
-            <Progress
-              value={score}
-              className={`h-2 w-[120px] ${p.predicted_to_pass ? 'bg-green-100' : 'bg-red-100'}`}
-            />
-          </div>
-        )
-      },
+      header: () => <div className='text-right'>Avg Score</div>,
+      cell: ({ row }) => (
+        <div className='text-right font-mono font-medium'>
+          {row.original.overall_score.toFixed(1)}%
+        </div>
+      ),
     },
   ]
 
-  // --- FIX 3: Initialize table unconditionally ---
   const table = useReactTable({
-    data: data?.predictions || [],
+    data: filteredPredictions, // [NEW] Use filtered data
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -152,88 +158,105 @@ export function PredictionsTable({
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
-    state: { sorting, columnFilters, columnVisibility, rowSelection },
+    state: { 
+      sorting,
+      columnFilters 
+    },
   })
 
-  // --- FIX 4: Conditional Rendering happens AFTER hooks ---
   if (isLoading) {
     return (
-      <Card className='bg-background/60 border-border/50 border shadow-sm backdrop-blur-sm'>
-        <CardHeader>
-          <CardTitle className='flex items-center gap-2'>
-            <TrendingUp className='text-primary h-5 w-5' />
-             Pass/Fail Predictions
-          </CardTitle>
-          <CardDescription>
-            Loading analytics...
-          </CardDescription>
-        </CardHeader>
-        <CardContent className='flex h-[220px] items-center justify-center'>
-          <Loader2 className='text-muted-foreground h-8 w-8 animate-spin' />
-        </CardContent>
+      <Card className='h-64 flex items-center justify-center bg-background/60 backdrop-blur'>
+        <div className="flex flex-col items-center gap-2">
+            <Loader2 className='text-primary h-8 w-8 animate-spin' />
+            <p className="text-muted-foreground text-sm">Loading predictions...</p>
+        </div>
       </Card>
     )
   }
 
   if (error || !data) {
     return (
-      <Card className='border-border/50 border shadow-sm'>
-        <CardHeader>
-          <CardTitle>Pass/Fail Predictions</CardTitle>
-          <CardDescription>Could not load model data.</CardDescription>
-        </CardHeader>
-        <CardContent className='flex h-[220px] items-center justify-center'>
-          <span className='text-destructive'>
-            {error?.message || 'Failed to load predictions.'}
+      <Card className='border-destructive/20 border bg-destructive/5'>
+        <CardContent className='flex h-64 items-center justify-center flex-col gap-2'>
+          <AlertCircle className="h-8 w-8 text-destructive" />
+          <span className='text-destructive font-medium'>
+            {error?.message || 'Failed to load data'}
           </span>
         </CardContent>
       </Card>
     )
   }
 
-  // Render Table
   return (
-    <Card className='border-border/50 bg-background/70 border shadow-sm backdrop-blur-sm'>
-      <CardHeader className='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>
-        <div>
-          <CardTitle className='flex items-center gap-2'>
-            <TrendingUp className='text-primary h-5 w-5' />
-            Pass/Fail Predictions
-          </CardTitle>
-          <CardDescription>
-            Click on a student row to view detailed analytics.
-          </CardDescription>
-        </div>
-        <div className='mt-3 md:mt-0 flex w-full md:w-auto flex-col items-start md:items-end gap-2'>
-          <div className='flex flex-wrap gap-2'>
-            <Badge variant='outline'>
-              Total: {data.summary.total_students_predicted}
-            </Badge>
-            <Badge variant='success'>
-              Pass: {data.summary.count_predicted_to_pass}
-            </Badge>
-            <Badge variant='destructive'>
-              Fail: {data.summary.count_predicted_to_fail}
-            </Badge>
-          </div>
-          <Input
-            placeholder='Search by ID or name...'
-            value={(table.getColumn('search')?.getFilterValue() as string) ?? ''}
-            onChange={(e) => table.getColumn('search')?.setFilterValue(e.target.value)}
-            className='h-9 w-full md:w-[280px] border-1 border-gray-500 dark:border-[#FDCFFA]/10'
-          />
+    <Card>
+      <CardHeader>
+        <div className='flex flex-row items-center justify-between'>
+            <div>
+                <CardTitle className='flex items-center gap-2'>
+                    <TrendingUp className='text-primary h-5 w-5' />
+                    Performance Predictions
+                </CardTitle>
+                <CardDescription>AI-driven analysis of student success rates</CardDescription>
+            </div>
+            <div className="flex gap-2">
+                <Badge variant="outline">Total: {data.summary.total_students_predicted}</Badge>
+            </div>
         </div>
       </CardHeader>
-
       <CardContent>
-        <div className='overflow-hidden rounded-md border'>
+        {/* [NEW] Tabs for Filtering */}
+        <Tabs defaultValue="all" className="w-full" onValueChange={setActiveTab}>
+          <div className="flex items-center justify-between mb-4">
+             <TabsList>
+                <TabsTrigger value="all">All Students</TabsTrigger>
+                <TabsTrigger value="passed" className="text-green-600">On Track</TabsTrigger>
+                <TabsTrigger value="failed" className="text-red-600">At Risk</TabsTrigger>
+             </TabsList>
+             
+             {/* Search Input */}
+             <div className="flex items-center gap-2 relative">
+                <Search className="h-4 w-4 absolute left-2 text-muted-foreground" />
+                <Input 
+                   placeholder="Search student..." 
+                   value={(table.getColumn('student_id')?.getFilterValue() as string) ?? ''}
+                   onChange={(event) => table.getColumn('student_id')?.setFilterValue(event.target.value)}
+                   className="pl-8 h-8 w-[200px]"
+                />
+             </div>
+          </div>
+
+          {/* Table Content (Wrapped in TabsContent, but using same table instance) */}
+          <TabsContent value="all" className="m-0">
+             <DataTableContent table={table} columns={columns} navigate={navigate} />
+          </TabsContent>
+          <TabsContent value="passed" className="m-0">
+             <DataTableContent table={table} columns={columns} navigate={navigate} />
+          </TabsContent>
+          <TabsContent value="failed" className="m-0">
+             <DataTableContent table={table} columns={columns} navigate={navigate} />
+          </TabsContent>
+        </Tabs>
+
+        {/* Pagination */}
+        <div className='flex items-center justify-end space-x-2 py-4'>
+            <Button variant='outline' size='sm' onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>Previous</Button>
+            <Button variant='outline' size='sm' onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>Next</Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// Helper Component for cleaner code
+function DataTableContent({ table, columns, navigate }: { table: any, columns: any, navigate: any }) {
+    return (
+        <div className='rounded-md border'>
           <Table>
-           <TableHeader className='bg-[#fcd3d3] dark:bg-[#FDCFFA]/10'>
-              {table.getHeaderGroups().map((headerGroup) => (
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup: any) => (
                 <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
+                  {headerGroup.headers.map((header: any) => (
                     <TableHead key={header.id}>
                       {flexRender(header.column.columnDef.header, header.getContext())}
                     </TableHead>
@@ -243,13 +266,13 @@ export function PredictionsTable({
             </TableHeader>
             <TableBody>
               {table.getRowModel().rows.length ? (
-                table.getRowModel().rows.map((row) => (
+                table.getRowModel().rows.map((row: any) => (
                   <TableRow
                     key={row.id}
                     onClick={() => navigate({ to: '/analytics/student/$studentId', params: { studentId: row.original.student_id } })}
-                    className='hover:bg-muted/60 cursor-pointer transition-all hover:shadow-sm'
+                    className='cursor-pointer hover:bg-muted/50'
                   >
-                    {row.getVisibleCells().map((cell) => (
+                    {row.getVisibleCells().map((cell: any) => (
                       <TableCell key={cell.id}>
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>
@@ -258,22 +281,13 @@ export function PredictionsTable({
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={columns.length} className='text-muted-foreground h-24 text-center'>
-                    No student predictions found.
+                  <TableCell colSpan={columns.length} className='h-24 text-center'>
+                    No students found in this category.
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
         </div>
-        {/* Pagination Controls */}
-        <div className='flex items-center justify-end space-x-2 py-4'>
-           <div className='space-x-2'>
-            <Button variant='outline' size='sm' onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>Previous</Button>
-            <Button variant='outline' size='sm' onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>Next</Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
+    )
 }

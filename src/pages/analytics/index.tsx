@@ -1,6 +1,6 @@
 'use client'
 
-import { Users, UserCheck, UserX, Percent, AlertTriangle } from 'lucide-react'
+import { Users, UserCheck, UserX, Percent, AlertTriangle, LayoutDashboard, GraduationCap, BookOpen } from 'lucide-react'
 import { useGlobalPredictions } from '@/lib/analytics-hooks'
 import { usePermissions } from '@/hooks/use-permissions'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -8,12 +8,13 @@ import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
+  CardDescription,
   CardTitle,
 } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { AppErrorBoundary } from '@/components/error-boundary'
 import { Header } from '@/components/layout/header'
@@ -57,8 +58,6 @@ export function Apps() {
     error,
   } = useGlobalPredictions()
 
-  console.log(predictionData?.performance_by_bloom);
-
   const summary = predictionData?.summary
 
   return (
@@ -74,103 +73,132 @@ export function Apps() {
 
       <Main>
         <AppErrorBoundary fallback={<AnalyticsErrorFallback />}>
-          <div className='pr-6'>
+          <div className='pr-6 pb-10'>
             <div>
               <h1 className='text-2xl font-bold tracking-tight'>
-                {isAdmin ? 'Dashboard Analytics' : 'Faculty Dashboard'}
+                {isAdmin ? 'System Analytics' : 'Faculty Dashboard'}
               </h1>
               <p className='text-muted-foreground'>
-                Overview of student performance and AI predictions.
+                AI-driven insights on student performance and cognitive development.
               </p>
             </div>
-            <div className='my-4'></div>
+            
+            <div className='my-6'>
+              {/* TABS IMPLEMENTATION */}
+              <Tabs defaultValue="overview" className="space-y-4">
+                <TabsList>
+                  <TabsTrigger value="overview" className="flex items-center gap-2">
+                    <LayoutDashboard className="h-4 w-4" />
+                    Overview
+                  </TabsTrigger>
+                  <TabsTrigger value="students" className="flex items-center gap-2">
+                    <GraduationCap className="h-4 w-4" />
+                    Student Predictions
+                  </TabsTrigger>
+                  <TabsTrigger value="subjects" className="flex items-center gap-2">
+                    <BookOpen className="h-4 w-4" />
+                    Subject Analysis
+                  </TabsTrigger>
+                </TabsList>
 
-            {isLoadingPredictions ? (
-              <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4'>
-                <Skeleton className='h-32' /><Skeleton className='h-32' />
-                <Skeleton className='h-32' /><Skeleton className='h-32' />
-              </div>
-            ) : summary ? (
-              <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4'>
-                <Card>
-                  <CardHeader>
-                    <div className="flex justify-between items-center">
-                        <CardDescription>Total Students</CardDescription>
-                        <Users className='text-muted-foreground size-4' />
+                {/* TAB 1: OVERVIEW */}
+                <TabsContent value="overview" className="space-y-4">
+                  {isLoadingPredictions ? (
+                    <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4'>
+                      <Skeleton className='h-32' /><Skeleton className='h-32' />
+                      <Skeleton className='h-32' /><Skeleton className='h-32' />
                     </div>
-                    <CardTitle className='text-3xl font-semibold'>
-                      {summary.total_students_predicted}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardFooter className='text-muted-foreground text-sm'>
-                    Active in system
-                  </CardFooter>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <div className="flex justify-between items-center">
-                        <CardDescription>Passing Rate</CardDescription>
-                        <Percent className='text-muted-foreground size-4' />
-                    </div>
-                    <CardTitle className='text-3xl font-semibold'>
-                      {(summary.predicted_pass_rate || 0).toFixed(1)}%
-                    </CardTitle>
-                  </CardHeader>
-                  <CardFooter className='text-muted-foreground text-sm'>
-                    AI Predicted
-                  </CardFooter>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <div className="flex justify-between items-center">
-                        <CardDescription>Predicted Pass</CardDescription>
-                        <UserCheck className='text-green-500 size-4' />
-                    </div>
-                    <CardTitle className='text-3xl font-semibold'>
-                      {summary.count_predicted_to_pass}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardFooter className='text-muted-foreground text-sm'>
-                    Low Risk
-                  </CardFooter>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <div className="flex justify-between items-center">
-                        <CardDescription>At Risk</CardDescription>
-                        <UserX className='text-red-500 size-4' />
-                    </div>
-                    <CardTitle className='text-3xl font-semibold'>
-                      {summary.count_predicted_to_fail}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardFooter className='text-muted-foreground text-sm'>
-                    High Risk
-                  </CardFooter>
-                </Card>
-              </div>
-            ) : (
-              <Card>
-                <CardContent className='pt-6'>
-                  <p className='text-muted-foreground text-center'>
-                    No data available.
-                  </p>
-                </CardContent>
-              </Card>
-            )}
+                  ) : summary ? (
+                    <>
+                      {/* Summary Cards */}
+                      <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4'>
+                        <Card>
+                          <CardHeader className="pb-2">
+                            <div className="flex justify-between items-center">
+                                <CardDescription>Total Students</CardDescription>
+                                <Users className='text-muted-foreground size-4' />
+                            </div>
+                            <CardTitle className='text-3xl font-semibold'>
+                              {summary.total_students_predicted}
+                            </CardTitle>
+                          </CardHeader>
+                          <CardFooter className='text-muted-foreground text-xs pt-0'>
+                            Active in current semester
+                          </CardFooter>
+                        </Card>
+                        <Card>
+                          <CardHeader className="pb-2">
+                            <div className="flex justify-between items-center">
+                                <CardDescription>Predicted Passing</CardDescription>
+                                <Percent className='text-muted-foreground size-4' />
+                            </div>
+                            <CardTitle className='text-3xl font-semibold'>
+                              {(summary.predicted_pass_rate || 0).toFixed(1)}%
+                            </CardTitle>
+                          </CardHeader>
+                          <CardFooter className='text-muted-foreground text-xs pt-0'>
+                            Based on current trajectory
+                          </CardFooter>
+                        </Card>
+                        <Card>
+                          <CardHeader className="pb-2">
+                            <div className="flex justify-between items-center">
+                                <CardDescription>Low Risk</CardDescription>
+                                <UserCheck className='text-green-500 size-4' />
+                            </div>
+                            <CardTitle className='text-3xl font-semibold'>
+                              {summary.count_predicted_to_pass}
+                            </CardTitle>
+                          </CardHeader>
+                          <CardFooter className='text-muted-foreground text-xs pt-0'>
+                            Students on track
+                          </CardFooter>
+                        </Card>
+                        <Card>
+                          <CardHeader className="pb-2">
+                            <div className="flex justify-between items-center">
+                                <CardDescription>At Risk</CardDescription>
+                                <UserX className='text-red-500 size-4' />
+                            </div>
+                            <CardTitle className='text-3xl font-semibold'>
+                              {summary.count_predicted_to_fail}
+                            </CardTitle>
+                          </CardHeader>
+                          <CardFooter className='text-muted-foreground text-xs pt-0'>
+                            Need intervention
+                          </CardFooter>
+                        </Card>
+                      </div>
 
-            <div className='mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3'>
-              <BloomLevelChart data={predictionData?.performance_by_bloom} />
-              <StudentStatus summary={summary} />
-              <CoreSubjectsPage data={predictionData?.subjects} />
-            </div>
+                      {/* Charts Grid */}
+                      <div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
+                        <StudentStatus summary={summary} />
+                        <BloomLevelChart data={predictionData?.performance_by_bloom} />
+                      </div>
+                    </>
+                  ) : (
+                    <Card>
+                      <CardContent className='pt-6 h-40 flex items-center justify-center'>
+                        <p className='text-muted-foreground'>No analytics data available.</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </TabsContent>
 
-            <div className='mt-4'>
-              <PredictionsTable
-                data={predictionData}
-                isLoading={isLoadingPredictions}
-                error={error as Error | null}
-              />
+                {/* TAB 2: STUDENTS */}
+                <TabsContent value="students">
+                  <PredictionsTable
+                    data={predictionData}
+                    isLoading={isLoadingPredictions}
+                    error={error as Error | null}
+                  />
+                </TabsContent>
+
+                {/* TAB 3: SUBJECTS */}
+                <TabsContent value="subjects">
+                  <CoreSubjectsPage data={predictionData?.subjects} />
+                </TabsContent>
+              </Tabs>
             </div>
           </div>
         </AppErrorBoundary>
