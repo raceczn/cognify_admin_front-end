@@ -1,12 +1,13 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useParams } from '@tanstack/react-router'
 import { getModule } from '@/lib/modules-hooks'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { ThemeSwitch } from '@/components/theme-switch'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ModuleMutateForm } from '../components/modules-mutate-drawer'
 import { ModulesProvider } from '../components/modules-provider'
 
@@ -15,6 +16,9 @@ export default function ModulesEditPage() {
   const { moduleId } = useParams({
     from: '/_authenticated/modules/$moduleId/edit',
   })
+
+  // Default to general tab
+  const [activeTab, setActiveTab] = useState('general')
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['module', moduleId],
@@ -34,31 +38,47 @@ export default function ModulesEditPage() {
       <Main>
         <div className='mb-6'>
           <h1 className='text-2xl font-bold tracking-tight'>Edit Module</h1>
-          <p className='text-muted-foreground'>Update module information.</p>
+          <p className='text-muted-foreground'>Update module information and content.</p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Module Details</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <div className='flex w-full flex-col gap-6'>
+          
+          {/* [FIX] Updated Grid Cols to 3 and Added View Trigger */}
+          <Tabs 
+            value={activeTab} 
+            onValueChange={setActiveTab} 
+            className="w-full"
+          >
+            <TabsList className="grid w-full grid-cols-3 max-w-[600px]">
+              <TabsTrigger value="general">General Details</TabsTrigger>
+              <TabsTrigger value="content">Content & Settings</TabsTrigger>
+              <TabsTrigger value="view">View Material</TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          {/* Main Content Area */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 min-h-[500px]">
             {isLoading ? (
-              <div className='space-y-4'>
+              <div className='space-y-4 p-8'>
                 <Skeleton className='h-10 w-full' />
                 <Skeleton className='h-10 w-full' />
                 <Skeleton className='h-10 w-1/2' />
               </div>
             ) : error ? (
-              <p className='text-destructive'>Error loading module.</p>
+              <div className='p-8 text-center'>
+                <p className='text-destructive'>Error loading module.</p>
+              </div>
             ) : data ? (
               <ModulesProvider>
-                <ModuleMutateForm moduleId={data.id} />
+                <ModuleMutateForm moduleId={data.id} activeTab={activeTab} />
               </ModulesProvider>
             ) : (
-              <p className='text-muted-foreground'>Module not found.</p>
+              <div className='p-8 text-center'>
+                <p className='text-muted-foreground'>Module not found.</p>
+              </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </Main>
     </>
   )

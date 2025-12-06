@@ -4,19 +4,21 @@ import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { Library, Table as TableIcon, Loader2 } from 'lucide-react'
+import { Library, Table as TableIcon, Loader2, Plus } from 'lucide-react'
 import { ModulesProvider, useModules } from './components/modules-provider'
 import { ModulesDialogs } from './components/modules-dialogs'
-import { ModulesPrimaryButtons } from './components/modules-primary-buttons'
 import { ModulesDataTable } from './components/modules-table'
 import { columns } from './components/modules-columns'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Module } from './data/schema'
+import { useNavigate } from '@tanstack/react-router'
 
 // The page content is placed inside a wrapper component
 function ModulesPageContent() {
+  const navigate = useNavigate()
   const {
     modules,
     isLoading,
@@ -27,11 +29,12 @@ function ModulesPageContent() {
 
   const verifiedModules = modules.filter((m) => m.is_verified)
 
+  // [FIX] Updated to navigate to the Edit Route
   const handleEditModule = (module: Module) => {
-    setCurrentRow(module)
-    setOpen('edit')
+    navigate({ to: '/modules/$moduleId/edit', params: { moduleId: module.id } })
   }
 
+  // [NOTE] Delete still uses the dialog, which is correct
   const handleDeleteModule = (module: Module) => {
     setCurrentRow(module)
     setOpen('delete')
@@ -72,7 +75,10 @@ function ModulesPageContent() {
               Manage learning materials, lectures, and resource files.
             </p>
           </div>
-          <ModulesPrimaryButtons />
+          {/* [FIX] Replaced Component with Direct Navigation Button */}
+          <Button onClick={() => navigate({ to: '/modules/new' })}>
+            <Plus className='mr-2 h-4 w-4' /> Add Module
+          </Button>
         </div>
 
         <Tabs defaultValue='manage' className='space-y-4'>
@@ -88,7 +94,11 @@ function ModulesPageContent() {
           <TabsContent value='browse'>
             <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 '>
               {verifiedModules.map((m) => (
-                <Card key={m.id} className='hover:shadow-md transition-shadow cursor-pointer'>
+                <Card 
+                  key={m.id} 
+                  className='hover:shadow-md transition-shadow cursor-pointer'
+                  onClick={() => handleEditModule(m)} // Also navigate on card click
+                >
                   <CardContent className='p-6'>
                     <h3 className='font-semibold text-lg mb-1'>{m.title}</h3>
                     {(() => {

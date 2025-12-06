@@ -56,3 +56,13 @@ export async function getSubject(id: string): Promise<Subject> {
   const res = await api.get(`/subjects/${id}`)
   return res.data
 }
+
+export async function uploadSubjectImage(file: File) {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const res = await api.post('/subjects/upload-image', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return res.data
+}

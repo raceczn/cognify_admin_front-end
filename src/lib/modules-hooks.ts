@@ -25,3 +25,17 @@ export async function deleteModule(id: string) {
   const res = await api.delete(`/modules/${id}`)
   return res.data
 }
+
+// [NEW] Add this function to handle file uploads
+export async function uploadModuleMaterial(file: File) {
+  const formData = new FormData()
+  formData.append('file', file)
+  
+  // This hits your new Backend V2 endpoint
+  const res = await api.post('/modules/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
+  return res.data // Returns { file_url: "..." }
+}
