@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
 import { useParams, useNavigate } from '@tanstack/react-router'
-import { AssessmentEditor } from '@/pages/assessments/components/AssessmentEditor'
 import { toast } from 'sonner'
 import {
   useAssessmentQuery,
@@ -12,6 +11,7 @@ import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { ThemeSwitch } from '@/components/theme-switch'
+import { AssessmentEditor } from '../components/assessments-editor'
 
 export default function AssessmentsEditPage() {
   const navigate = useNavigate()
@@ -19,12 +19,14 @@ export default function AssessmentsEditPage() {
     from: '/_authenticated/assessments/$assessmentId/edit',
   })
 
+  // 1. Fetch Assessment Data
   const {
     data: assessment,
     isLoading: isLoadingAssessment,
     error,
   } = useAssessmentQuery(assessmentId)
 
+  // 2. Fetch Subjects for the dropdown
   const { data: subjectData } = useQuery({
     queryKey: ['subjects-options'],
     queryFn: async () => {
@@ -34,14 +36,16 @@ export default function AssessmentsEditPage() {
   })
   const subjects = subjectData || []
 
+  // 3. Mutation for saving changes
   const updateMutation = useUpdateAssessmentMutation()
 
   const handleSave = async (finalData: any) => {
     try {
       await updateMutation.mutateAsync({ id: assessmentId, data: finalData })
-      toast.success('Assessment updated')
+      toast.success('Assessment updated successfully')
       navigate({ to: '/assessments' })
     } catch (err) {
+      console.error(err)
       toast.error('Failed to update assessment')
     }
   }
@@ -63,26 +67,31 @@ export default function AssessmentsEditPage() {
           </p>
         </div>
 
-          <div>
-            {isLoadingAssessment ? (
-              <div className='space-y-4'>
-                <Skeleton className='h-10 w-full' />
-                <Skeleton className='h-10 w-full' />
-                <Skeleton className='h-10 w-1/2' />
-              </div>
-            ) : error ? (
-              <p className='text-destructive'>Error loading assessment.</p>
-            ) : assessment ? (
-              <AssessmentEditor
-                assessment={assessment}
-                subjects={subjects}
-                onUpdateAssessment={handleSave}
-                onBack={() => navigate({ to: '/assessments' })}
-              />
-            ) : (
-              <p className='text-muted-foreground'>Assessment not found.</p>
-            )}
-          </div>
+        <div className='mt-4'>
+          {isLoadingAssessment ? (
+            <div className='space-y-4'>
+              <Skeleton className='h-10 w-full' />
+              <Skeleton className='h-10 w-full' />
+              <Skeleton className='h-10 w-1/2' />
+            </div>
+          ) : error ? (
+            <div className="flex h-40 flex-col items-center justify-center gap-2 rounded-md border border-dashed text-destructive">
+               <p className='font-semibold'>Error loading assessment</p>
+               <p className='text-sm text-muted-foreground'>Please try again later.</p>
+            </div>
+          ) : assessment ? (
+            <AssessmentEditor
+              assessment={assessment}
+              subjects={subjects}
+              onUpdateAssessment={handleSave}
+              onBack={() => navigate({ to: '/assessments' })}
+            />
+          ) : (
+            <div className="py-12 text-center text-muted-foreground">
+              Assessment not found.
+            </div>
+          )}
+        </div>
       </Main>
     </>
   )

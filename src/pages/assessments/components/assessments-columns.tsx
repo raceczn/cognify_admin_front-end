@@ -1,25 +1,14 @@
-import { useNavigate } from '@tanstack/react-router'
 import { ColumnDef } from '@tanstack/react-table'
 import { type Assessment } from '@/pages/assessments/data/schema'
-import { MoreHorizontal, Pencil, Trash } from 'lucide-react'
-import { useDeleteAssessmentMutation } from '@/lib/assessment-hooks'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { DataTableColumnHeader } from '@/components/data-table'
 import { Checkbox } from '@/components/ui/checkbox'
+import { DataTableRowActions } from './data-table-row-actions'
 
 export const assessmentsColumns = (
   getSubjectTitle?: (id: string) => string
 ): ColumnDef<Assessment>[] => [
-    {
+  {
     id: 'select',
     header: ({ table }) => (
       <Checkbox
@@ -51,7 +40,7 @@ export const assessmentsColumns = (
     cell: ({ row }) => {
       const title = row.getValue('title') as string
       return (
-        <div className='max-w-[280px] truncate' title={title}>
+        <div className='max-w-[280px] truncate font-medium' title={title}>
           {title}
         </div>
       )
@@ -60,9 +49,8 @@ export const assessmentsColumns = (
    {
     accessorKey: 'subject_id',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Subject Title' />
+      <DataTableColumnHeader column={column} title='Subject' />
     ),
-
     cell: ({ row }) => {
       const id = row.getValue('subject_id') as string
       const title = getSubjectTitle ? getSubjectTitle(id) : id
@@ -78,12 +66,12 @@ export const assessmentsColumns = (
     },
   },
   {
-    accessorKey: 'purpose',
-   header: ({ column }) => (
+    accessorKey: 'type',
+    header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Type' />
     ),
     cell: ({ row }) => {
-      const raw = (row.getValue('purpose') as string) || ''
+      const raw = (row.getValue('type') as string) || ''
       const val = raw.toLowerCase()
       const color =
         val === 'pre-assessment'
@@ -98,20 +86,21 @@ export const assessmentsColumns = (
       return (
         <div className='flex items-center gap-2'>
           <span className={`inline-block h-2.5 w-2.5 rounded-full ${color}`} />
-          <span className='font-medium capitalize'>{raw || 'N/A'}</span>
+          <span className='capitalize text-muted-foreground'>{raw || 'N/A'}</span>
         </div>
       )
     },
   },
-  
   {
-    accessorKey: 'total_items',
+    accessorKey: 'questions', 
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Items' />
     ),
-    cell: ({ row }) => (
-      <div className='w-12 text-center'>{row.getValue('total_items')}</div>
-    ),
+    cell: ({ row }) => {
+      // [FIX] Backend might not return total_items, so count questions array
+      const count = row.original.questions?.length || 0
+      return <div className='w-12 text-center'>{count}</div>
+    },
   },
   {
     accessorKey: 'bloom_levels',
@@ -123,29 +112,14 @@ export const assessmentsColumns = (
         ? row.original.bloom_levels
         : []
       const raw = (levels[0] || '') as string
-      const lvl = String(raw).toLowerCase()
       const unique = Array.from(new Set(levels.map((l) => String(l).toLowerCase())))
       const additionalCount = Math.max(0, unique.length - (raw ? 1 : 0))
-      const color =
-        lvl === 'remembering'
-          ? 'bg-gray-400'
-          : lvl === 'understanding'
-            ? 'bg-blue-500'
-            : lvl === 'applying'
-              ? 'bg-green-500'
-              : lvl === 'analyzing'
-                ? 'bg-amber-500'
-                : lvl === 'evaluating'
-                  ? 'bg-violet-500'
-                  : lvl === 'creating'
-                    ? 'bg-rose-500'
-                    : 'bg-muted-foreground'
+      
       return (
         <div className='flex items-center gap-2'>
-          <span className={`inline-block h-2.5 w-2.5 rounded-full ${color}`} />
-          <span className='font-medium capitalize'>{raw || 'N/A'}</span>
+          <span className='capitalize text-sm'>{raw || '-'}</span>
           {additionalCount > 0 && (
-            <span className='text-muted-foreground text-xs'>+({additionalCount})</span>
+            <span className='text-muted-foreground text-xs'>+{additionalCount}</span>
           )}
         </div>
       )
@@ -153,48 +127,6 @@ export const assessmentsColumns = (
   },
   {
     id: 'actions',
-    cell: ({ row }) => {
-      const assessment = row.original
-      const navigate = useNavigate()
-      const deleteMutation = useDeleteAssessmentMutation()
-
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant='ghost' className='h-8 w-8 p-0'>
-              <span className='sr-only'>Open menu</span>
-              <MoreHorizontal className='h-4 w-4' />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align='end'>
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(assessment.id)}
-            >
-              Copy ID
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() =>
-                navigate({
-                  to: '/assessments/$assessmentId/edit',
-                  params: { assessmentId: assessment.id },
-                })
-              }
-            >
-              <Pencil className='mr-2 h-4 w-4' /> Edit
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className='text-red-600'
-              onClick={async () => {
-                await deleteMutation.mutateAsync(assessment.id)
-              }}
-            >
-              <Trash className='mr-2 h-4 w-4' /> Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )
-    },
+    cell: ({ row }) => <DataTableRowActions row={row} />,
   },
 ]

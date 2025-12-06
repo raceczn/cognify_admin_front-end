@@ -1,19 +1,22 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
-import { Loader2 } from 'lucide-react'
-import api from '@/lib/axios-client'
-import { Main } from '@/components/layout/main' // [FIX] Import Main layout
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { AssessmentEditor } from '@/pages/assessments/components/assessments-editor'
+import { ModuleMutateForm } from '@/pages/modules/components/modules-mutate-drawer'
+// [FIX] Import Main layout
 
 // Import Editors and Providers
 import { ModulesProvider } from '@/pages/modules/components/modules-provider'
-import { ModuleMutateForm } from '@/pages/modules/components/modules-mutate-drawer'
-import { SubjectsProvider } from '@/pages/subjects/components/subjects-provider'
 import { SubjectMutateForm } from '@/pages/subjects/components/subjects-mutate-drawer'
-import { AssessmentEditor } from '@/pages/assessments/components/AssessmentEditor'
+import { SubjectsProvider } from '@/pages/subjects/components/subjects-provider'
+import { Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 import { useUpdateAssessmentMutation } from '@/lib/assessment-hooks'
+import api from '@/lib/axios-client'
+import { Main } from '@/components/layout/main'
 
-export const Route = createFileRoute('/_authenticated/admin/review/$type/$itemId')({
+export const Route = createFileRoute(
+  '/_authenticated/admin/review/$type/$itemId'
+)({
   component: VerificationDetailPage,
 })
 
@@ -52,7 +55,7 @@ function VerificationDetailPage() {
   }
 
   const handleReject = () => {
-    const reason = prompt("Enter rejection reason:")
+    const reason = prompt('Enter rejection reason:')
     if (reason) {
       rejectMutation.mutate(reason)
     }
@@ -60,17 +63,17 @@ function VerificationDetailPage() {
 
   // --- RENDERERS ---
   // [FIX] Wrap everything in <Main> to match system layout
-  
+
   if (type === 'module') {
     return (
       <Main>
         <ModulesProvider>
-            <ModuleMutateForm 
-                moduleId={itemId} 
-                isVerificationMode={true}
-                onApprove={handleApprove}
-                onReject={handleReject}
-            />
+          <ModuleMutateForm
+            moduleId={itemId}
+            isVerificationMode={true}
+            onApprove={handleApprove}
+            onReject={handleReject}
+          />
         </ModulesProvider>
       </Main>
     )
@@ -80,54 +83,77 @@ function VerificationDetailPage() {
     return (
       <Main>
         <SubjectsProvider>
-            <SubjectMutateForm 
-                subjectId={itemId}
-                isVerificationMode={true}
-                onApprove={handleApprove}
-                onReject={handleReject}
-            />
+          <SubjectMutateForm
+            subjectId={itemId}
+            isVerificationMode={true}
+            onApprove={handleApprove}
+            onReject={handleReject}
+          />
         </SubjectsProvider>
       </Main>
     )
   }
 
   if (type === 'assessment') {
-     return (
-       <Main>
-         <AssessmentVerificationWrapper id={itemId} onApprove={handleApprove} onReject={handleReject} />
-       </Main>
-     )
+    return (
+      <Main>
+        <AssessmentVerificationWrapper
+          id={itemId}
+          onApprove={handleApprove}
+          onReject={handleReject}
+        />
+      </Main>
+    )
   }
 
-  return <Main><div className="p-8 text-center text-muted-foreground">Unknown Item Type</div></Main>
+  return (
+    <Main>
+      <div className='text-muted-foreground p-8 text-center'>
+        Unknown Item Type
+      </div>
+    </Main>
+  )
 }
 
 // Wrapper to load assessment data before rendering editor
-function AssessmentVerificationWrapper({ id, onApprove, onReject }: { id: string, onApprove: () => void, onReject: () => void }) {
-    const { data: assessment, isLoading } = useQuery({
-        queryKey: ['assessment', id],
-        queryFn: async () => {
-            const res = await api.get(`/assessments/${id}`)
-            return res.data
-        }
-    })
-    const updateAssessment = useUpdateAssessmentMutation()
+function AssessmentVerificationWrapper({
+  id,
+  onApprove,
+  onReject,
+}: {
+  id: string
+  onApprove: () => void
+  onReject: () => void
+}) {
+  const { data: assessment, isLoading } = useQuery({
+    queryKey: ['assessment', id],
+    queryFn: async () => {
+      const res = await api.get(`/assessments/${id}`)
+      return res.data
+    },
+  })
+  const updateAssessment = useUpdateAssessmentMutation()
 
-    if (isLoading) return <div className="flex h-64 items-center justify-center"><Loader2 className="animate-spin text-muted-foreground" /></div>
-
+  if (isLoading)
     return (
-        <AssessmentEditor 
-            assessment={assessment}
-            onUpdateAssessment={async (data) => {
-                await updateAssessment.mutateAsync({ id, data })
-                toast.success("Assessment saved")
-            }}
-            isVerificationMode={true}
-            onApprove={async (currentData) => {
-                await updateAssessment.mutateAsync({ id, data: currentData })
-                onApprove()
-            }}
-            onReject={onReject}
-        />
+      <div className='flex h-64 items-center justify-center'>
+        <Loader2 className='text-muted-foreground animate-spin' />
+      </div>
     )
+
+  return (
+    <AssessmentEditor
+      assessment={assessment}
+      onUpdateAssessment={async (data) => {
+        await updateAssessment.mutateAsync({ id, data })
+        toast.success('Assessment saved')
+      }}
+      isVerificationMode={true}
+      onApprove={async (currentData) => {
+        await updateAssessment.mutateAsync({ id, data: currentData })
+        onApprove()
+      }}
+      onReject={onReject}
+    />
+  )
 }

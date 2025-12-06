@@ -1,7 +1,5 @@
-import { useNavigate } from '@tanstack/react-router'
-import { Plus } from 'lucide-react'
-import { useAssessmentsQuery } from '@/lib/assessment-hooks'
-import { Button } from '@/components/ui/button'
+import { useQuery } from '@tanstack/react-query'
+import { getAllSubjects } from '@/lib/subjects-hooks'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
@@ -9,16 +7,34 @@ import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { assessmentsColumns } from './components/assessments-columns'
+import { AssessmentsDialogs } from './components/assessments-dialogs'
+import { AssessmentsPrimaryButtons } from './components/assessments-primary-buttons'
+import {
+  AssessmentsProvider,
+  useAssessments,
+} from './components/assessments-provider'
 import { AssessmentsDataTable } from './components/assessments-table'
-import { useQuery } from '@tanstack/react-query'
-import { getAllSubjects } from '@/lib/subjects-hooks'
 
-export function Assessments() {
-  const navigate = useNavigate()
-  const { data: assessments = [] } = useAssessmentsQuery()
-  const { data: subjectsRes } = useQuery({ queryKey: ['subjects:list'], queryFn: getAllSubjects })
+export default function Assessments() {
+  return (
+    <AssessmentsProvider>
+      <AssessmentsPageContent />
+    </AssessmentsProvider>
+  )
+}
+
+function AssessmentsPageContent() {
+  const { assessments } = useAssessments()
+
+  // Fetch subjects to map "subject_id" to "Subject Title" in the table
+  const { data: subjectsRes } = useQuery({
+    queryKey: ['subjects:list'],
+    queryFn: getAllSubjects,
+  })
+
   const subjectOptions = subjectsRes?.items ?? []
-  const getSubjectTitle = (id: string) => subjectOptions.find(s => s.id === id)?.title || id
+  const getSubjectTitle = (id: string) =>
+    subjectOptions.find((s) => s.id === id)?.title || id
 
   return (
     <>
@@ -38,13 +54,7 @@ export function Assessments() {
               Create and manage quizzes and exams.
             </p>
           </div>
-          <Button
-            className='space-x-1'
-            onClick={() => navigate({ to: '/assessments/new' })}
-          >
-            <span>Create Assessment</span>
-            <Plus size={18} />
-          </Button>
+          <AssessmentsPrimaryButtons />
         </div>
 
         <Tabs defaultValue='manage' className='space-y-4'>
@@ -61,6 +71,8 @@ export function Assessments() {
           </TabsContent>
         </Tabs>
       </Main>
+
+      <AssessmentsDialogs />
     </>
   )
 }

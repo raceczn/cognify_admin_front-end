@@ -1,15 +1,15 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { getAllSubjects } from '@/lib/subjects-hooks'
-import { useCreateAssessmentMutation } from '@/lib/assessment-hooks'
+import { AssessmentEditor } from '@/pages/assessments/components/assessments-editor'
 import { Assessment } from '@/pages/assessments/data/schema'
+import { toast } from 'sonner'
+import { useCreateAssessmentMutation } from '@/lib/assessment-hooks'
+import { getAllSubjects } from '@/lib/subjects-hooks'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { Skeleton } from '@/components/ui/skeleton'
-import { AssessmentEditor } from '@/pages/assessments/components/AssessmentEditor'
-import { toast } from 'sonner'
 
 export default function AssessmentsNewPage() {
   const navigate = useNavigate()
@@ -46,20 +46,25 @@ export default function AssessmentsNewPage() {
 
       <Main>
         <div className='mb-1'>
-          <h1 className='text-2xl font-bold tracking-tight'>Create Assessment</h1>
-          <p className='text-muted-foreground'>Define the assessment details and questions.</p>
+          <h1 className='text-2xl font-bold tracking-tight'>
+            Create Assessment
+          </h1>
+          <p className='text-muted-foreground'>
+            Define the assessment details and questions.
+          </p>
         </div>
 
-          <div>
-            {isLoading ? (
-              <div className='space-y-4'>
-                <Skeleton className='h-10 w-full' />
-                <Skeleton className='h-10 w-full' />
-                <Skeleton className='h-10 w-1/2' />
-              </div>
-            ) : (
-              <AssessmentEditor
-                assessment={{
+        <div>
+          {isLoading ? (
+            <div className='space-y-4'>
+              <Skeleton className='h-10 w-full' />
+              <Skeleton className='h-10 w-full' />
+              <Skeleton className='h-10 w-1/2' />
+            </div>
+          ) : (
+            <AssessmentEditor
+              assessment={
+                {
                   id: '',
                   title: '',
                   subject_id: '',
@@ -67,12 +72,13 @@ export default function AssessmentsNewPage() {
                   bloom_levels: [],
                   questions: [],
                   is_verified: false,
-                } as Assessment}
-                subjects={subjects}
-                onUpdateAssessment={handleSave}
-                onBack={() => navigate({ to: '/assessments' })}
-              />
-            )}
+                } as Assessment
+              }
+              subjects={subjects}
+              onUpdateAssessment={handleSave}
+              onBack={() => navigate({ to: '/assessments' })}
+            />
+          )}
         </div>
       </Main>
     </>
