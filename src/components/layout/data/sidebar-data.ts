@@ -62,33 +62,33 @@ export const staticSidebarData: Omit<SidebarData, 'user'> = {
         },
         
         // --- ADMIN: VERIFICATION ---
-        {
-          title: 'Verification',
-          icon: ClipboardCheck,
-          allowedRoles: [ROLES.ADMIN],
-          items: [
-            {
-              title: 'All Pending',
-              url: '/admin/verification',
-              icon: ClipboardCheck,
-            },
-            {
-              title: 'Modules',
-              url: '/admin/verification?type=module',
-              icon: BookOpen,
-            },
-            {
-              title: 'Assessments',
-              url: '/admin/verification?type=assessment',
-              icon: Clipboard,
-            },
-            {
-              title: 'Subjects', // [NEW]
-              url: '/admin/verification?type=subject',
-              icon: Library,
-            },
-          ]
-        },
+        // {
+        //   title: 'Verification',
+        //   icon: ClipboardCheck,
+        //   allowedRoles: [ROLES.ADMIN],
+        //   items: [
+        //     {
+        //       title: 'All Pending',
+        //       url: '/admin/verification',
+        //       icon: ClipboardCheck,
+        //     },
+        //     {
+        //       title: 'Modules',
+        //       url: '/admin/verification?type=module',
+        //       icon: BookOpen,
+        //     },
+        //     {
+        //       title: 'Assessments',
+        //       url: '/admin/verification?type=assessment',
+        //       icon: Clipboard,
+        //     },
+        //     {
+        //       title: 'Subjects', // [NEW]
+        //       url: '/admin/verification?type=subject',
+        //       icon: Library,
+        //     },
+        //   ]
+        // },
         // --- CONTENT MANAGEMENT (Both Roles) ---
         // Renamed section to make it clear this is the "Library"
         {
