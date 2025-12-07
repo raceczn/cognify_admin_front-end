@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { CheckedState } from '@radix-ui/react-checkbox'
+import { useQuery } from '@tanstack/react-query'
 import {
   Assessment,
   Question,
@@ -6,7 +8,16 @@ import {
   AssessmentPurpose,
   Option,
 } from '@/pages/assessments/data/schema'
-import { Pencil, ListOrdered, Loader2, ArrowLeft, Save, CheckCircle, XCircle } from 'lucide-react'
+import {
+  Pencil,
+  ListOrdered,
+  Loader2,
+  ArrowLeft,
+  Save,
+  CheckCircle,
+  XCircle,
+} from 'lucide-react'
+import { getAllSubjects } from '@/lib/subjects-hooks'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -29,10 +40,7 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 // Ensure this import matches your file structure (kebab-case recommended)
-import { QuestionEditor } from './question-editor' 
-import { useQuery } from '@tanstack/react-query'
-import { getAllSubjects } from '@/lib/subjects-hooks'
-import { CheckedState } from '@radix-ui/react-checkbox'
+import { QuestionEditor } from './question-editor'
 
 interface AssessmentEditorProps {
   assessment: Assessment | null | undefined
@@ -69,16 +77,18 @@ function normalizePurpose(val?: string): AssessmentPurpose | undefined {
   let hy = s.replace(/[_\s]+/g, '-')
   if (hy === 'preassessment') hy = 'pre-assessment'
   if (hy === 'postassessment') hy = 'post-assessment'
-  
+
   const allowed: AssessmentPurpose[] = [
     'pre-assessment',
     'quiz',
     'post-assessment',
     'diagnostic',
   ]
-  
+
   // Safe cast after check
-  return allowed.includes(hy as AssessmentPurpose) ? (hy as AssessmentPurpose) : undefined
+  return allowed.includes(hy as AssessmentPurpose)
+    ? (hy as AssessmentPurpose)
+    : undefined
 }
 
 const getPurposeDotColor = (purpose: AssessmentPurpose): string => {
@@ -118,7 +128,10 @@ export function AssessmentEditor({
           return {
             ...q,
             // Ensure ID exists
-            question_id: q.question_id || q.id || Math.random().toString(36).substring(2, 9),
+            question_id:
+              q.question_id ||
+              q.id ||
+              Math.random().toString(36).substring(2, 9),
             text: q.text || q.question || '',
             type: q.type || 'multiple_choice',
             points: q.points || 1,
@@ -136,7 +149,8 @@ export function AssessmentEditor({
       )
 
       // Normalize Purpose
-      const rawPurpose = (initialAssessment as any).purpose ?? (initialAssessment as any).type
+      const rawPurpose =
+        (initialAssessment as any).purpose ?? (initialAssessment as any).type
       const normalizedPurpose = normalizePurpose(rawPurpose)
 
       setAssessment({
@@ -156,15 +170,15 @@ export function AssessmentEditor({
     // Prepare payload questions matching backend expectations if needed
     // Note: The Schema (Assessment) allows `questions` as `Question[]`.
     // If your backend needs specific fields like 'correct' or 'answer', ensure they are mapped here.
-    
+
     // We stick to the 'Assessment' type for safety.
     const payload: Assessment = {
       ...assessment,
       updated_at: new Date(), // Ensure this is a Date object, the schema handles coercion
     }
-    
+
     onUpdateAssessment(payload)
-    
+
     if (isVerificationMode && onApprove) {
       onApprove(payload)
     }
@@ -174,24 +188,26 @@ export function AssessmentEditor({
   const handleBloomChange = (level: string, checked: CheckedState) => {
     setAssessment((prev) => {
       if (!prev) return prev
-      const currentLevels = (prev.bloom_levels || []).map((l) => String(l).toLowerCase())
+      const currentLevels = (prev.bloom_levels || []).map((l) =>
+        String(l).toLowerCase()
+      )
       const key = level.toLowerCase()
-      
+
       let newLevels: string[]
-      
+
       if (checked === true) {
         newLevels = Array.from(new Set([...currentLevels, key]))
       } else {
         newLevels = currentLevels.filter((l) => l !== key)
       }
-      
+
       return { ...prev, bloom_levels: newLevels }
     })
   }
 
   if (!assessment) {
     return (
-      <div className='flex h-64 items-center justify-center text-muted-foreground'>
+      <div className='text-muted-foreground flex h-64 items-center justify-center'>
         <Loader2 className='mr-2 h-6 w-6 animate-spin' />
         <span>Loading assessment...</span>
       </div>
@@ -200,9 +216,7 @@ export function AssessmentEditor({
 
   const handleUpdateDetails = (field: keyof Assessment, value: any) => {
     const finalValue = value === CLEAR_VALUE ? undefined : value
-    setAssessment((prev) =>
-      prev ? { ...prev, [field]: finalValue } : prev
-    )
+    setAssessment((prev) => (prev ? { ...prev, [field]: finalValue } : prev))
   }
 
   const handleAddQuestion = (type: QuestionType) => {
@@ -238,19 +252,14 @@ export function AssessmentEditor({
       if (!prev) return prev
       return {
         ...prev,
-        questions: (prev.questions || []).filter(
-          (q) => q.question_id !== qId
-        ),
+        questions: (prev.questions || []).filter((q) => q.question_id !== qId),
       }
     })
   }
 
   const questions: Question[] = assessment.questions || []
-  const totalPoints = questions.reduce(
-    (sum, q) => sum + (q.points || 0),
-    0
-  )
-  
+  const totalPoints = questions.reduce((sum, q) => sum + (q.points || 0), 0)
+
   const getSelectValue = (value: string | null | undefined): string =>
     value == null ? CLEAR_VALUE : value
 
@@ -260,10 +269,14 @@ export function AssessmentEditor({
     queryFn: getAllSubjects,
     enabled: !subjects || subjects.length === 0,
   })
-  
-  const subjectOptions = (subjects && subjects.length > 0)
-    ? subjects
-    : (subjectsRes?.items || []).map((s: any) => ({ id: s.id, title: s.title }))
+
+  const subjectOptions =
+    subjects && subjects.length > 0
+      ? subjects
+      : (subjectsRes?.items || []).map((s: any) => ({
+          id: s.id,
+          title: s.title,
+        }))
 
   return (
     <div className='space-y-6 p-1'>
@@ -283,9 +296,31 @@ export function AssessmentEditor({
               )}
               <Pencil size={18} /> Assessment Details
             </CardTitle>
-             <Button onClick={handleSave} className='gap-2'>
-              <Save size={16} /> Save Changes
-            </Button>
+            {isVerificationMode ? (
+              <div className='flex items-center gap-2'>
+                <Button
+                  variant='secondary'
+                  className='border border-green-300 text-green-600 hover:bg-green-50 hover:text-green-700'
+                  onClick={() => assessment && onApprove?.(assessment)}
+                >
+                  <CheckCircle size={16} />
+                  Approve
+                </Button>
+
+                <Button
+                  variant='destructive'
+                  className='gap-2'
+                  onClick={() => onReject?.()}
+                >
+                  <XCircle size={16} />
+                  Reject
+                </Button>
+              </div>
+            ) : (
+              <Button onClick={handleSave} className='gap-2'>
+                <Save size={16} /> Save Changes
+              </Button>
+            )}
           </div>
           <CardDescription>Edit the core information.</CardDescription>
         </CardHeader>
@@ -331,7 +366,9 @@ export function AssessmentEditor({
                             getPurposeDotColor(p)
                           )}
                         />
-                        <span className="capitalize">{p.replace('-', ' ')}</span>
+                        <span className='capitalize'>
+                          {p.replace('-', ' ')}
+                        </span>
                       </div>
                     </SelectItem>
                   ))}
@@ -385,7 +422,9 @@ export function AssessmentEditor({
                 <div key={level} className='flex items-center space-x-2'>
                   <Checkbox
                     id={`bloom-${level}`}
-                    checked={(assessment.bloom_levels || []).map((l) => String(l).toLowerCase()).includes(level.toLowerCase())}
+                    checked={(assessment.bloom_levels || [])
+                      .map((l) => String(l).toLowerCase())
+                      .includes(level.toLowerCase())}
                     onCheckedChange={(checked) =>
                       handleBloomChange(level, checked)
                     }
@@ -409,14 +448,14 @@ export function AssessmentEditor({
 
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className='flex items-center justify-between'>
             <CardTitle className='flex items-center gap-2'>
               <ListOrdered size={18} /> Questions
             </CardTitle>
             <Button
               onClick={() => handleAddQuestion('multiple_choice')}
               variant='outline'
-              size="sm"
+              size='sm'
               className='border-dashed'
             >
               Add New Question
@@ -440,31 +479,6 @@ export function AssessmentEditor({
             ))}
           </div>
         </CardContent>
-        <CardFooter className='flex flex-col gap-2'>
-          <div className='w-full pt-4'>
-            <Button onClick={handleSave} className='w-full' size="lg">
-              Save All Changes
-            </Button>
-          </div>
-          {isVerificationMode && (
-            <div className='flex w-full gap-2'>
-              <Button
-                variant='secondary'
-                className='flex-1 gap-2'
-                onClick={() => assessment && onApprove?.(assessment)}
-              >
-                <CheckCircle size={16} /> Approve
-              </Button>
-              <Button
-                variant='destructive'
-                className='flex-1 gap-2'
-                onClick={() => onReject?.()}
-              >
-                <XCircle size={16} /> Reject
-              </Button>
-            </div>
-          )}
-        </CardFooter>
       </Card>
     </div>
   )
@@ -476,30 +490,40 @@ function toStringArray(src: any): string[] {
   if (!src) return []
   if (Array.isArray(src)) return src.map((x: any) => String(x))
   const s = String(src)
-  const parts = s.split(/\r?\n|\|/).map((x) => x.trim()).filter(Boolean)
+  const parts = s
+    .split(/\r?\n|\|/)
+    .map((x) => x.trim())
+    .filter(Boolean)
   if (parts.length > 0) return parts
-  return s.split(',').map((x) => x.trim()).filter(Boolean)
+  return s
+    .split(',')
+    .map((x) => x.trim())
+    .filter(Boolean)
 }
 
 function normalizeOptions(rawQ: any): Option[] {
   // If options is already an array of objects
-  if (Array.isArray(rawQ?.options) && rawQ.options.length > 0 && typeof rawQ.options[0] === 'object') {
-     return rawQ.options.map((o: any) => ({
-        id: o.id ? String(o.id) : Math.random().toString(36).slice(2),
-        text: o.text || o.value || '',
-        is_correct: !!o.is_correct
-     }))
+  if (
+    Array.isArray(rawQ?.options) &&
+    rawQ.options.length > 0 &&
+    typeof rawQ.options[0] === 'object'
+  ) {
+    return rawQ.options.map((o: any) => ({
+      id: o.id ? String(o.id) : Math.random().toString(36).slice(2),
+      text: o.text || o.value || '',
+      is_correct: !!o.is_correct,
+    }))
   }
 
   // Otherwise parse from strings/arrays
   const arrStrings = toStringArray(
     rawQ?.options ?? rawQ?.choices ?? rawQ?.choice_list ?? rawQ?.options_text
   )
-  
+
   const base = arrStrings.map((optText: string, idx: number) => ({
-      id: `opt-${rawQ?.question_id ?? rawQ?.id ?? 'q'}-${idx}`,
-      text: optText,
-      is_correct: false,
+    id: `opt-${rawQ?.question_id ?? rawQ?.id ?? 'q'}-${idx}`,
+    text: optText,
+    is_correct: false,
   }))
 
   // Try to determine correct answer from other fields if not inside objects
@@ -514,20 +538,29 @@ function normalizeOptions(rawQ: any): Option[] {
     return idx >= 0 && idx < base.length ? idx : undefined
   })()
 
+  // [FIX] Add 'correct_answers' (plural) check for compatibility with backend populate script
   const answerText =
     typeof rawQ?.answer === 'string'
       ? String(rawQ.answer)
       : typeof rawQ?.correct_answer === 'string'
-      ? String(rawQ.correct_answer)
-      : typeof rawQ?.correct_index === 'number' && base[rawQ.correct_index]
-      ? base[rawQ.correct_index].text
-      : undefined
+        ? String(rawQ.correct_answer)
+        : typeof rawQ?.correct_answers === 'string'
+          ? String(rawQ.correct_answers)
+          : typeof rawQ?.correct_index === 'number' && base[rawQ.correct_index]
+            ? base[rawQ.correct_index].text
+            : undefined
+
+  // [FIX] Handle array of correct answers if provided as list
+  const correctArr = Array.isArray(rawQ?.correct_answers)
+    ? rawQ.correct_answers
+    : []
 
   return base.map((o, i) => ({
     ...o,
     is_correct:
       o.is_correct ||
       (correctFromLetter !== undefined ? i === correctFromLetter : false) ||
-      (answerText ? o.text === answerText : false),
+      (answerText ? o.text === answerText : false) ||
+      correctArr.includes(o.text),
   }))
 }
