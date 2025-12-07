@@ -9,8 +9,9 @@ import { SubjectsDialogs } from './components/subjects-dialogs'
 import { SubjectsPrimaryButtons } from './components/subjects-primary-buttons'
 import { DataTable } from './components/subjects-table'
 import { subjectsColumns } from './components/subjects-columns'
-import { Library, Table as TableIcon } from 'lucide-react'
+import { Library, Table as TableIcon, BadgeCheck } from 'lucide-react' 
 import { Card, CardContent } from '@/components/ui/card'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 export default function Subjects() {
   return (
@@ -23,9 +24,6 @@ export default function Subjects() {
 function SubjectsPageContent() {
   const { subjects } = useSubjects()
   
-  // [FIX] Separate verified vs all subjects
-  // "Manage" tab needs to see EVERYTHING (pending, verified, rejected)
-  // "Browse" tab shows only the approved library
   const verifiedSubjects = subjects.filter(s => s.is_verified)
 
   return (
@@ -49,7 +47,7 @@ function SubjectsPageContent() {
           <SubjectsPrimaryButtons />
         </div>
 
-        <Tabs defaultValue="manage" className="space-y-4">
+        <Tabs defaultValue="browse" className="space-y-4">
           <TabsList>
             <TabsTrigger value="browse" className="gap-2">
                 <Library size={16} /> Browse
@@ -64,8 +62,21 @@ function SubjectsPageContent() {
                 {verifiedSubjects.map(s => (
                     <Card key={s.id} className="hover:shadow-md transition-shadow cursor-pointer">
                         <CardContent className="p-6">
-                            <h3 className="font-semibold text-lg mb-1">{s.title}</h3>
-                            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-4">
+                            <div className="flex items-start justify-between mb-1">
+                                <h3 className="font-bold text-lg flex items-center gap-1.5">
+                                    {s.title}
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger>
+                                          {/* Verified Badge: Green Check Only */}
+                                          <BadgeCheck className="h-5 w-5 text-emerald-500 fill-emerald-50" /> 
+                                        </TooltipTrigger>
+                                        <TooltipContent>Verified Subject</TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                </h3>
+                            </div>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-4 font-semibold">
                                 PQF Level {s.pqf_level}
                             </p>
                             <p className="text-sm text-muted-foreground line-clamp-2">
@@ -84,7 +95,6 @@ function SubjectsPageContent() {
 
           <TabsContent value="manage">
             <div className='-mx-4 flex-1 overflow-auto px-4 py-1 lg:flex-row lg:space-x-12 lg:space-y-0'>
-              {/* [FIX] Pass ALL subjects here, not just verified ones */}
               <DataTable data={subjects} columns={subjectsColumns} />
             </div>
           </TabsContent>

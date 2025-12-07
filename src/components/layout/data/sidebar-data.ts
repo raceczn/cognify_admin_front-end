@@ -1,4 +1,3 @@
-// src/components/layout/data/sidebar-data.ts
 import {
   LayoutDashboard,
   Monitor,
@@ -61,36 +60,36 @@ export const staticSidebarData: Omit<SidebarData, 'user'> = {
           allowedRoles: [ROLES.ADMIN, ROLES.FACULTY_MEMBER], 
         },
         
-        // --- ADMIN: VERIFICATION ---
-        // {
-        //   title: 'Verification',
-        //   icon: ClipboardCheck,
-        //   allowedRoles: [ROLES.ADMIN],
-        //   items: [
-        //     {
-        //       title: 'All Pending',
-        //       url: '/admin/verification',
-        //       icon: ClipboardCheck,
-        //     },
-        //     {
-        //       title: 'Modules',
-        //       url: '/admin/verification?type=module',
-        //       icon: BookOpen,
-        //     },
-        //     {
-        //       title: 'Assessments',
-        //       url: '/admin/verification?type=assessment',
-        //       icon: Clipboard,
-        //     },
-        //     {
-        //       title: 'Subjects', // [NEW]
-        //       url: '/admin/verification?type=subject',
-        //       icon: Library,
-        //     },
-        //   ]
-        // },
+        // --- ADMIN: VERIFICATION (Enabled) ---
+        {
+          title: 'Verification',
+          icon: ClipboardCheck,
+          allowedRoles: [ROLES.ADMIN],
+          items: [
+            {
+              title: 'All Pending',
+              url: '/admin/verification',
+              icon: ClipboardCheck,
+            },
+            {
+              title: 'Modules',
+              url: '/admin/verification?type=module',
+              icon: BookOpen,
+            },
+            {
+              title: 'Assessments',
+              url: '/admin/verification?type=assessment',
+              icon: Clipboard,
+            },
+            {
+              title: 'Subjects', 
+              url: '/admin/verification?type=subject',
+              icon: Library,
+            },
+          ]
+        },
+        
         // --- CONTENT MANAGEMENT (Both Roles) ---
-        // Renamed section to make it clear this is the "Library"
         {
           title: 'Content Library',
           icon: BookOpen, 
@@ -115,16 +114,8 @@ export const staticSidebarData: Omit<SidebarData, 'user'> = {
             },
           ]
         },
-
-        // {
-        //   title: 'Feedback',
-        //   url: '/reports',
-        //   icon: MessagesSquare,
-        //   allowedRoles: [ROLES.ADMIN, ROLES.FACULTY_MEMBER],
-        // },
       ],
     },
-    // ... (Keep 'Other' / Settings section) ...
     {
       title: 'Other',
       items: [
@@ -140,18 +131,11 @@ export const staticSidebarData: Omit<SidebarData, 'user'> = {
             { title: 'Display', url: '/settings/display', icon: Monitor },
           ],
         },
-        // {
-        //   title: 'Help Center',
-        //   url: '/help-center',
-        //   icon: HelpCircle,
-        //   allowedRoles: [ROLES.ADMIN, ROLES.FACULTY_MEMBER],
-        // },
       ],
     },
   ],
 }
 
-// ... (Keep getFilteredSidebarData helper) ...
 export function getFilteredSidebarData(userRole: string): SidebarData {
   const normalizedRole = userRole.toLowerCase();
   return {

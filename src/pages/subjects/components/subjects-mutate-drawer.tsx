@@ -26,7 +26,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Separator } from '@/components/ui/separator'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -62,7 +61,7 @@ export function SubjectMutateForm({
       title: '',
       pqf_level: 6,
       description: '',
-      is_verified: false,
+      is_verified: false, // Default to false
       image_url: null,
       topics: [],
     },
@@ -95,7 +94,6 @@ export function SubjectMutateForm({
     // Update form values
     currentTopics.forEach((_, index) => {
       // Distribute remainder to the first few items to ensure exact 100 sum
-      // e.g., 3 items: 34, 33, 33
       const newWeight = index < remainder ? baseWeight + 1 : baseWeight;
       form.setValue(`topics.${index}.weight_percentage`, newWeight, { 
         shouldValidate: true, 
@@ -129,13 +127,17 @@ export function SubjectMutateForm({
     
     if (currentTotalWeight !== 100) {
       toast.error(`Total weight must be 100%. Currently: ${currentTotalWeight}%`)
-      // Auto-switch to curriculum tab
       const tabTrigger = document.querySelector('[value="curriculum"]') as HTMLElement;
       if (tabTrigger) tabTrigger.click();
       return
     }
 
     try {
+      // Force verification false unless approved in verification mode
+      if (!isVerificationMode) {
+        data.is_verified = false;
+      }
+
       if (isEdit && subjectId) {
         await updateSubjectMutation.mutateAsync({ id: subjectId, data })
         toast.success('Subject updated successfully.')
@@ -251,27 +253,7 @@ export function SubjectMutateForm({
                     </FormItem>
                   )}
                 />
-
-                <FormField
-                  control={form.control}
-                  name="is_verified"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 bg-gray-50">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>Verified Subject</FormLabel>
-                        <FormDescription>
-                          Subject reviewed and approved for curriculum use.
-                        </FormDescription>
-                      </div>
-                    </FormItem>
-                  )}
-                />
+                {/* [REMOVED] is_verified Checkbox */}
             </div>
 
             {/* TAB 2: CURRICULUM (SMART ALLOCATION ADDED) */}

@@ -53,35 +53,14 @@ export const subjectsColumns: ColumnDef<Subject>[] = [
       <DataTableColumnHeader column={column} title='Description' />
     ),
     cell: ({ row }) => (
-      <LongText className='text-muted-foreground max-w-[350px] text-sm'>
+      // [FIX] Increased max-width to 500px since we removed other columns
+      <LongText className='text-muted-foreground max-w-[500px] text-sm'>
         {row.getValue('description') || 'No description.'}
       </LongText>
     ),
   },
-  {
-    id: 'visuals',
-    header: 'Style',
-    cell: ({ row }) => {
-      const iconColor = row.original.icon_color || '#000'
-      const iconBg = row.original.icon_bg_color || '#eee'
-
-      return (
-        <div className='flex items-center gap-2'>
-          <div
-            className='flex h-6 w-6 items-center justify-center rounded border text-xs'
-            style={{ backgroundColor: iconBg, color: iconColor }}
-            title={`Icon: ${row.original.icon_name}`}
-          >
-            {/* Simple initial as placeholder for actual icon */}
-            {row.original.icon_name?.charAt(0).toUpperCase() || 'I'}
-          </div>
-          <span className='text-muted-foreground text-xs'>
-            {row.original.icon_name}
-          </span>
-        </div>
-      )
-    },
-  },
+  // [REMOVED] Topics Column
+  // [REMOVED] Visuals (Style) Column
   {
     accessorKey: 'pqf_level',
     header: ({ column }) => (
@@ -95,17 +74,6 @@ export const subjectsColumns: ColumnDef<Subject>[] = [
       </div>
     ),
   },
-  // {
-  //   accessorKey: 'active_tos_id',
-  //   header: ({ column }) => (
-  //     <DataTableColumnHeader column={column} title='Active TOS' />
-  //   ),
-  //   cell: ({ row }) => (
-  //     <LongText className='text-muted-foreground max-w-[150px] text-xs'>
-  //       {row.getValue('active_tos_id') || 'None'}
-  //     </LongText>
-  //   ),
-  // },
   {
     id: 'actions',
     header: ({ column }) => (

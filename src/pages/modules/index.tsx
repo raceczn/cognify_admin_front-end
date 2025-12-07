@@ -4,7 +4,7 @@ import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { Library, Table as TableIcon, Loader2, Plus } from 'lucide-react'
+import { Library, Table as TableIcon, Loader2, Plus, BadgeCheck } from 'lucide-react' 
 import { ModulesProvider, useModules } from './components/modules-provider'
 import { ModulesDialogs } from './components/modules-dialogs'
 import { ModulesDataTable } from './components/modules-table'
@@ -15,8 +15,8 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Module } from './data/schema'
 import { useNavigate } from '@tanstack/react-router'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
-// The page content is placed inside a wrapper component
 function ModulesPageContent() {
   const navigate = useNavigate()
   const {
@@ -29,12 +29,10 @@ function ModulesPageContent() {
 
   const verifiedModules = modules.filter((m) => m.is_verified)
 
-  // [FIX] Updated to navigate to the Edit Route
   const handleEditModule = (module: Module) => {
     navigate({ to: '/modules/$moduleId/edit', params: { moduleId: module.id } })
   }
 
-  // [NOTE] Delete still uses the dialog, which is correct
   const handleDeleteModule = (module: Module) => {
     setCurrentRow(module)
     setOpen('delete')
@@ -75,13 +73,12 @@ function ModulesPageContent() {
               Manage learning materials, lectures, and resource files.
             </p>
           </div>
-          {/* [FIX] Replaced Component with Direct Navigation Button */}
           <Button onClick={() => navigate({ to: '/modules/new' })}>
             <Plus className='mr-2 h-4 w-4' /> Add Module
           </Button>
         </div>
 
-        <Tabs defaultValue='manage' className='space-y-4'>
+        <Tabs defaultValue='browse' className='space-y-4'>
           <TabsList>
             <TabsTrigger value='browse' className='gap-2'>
               <Library size={16} /> Browse
@@ -96,17 +93,31 @@ function ModulesPageContent() {
               {verifiedModules.map((m) => (
                 <Card 
                   key={m.id} 
-                  className='hover:shadow-md transition-shadow cursor-pointer'
-                  onClick={() => handleEditModule(m)} // Also navigate on card click
+                  className='hover:shadow-md transition-shadow cursor-pointer group'
+                  onClick={() => handleEditModule(m)}
                 >
                   <CardContent className='p-6'>
-                    <h3 className='font-semibold text-lg mb-1'>{m.title}</h3>
+                    <div className="flex items-start justify-between mb-1">
+                        <h3 className='font-bold text-lg flex items-center gap-1.5'>
+                            {m.title}
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  {/* Verified Badge: Green Check Only */}
+                                  <BadgeCheck className="h-5 w-5 text-emerald-500 fill-emerald-50" />
+                                </TooltipTrigger>
+                                <TooltipContent>Verified Module</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                        </h3>
+                    </div>
+
                     {(() => {
                       const title = getSubjectTitle(m.subject_id)
                       const color = subjectBadgeColor(title)
                       return (
                         <div className='mb-2'>
-                          <Badge variant='outline' className={cn('text-xs uppercase', color)}>
+                          <Badge variant='outline' className={cn('text-xs uppercase font-medium', color)}>
                             {title}
                           </Badge>
                         </div>
@@ -148,7 +159,6 @@ function ModulesPageContent() {
   )
 }
 
-// Export the main component wrapped in the Provider
 export default function ModulesPage() {
     return (
         <ModulesProvider> 

@@ -66,11 +66,12 @@ export function DataTable({ data, columns }: DataTableProps) {
       <DataTableToolbar
         table={table}
         searchPlaceholder='Filter subjects...'
-        searchKey='title' // [FIX] Updated to 'title'
+        searchKey='title' 
       />
       <div className='rounded-md border'>
         <Table>
-          <TableHeader className='bg-[#fced99] dark:bg-[#2c2c2c]'>
+          {/* [FIX] Match User List Header Color */}
+          <TableHeader className='bg-[#fbd6f8] dark:bg-[#FDCFFA]/10'>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {

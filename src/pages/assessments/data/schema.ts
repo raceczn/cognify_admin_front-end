@@ -46,6 +46,7 @@ export const assessmentFormSchema = z.object({
     bloom_levels: z.array(z.string()).optional().default([]),
     questions: z.array(questionSchema).optional().default([]),
     is_verified: z.boolean().optional(),
+    type: z.string().optional()
 })
 
 export const assessmentSchema = assessmentFormSchema.extend({

@@ -16,27 +16,58 @@ import {
 } from '@/components/ui/sidebar'
 import { Link, useLocation } from '@tanstack/react-router'
 import { type NavGroup as NavGroupType } from './types'
+import { useVerificationQueue, useWhitelist } from '@/lib/admin-hooks'
 
 export function NavGroup({ title, items }: NavGroupType) {
-  // [FIX] Get both pathname and search string
   const { pathname, search } = useLocation()
   
-  // Combine them to form the current full path (e.g., "/admin/verification?type=module")
-  // We use decodeURIComponent to handle any encoding issues if necessary, 
-  // but usually strict string comparison works for simple params.
+  // Fetch data for badges
+  const { data: queue } = useVerificationQueue()
+  const { data: whitelist } = useWhitelist()
+
+  // Helper to calculate badge count based on URL
+  const getBadgeCount = (url: string) => {
+    // Optimization: Only check badges for the "General" group
+    if (title !== 'General') return null
+    
+    // Normalize URL
+    const cleanUrl = url.split('?')[0]
+    const searchParams = new URLSearchParams(url.split('?')[1])
+    const type = searchParams.get('type')
+
+    // --- 1. Verification Queue Badges ---
+    if (cleanUrl === '/admin/verification') {
+        if (!queue) return null
+        
+        // Parent item / All Pending
+        if (!type) {
+            return queue.length > 0 ? queue.length : null
+        }
+        
+        // Sub-items (Modules, Assessments, Subjects)
+        const count = queue.filter(i => i.type === type).length
+        return count > 0 ? count : null
+    }
+
+    // --- 2. Whitelisting Badge ---
+    // Shows count of users who are whitelisted but haven't registered yet
+    if (cleanUrl === '/admin/whitelisting' && whitelist) {
+        const pendingCount = whitelist.filter((u: any) => !u.is_registered).length
+        return pendingCount > 0 ? pendingCount : null
+    }
+    
+    return null
+  }
+
   const currentUrl = pathname + (search.toString() !== '{}' ? `?${new URLSearchParams(search as any).toString()}` : '')
 
-  // Helper to check if a URL is active
-  // We check for exact match to prevent "All Pending" from highlighting when "Modules" is selected
   const isUrlActive = (url: string) => {
-    // Normalize by removing trailing slash if present
     const cleanCurrent = currentUrl.replace(/\/$/, '')
     const cleanUrl = url.replace(/\/$/, '')
     
-    // 1. Exact match (Best for distinct tabs like ?type=module)
     if (cleanCurrent === cleanUrl) return true
     
-    // 2. Fallback: If we are on "/admin/verification" (no params), ensure we match the "All Pending" link which has no params
+    // Parent matching for verification root
     if (cleanUrl === '/admin/verification' && cleanCurrent === '/admin/verification') return true
 
     return false
@@ -48,10 +79,15 @@ export function NavGroup({ title, items }: NavGroupType) {
       <SidebarMenu>
         {items.map((item) => {
           const isCollapsible = item.items && item.items.length > 0
+          
+          // Calculate parent badge (sum of child badges or specific logic)
+          // For Verification, it's the total queue length
+          const parentBadge = item.title === 'Verification' && queue && queue.length > 0 
+            ? queue.length 
+            : getBadgeCount(item.url ?? '') // Fallback for non-verification parents
 
           if (isCollapsible) {
-             // Keep group open if ANY child is active
-            const isChildActive = item.items?.some(sub => isUrlActive(sub.url ?? ''))
+             const isChildActive = item.items?.some(sub => isUrlActive(sub.url ?? ''))
 
              return (
                <Collapsible
@@ -65,21 +101,38 @@ export function NavGroup({ title, items }: NavGroupType) {
                      <SidebarMenuButton tooltip={item.title}>
                        {item.icon && <item.icon />}
                        <span>{item.title}</span>
+                       
+                       {/* Render Parent Badge */}
+                       {parentBadge && (
+                         <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm">
+                           {parentBadge}
+                         </span>
+                       )}
+
                        <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                      </SidebarMenuButton>
                    </CollapsibleTrigger>
                    <CollapsibleContent>
                      <SidebarMenuSub>
-                       {item.items?.map((subItem) => (
-                         <SidebarMenuSubItem key={subItem.title}>
-                           {/* [FIX] Use new isUrlActive helper */}
-                           <SidebarMenuSubButton asChild isActive={isUrlActive(subItem.url ?? '')}>
-                             <Link to={subItem.url ?? ''}>
-                               <span>{subItem.title}</span>
-                             </Link>
-                           </SidebarMenuSubButton>
-                         </SidebarMenuSubItem>
-                       ))}
+                       {item.items?.map((subItem) => {
+                         const count = getBadgeCount(subItem.url ?? '')
+                         
+                         return (
+                           <SidebarMenuSubItem key={subItem.title}>
+                             <SidebarMenuSubButton asChild isActive={isUrlActive(subItem.url ?? '')}>
+                               <Link to={subItem.url ?? ''} className="flex w-full items-center justify-between pr-2">
+                                 <span>{subItem.title}</span>
+                                 {/* Render Sub-Item Badge */}
+                                 {count && (
+                                    <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-red-100 text-[10px] font-bold text-red-600">
+                                      {count}
+                                    </span>
+                                 )}
+                               </Link>
+                             </SidebarMenuSubButton>
+                           </SidebarMenuSubItem>
+                         )
+                       })}
                      </SidebarMenuSub>
                    </CollapsibleContent>
                  </SidebarMenuItem>
@@ -87,13 +140,22 @@ export function NavGroup({ title, items }: NavGroupType) {
              )
           }
 
+          // Non-collapsible items (e.g. Dashboard, User List, Whitelisting)
           return (
             <SidebarMenuItem key={item.title}>
-              {/* [FIX] Use new isUrlActive helper */}
               <SidebarMenuButton asChild isActive={isUrlActive(item.url ?? '')} tooltip={item.title}>
-                <Link to={item.url ?? ''}>
-                  {item.icon && <item.icon />}
-                  <span>{item.title}</span>
+                <Link to={item.url ?? ''} className="flex w-full items-center justify-between pr-2">
+                  <div className="flex items-center gap-2">
+                    {item.icon && <item.icon />}
+                    <span>{item.title}</span>
+                  </div>
+                  
+                  {/* Render Badge (Specifically handles Whitelisting here) */}
+                  {getBadgeCount(item.url ?? '') && (
+                    <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm">
+                        {getBadgeCount(item.url ?? '')}
+                    </span>
+                  )}
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

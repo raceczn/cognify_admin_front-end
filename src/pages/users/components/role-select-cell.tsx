@@ -29,15 +29,16 @@ export function RoleSelectCell({
 
   const userType = roles.find((r) => r.value === currentRoleValue)
 
-  const handleRoleChange = async (newRoleId: string) => {
+  const handleRoleChange = async (newRoleValue: string) => {
     if (isUpdating) return
 
     setIsUpdating(true)
     const prev = currentRoleValue
-    setCurrentRoleValue(newRoleId) 
+    setCurrentRoleValue(newRoleValue) 
 
     try {
-      const response = await updateProfile(userId, { role_id: newRoleId })
+      // FIX: Changed key from 'role_id' to 'role' to match backend schema
+      const response = await updateProfile(userId, { role: newRoleValue })
 
       // [FIXED] Explicitly handle Date conversion
       const updatedUser: User = {
@@ -45,7 +46,7 @@ export function RoleSelectCell({
         ...response,
         created_at: new Date(response.created_at || currentUser.created_at),
         updated_at: new Date(),
-        role: response.role || newRoleId || 'unknown',
+        role: response.role || newRoleValue || 'unknown',
         deleted_at:
           typeof (response as any)?.deleted_at === 'string'
             ? new Date((response as any).deleted_at)
@@ -55,6 +56,7 @@ export function RoleSelectCell({
       updateLocalUsers(updatedUser, 'edit')
       toast.success('Role updated successfully')
     } catch (err) {
+      console.error(err)
       setCurrentRoleValue(prev)
       toast.error('Update failed. Try again.')
     } finally {

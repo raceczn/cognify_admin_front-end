@@ -165,6 +165,11 @@ export function ModuleMutateForm({
         bloom_level: (payload.bloom_levels?.[0]) || 'remembering',
       }
 
+      // Force verification to false unless specifically approved in verification mode
+      if (!isVerificationMode) {
+        dataToSend.is_verified = false;
+      }
+
       if (isEdit && moduleId) {
         await updateModuleMutation.mutateAsync({ id: moduleId, data: dataToSend })
         toast.success('Module updated successfully.')
@@ -262,27 +267,7 @@ export function ModuleMutateForm({
                   </FormItem>
                 )}
               />
-
-              <FormField
-                control={form.control}
-                name="is_verified"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 bg-gray-50">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>Verified Module</FormLabel>
-                      <FormDescription>
-                        Mark this module as reviewed and ready for students.
-                      </FormDescription>
-                    </div>
-                  </FormItem>
-                )}
-              />
+              {/* [REMOVED] is_verified Checkbox */}
             </div>
 
             {/* TAB 2: CONTENT & SETTINGS */}
