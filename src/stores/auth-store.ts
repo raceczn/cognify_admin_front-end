@@ -12,6 +12,10 @@ interface Profile {
   user_name?: string
   role_id: string
   email: string
+  // [FIX] Added profile_picture to the interface
+  profile_picture?: string | null 
+  profile_image?: string | null // Keep for backward compatibility
+  
   pre_assessment_score?: number
   ai_confidence?: number
   current_module?: string
@@ -26,7 +30,7 @@ interface AuthUser {
   email: string
   role_id: string
   profile: Profile
-  roleDesignation?: string // Added to track role from permission check
+  roleDesignation?: string 
 }
 
 type AuthSlice = {
@@ -39,8 +43,6 @@ export interface AuthState {
   auth: AuthSlice
 }
 
-// We only store User Info in a visible cookie to persist "Logged In" state UI.
-// The actual security is handled by the HttpOnly cookie (invisible to JS).
 const USER_INFO_KEY = 'user_info'
 
 const readJsonCookie = <T = any>(key: string): T | null => {
@@ -72,7 +74,6 @@ export const useAuthStore = create<AuthState>()((set) => {
     reset: () =>
       set((state) => {
         removeCookie(USER_INFO_KEY)
-        // We don't touch access_token cookies here; the logout API route clears them.
         return {
           ...state,
           auth: {

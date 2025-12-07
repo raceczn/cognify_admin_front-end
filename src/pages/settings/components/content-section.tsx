@@ -1,9 +1,9 @@
 import { Separator } from '@/components/ui/separator'
 
-type ContentSectionProps = {
+interface ContentSectionProps {
   title: string
   desc: string
-  children: React.JSX.Element
+  children: React.ReactNode
 }
 
 export function ContentSection({ title, desc, children }: ContentSectionProps) {
@@ -15,7 +15,10 @@ export function ContentSection({ title, desc, children }: ContentSectionProps) {
       </div>
       <Separator className='my-4 flex-none' />
       <div className='faded-bottom h-full w-full overflow-y-auto scroll-smooth pe-4 pb-12'>
-        <div className='-mx-1 px-1.5 lg:max-w-xl'>{children}</div>
+        {/* [FIX] Removed 'lg:max-w-xl' to allow full width responsiveness */}
+        <div className='w-full -mx-1 px-1.5'>
+          {children}
+        </div>
       </div>
     </div>
   )

@@ -1,5 +1,5 @@
 import { Outlet } from '@tanstack/react-router'
-import { Monitor, Bell, Palette, Wrench, UserCog } from 'lucide-react'
+import { Monitor, Palette, UserCog } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
@@ -16,19 +16,9 @@ const sidebarNavItems = [
     icon: <UserCog size={18} />,
   },
   {
-    title: 'Account',
-    href: '/settings/account',
-    icon: <Wrench size={18} />,
-  },
-  {
     title: 'Appearance',
     href: '/settings/appearance',
     icon: <Palette size={18} />,
-  },
-  {
-    title: 'Notifications',
-    href: '/settings/notifications',
-    icon: <Bell size={18} />,
   },
   {
     title: 'Display',
@@ -40,7 +30,6 @@ const sidebarNavItems = [
 export function Settings() {
   return (
     <>
-      {/* ===== Top Heading ===== */}
       <Header>
         <Search />
         <div className='ms-auto flex items-center space-x-4'>
@@ -50,13 +39,14 @@ export function Settings() {
         </div>
       </Header>
 
-      <Main fixed>
+      {/* [FIX] Added 'fluid' prop to make the container 100% width */}
+      <Main fixed fluid>
         <div className='space-y-0.5'>
           <h1 className='text-2xl font-bold tracking-tight md:text-3xl'>
             Settings
           </h1>
           <p className='text-muted-foreground'>
-            Manage your account settings and set e-mail preferences.
+            Manage your profile details and system preferences.
           </p>
         </div>
         <Separator className='my-4 lg:my-6' />

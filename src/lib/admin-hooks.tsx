@@ -1,10 +1,9 @@
-// src/lib/admin-hooks.ts
+// src/lib/admin-hooks.tsx
 import api from '@/lib/axios-client'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 export interface VerificationItem {
   item_id: string
-  // [FIX] Added 'subject' to the type union
   type: 'module' | 'question' | 'assessment' | 'subject'
   title: string
   submitted_by: string
@@ -21,6 +20,15 @@ export interface WhitelistedUser {
   added_by: string
   created_at: string
 }
+
+// [FIX] Updated to send email + password (LoginSchema)
+export async function adminUpdateUserPassword(uid: string, email: string, password: string) {
+  // We send email as part of the body to satisfy the backend LoginSchema, 
+  // even though UID identifies the user record.
+  const res = await api.put(`/admin/users/${uid}/password`, { email, password })
+  return res.data
+}
+
 
 // --- VERIFICATION QUEUE ---
 
@@ -109,7 +117,7 @@ export function useRemoveWhitelist() {
   })
 }
 
-// --- ADD THIS NEW HOOK ---
+// --- BULK ---
 export function useBulkWhitelist() {
   const queryClient = useQueryClient()
   return useMutation({

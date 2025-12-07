@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Loader2, Save, Upload, User as UserIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { updateProfile, uploadProfilePicture } from '@/lib/profile-hooks'
+import { adminUpdateUserPassword } from '@/lib/admin-hooks' // [FIX] Import
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -55,7 +56,6 @@ export function UserForm({ user }: UserFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
 
-  // Determine initial role value
   const initialRole = roles.find(r => r.value === user.role)?.value || user.role || user.role_id
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -72,7 +72,6 @@ export function UserForm({ user }: UserFormProps) {
     },
   })
 
-  // [FIX] Pre-load data when 'user' prop updates
   useEffect(() => {
     if (user) {
       form.reset({
@@ -100,9 +99,7 @@ export function UserForm({ user }: UserFormProps) {
     setIsUploading(true)
     toast.loading('Uploading profile picture...')
     try {
-      // [FIX] Use the dedicated profile uploader
       const res = await uploadProfilePicture(file)
-      
       form.setValue('profile_picture', res.file_url, { shouldDirty: true })
       toast.dismiss()
       toast.success('Image uploaded successfully!')
@@ -118,6 +115,7 @@ export function UserForm({ user }: UserFormProps) {
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     setIsSubmitting(true)
     try {
+      // 1. Prepare Profile Payload
       const payload: any = {
         first_name: data.first_name,
         last_name: data.last_name,
@@ -127,17 +125,25 @@ export function UserForm({ user }: UserFormProps) {
         profile_picture: data.profile_picture,
       }
 
-      if (data.password) {
-        payload.password = data.password
+      // [FIX] 2. Handle Password Change via Admin API using LoginSchema logic
+      if (data.password && data.password.length > 0) {
+        try {
+          // Pass email + password
+          await adminUpdateUserPassword(user.id, data.email, data.password)
+          toast.success('Password updated successfully')
+        } catch (pwError: any) {
+          console.error("Failed to update password:", pwError)
+          toast.error("Failed to update password. Check admin permissions.")
+        }
       }
 
+      // 3. Update Profile Data
       const response = await updateProfile(user.id, payload)
 
       const updatedUser: User = {
         ...user,
         ...response,
         role: response.role || 'unknown',
-        // Ensure date fields are Date objects (API often returns ISO strings)
         created_at: response.created_at ? new Date(response.created_at) : user.created_at,
         updated_at: response.updated_at ? new Date(response.updated_at) : new Date(),
         deleted_at: response.deleted_at ? new Date(response.deleted_at) : user.deleted_at,
@@ -153,17 +159,14 @@ export function UserForm({ user }: UserFormProps) {
     }
   }
 
-  // Watch profile picture for preview
   const profilePicUrl = form.watch('profile_picture')
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className='w-full'>
         
-        {/* [FIX] 3-Column Layout: 2 for Form, 1 for Profile Pic */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* LEFT COLUMN: Input Fields */}
           <div className="lg:col-span-2 space-y-6">
             <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
               <FormField
@@ -193,7 +196,6 @@ export function UserForm({ user }: UserFormProps) {
                 )}
               />
               
-              {/* [FIX] Renamed Label to Username, removed Nickname */}
               <div className="col-span-1 md:col-span-2">
                 <FormField
                   control={form.control}
@@ -293,7 +295,6 @@ export function UserForm({ user }: UserFormProps) {
             </div>
           </div>
 
-          {/* RIGHT COLUMN: Profile Picture */}
           <div className="lg:col-span-1">
             <Card>
               <CardContent className="flex flex-col items-center justify-center p-6 space-y-6">
