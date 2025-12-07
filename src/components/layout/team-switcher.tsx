@@ -29,9 +29,9 @@ export function TeamSwitcher({ teams }: TeamSwitcherProps) {
           size='lg'
           className='cursor-default hover:bg-transparent focus-visible:ring-0'
         >
-          <div className='bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg'>
-            <Logo className='size-4' />
-          </div>
+          <div className='flex aspect-square w-8 h-8 items-center justify-center rounded-md overflow-hidden'>
+  <Logo className='w-8 h-8 object-contain' />
+</div>
           <div className='grid flex-1 text-start text-sm leading-tight'>
             <span className='truncate font-semibold'>{team.name}</span>
             <span className='text-muted-foreground truncate text-[12px]'>

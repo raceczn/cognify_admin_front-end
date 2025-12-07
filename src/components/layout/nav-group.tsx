@@ -99,7 +99,7 @@ export function NavGroup({ title, items }: NavGroupType) {
                  <SidebarMenuItem>
                    <CollapsibleTrigger asChild>
                      <SidebarMenuButton tooltip={item.title}>
-                       {item.icon && <item.icon />}
+                       {item.icon && <item.icon className="!size-5" />}
                        <span>{item.title}</span>
                        
                        {/* Render Parent Badge */}
@@ -146,7 +146,7 @@ export function NavGroup({ title, items }: NavGroupType) {
               <SidebarMenuButton asChild isActive={isUrlActive(item.url ?? '')} tooltip={item.title}>
                 <Link to={item.url ?? ''} className="flex w-full items-center justify-between pr-2">
                   <div className="flex items-center gap-2">
-                    {item.icon && <item.icon />}
+                    {item.icon && <item.icon className="!size-5" />}
                     <span>{item.title}</span>
                   </div>
                   

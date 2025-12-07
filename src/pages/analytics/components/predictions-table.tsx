@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import {
   ColumnDef,
@@ -34,6 +35,7 @@ import {
 } from '@/components/ui/table'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs' // [NEW] Import Tabs
 import { Prediction } from '@/lib/analytics-hooks'
+import { listStudents } from '@/lib/profile-hooks'
 
 interface PredictionData {
   summary: {
@@ -61,27 +63,43 @@ export function PredictionsTable({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [activeTab, setActiveTab] = React.useState('all') // [NEW] Tab State
 
+  const { data: allStudents } = useQuery({
+    queryKey: ['studentsListAll'],
+    queryFn: () => listStudents(0, 2000),
+    staleTime: 1000 * 30,
+    refetchOnMount: 'always',
+  })
+
+  const combinedPredictions = React.useMemo(() => {
+    const base = Array.isArray(data?.predictions) ? (data!.predictions as Prediction[]) : []
+    const ids = new Set(base.map(p => String(p.student_id)))
+    const extras = (allStudents || [])
+      .filter(s => Boolean((s as any)?.is_verified))
+      .filter(s => !ids.has(String((s as any).id)))
+      .map(s => ({
+        student_id: String((s as any).id),
+        first_name: (s as any).first_name ?? null,
+        last_name: (s as any).last_name ?? null,
+        predicted_to_pass: false,
+        overall_score: 0,
+        risk_level: 'Unknown',
+        passing_probability: 0,
+      } as Prediction))
+    return [...base, ...extras]
+  }, [data?.predictions, allStudents])
+
   // [NEW] Filter Data Logic
   const filteredPredictions = React.useMemo(() => {
-    if (!data?.predictions) return []
-    
+    if (!combinedPredictions) return []
     switch (activeTab) {
       case 'passed':
-        // Filter where risk is Low OR passing prob is high
-        return data.predictions.filter(p => 
-          p.predicted_to_pass === true || 
-          (p.passing_probability >= 0.75)
-        )
+        return combinedPredictions.filter(p => p.predicted_to_pass === true || (p.passing_probability >= 0.75))
       case 'failed':
-        // Filter where risk is NOT Low
-        return data.predictions.filter(p => 
-          p.predicted_to_pass === false || 
-          (p.passing_probability < 0.75)
-        )
+        return combinedPredictions.filter(p => p.predicted_to_pass === false || (p.passing_probability < 0.75))
       default:
-        return data.predictions
+        return combinedPredictions
     }
-  }, [data?.predictions, activeTab])
+  }, [combinedPredictions, activeTab])
 
   const columns: ColumnDef<Prediction>[] = [
     {
@@ -200,7 +218,7 @@ export function PredictionsTable({
                 <CardDescription>AI-driven analysis of student success rates</CardDescription>
             </div>
             <div className="flex gap-2">
-                <Badge variant="outline">Total: {data.summary.total_students_predicted}</Badge>
+                <Badge variant="outline">Total: {combinedPredictions.length}</Badge>
             </div>
         </div>
       </CardHeader>

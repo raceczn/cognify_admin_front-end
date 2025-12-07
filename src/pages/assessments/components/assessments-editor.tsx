@@ -18,6 +18,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { getAllSubjects } from '@/lib/subjects-hooks'
+import { getModules, getModulesBySubject } from '@/lib/modules-hooks'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -52,7 +53,6 @@ interface AssessmentEditorProps {
   onReject?: () => void
 }
 
-const MODULE_IDS = ['MOD_COG101', 'MOD_PERS202', 'MOD_MOTIVATION302']
 
 const ASSESSMENT_PURPOSES: AssessmentPurpose[] = [
   'pre-assessment',
@@ -278,6 +278,22 @@ export function AssessmentEditor({
           title: s.title,
         }))
 
+  const { data: modulesRes } = useQuery({
+    queryKey: ['modules:list', assessment.subject_id ?? 'all'],
+    queryFn: () =>
+      assessment.subject_id ? getModulesBySubject(String(assessment.subject_id)) : getModules(),
+  })
+
+  const moduleOptions = Array.isArray(modulesRes)
+    ? (modulesRes || []).map((m: any) => ({
+        id: m?.id ?? m?.data?.id ?? '',
+        title: m?.title ?? m?.data?.title ?? 'Untitled Module',
+      }))
+    : ((modulesRes?.items || []) as any[]).map((m: any) => ({
+        id: m?.id ?? m?.data?.id ?? '',
+        title: m?.title ?? m?.data?.title ?? 'Untitled Module',
+      }))
+
   return (
     <div className='space-y-6 p-1'>
       <Card>
@@ -403,16 +419,16 @@ export function AssessmentEditor({
                 <SelectTrigger>
                   <SelectValue placeholder='Select' />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={CLEAR_VALUE}>Select Module</SelectItem>
-                  {MODULE_IDS.map((id) => (
-                    <SelectItem key={id} value={id}>
-                      {id}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <SelectContent>
+                <SelectItem value={CLEAR_VALUE}>Select Module</SelectItem>
+                {moduleOptions.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           </div>
 
           <div className='space-y-2 pt-2'>

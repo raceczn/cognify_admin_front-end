@@ -39,3 +39,11 @@ export async function uploadModuleMaterial(file: File) {
   })
   return res.data // Returns { file_url: "..." }
 }
+
+export async function getModulesBySubject(subjectId?: string) {
+  if (subjectId) {
+    const res = await api.get('/modules/', { params: { subject_id: subjectId } })
+    return res.data
+  }
+  return getModules()
+}

@@ -8,14 +8,16 @@ import {
   Wrench,
   UserCog,
   Users,
-  Command,
   BookOpen,
   Clipboard,
   Library,
   ClipboardCheck,
   UserPlus,
 } from 'lucide-react'
+import React from 'react'
 import { type SidebarData } from '../types'
+
+
 
 export const ROLES = {
   ADMIN: 'admin',
@@ -27,7 +29,7 @@ export const staticSidebarData: Omit<SidebarData, 'user'> = {
   teams: [
     {
       name: 'COGNIFY',
-      logo: Command,
+      logo: ((props: any) => React.createElement('img', { src: '/images/logo.png', alt: 'COGNIFY', ...props })) as React.ElementType,
       plan: 'System V2',
     },
   ],

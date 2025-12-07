@@ -36,6 +36,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { moduleFormSchema, ModuleFormValues } from '../data/schema'
 import { useModules } from './modules-provider'
 
@@ -489,11 +490,10 @@ export function ModuleMutateForm({
                       <FormItem>
                         <FormLabel>Module Content</FormLabel>
                         <FormControl>
-                          <Textarea
-                            placeholder='Enter the full text content here...'
-                            className='min-h-[200px] font-mono text-sm'
-                            {...field}
+                          <RichTextEditor
+                            placeholder='Enter the full text content here... '
                             value={field.value || ''}
+                            onChange={field.onChange}
                           />
                         </FormControl>
                         <FormMessage />
@@ -549,8 +549,19 @@ export function ModuleMutateForm({
                   )
                 ) : contentText ? (
                   // Changed from fixed h-[600px] to h-[85vh] for maximum height viewing
-                  <div className='h-[85vh] flex-1 overflow-y-auto rounded-lg border bg-gray-50 p-6 font-mono text-sm whitespace-pre-wrap'>
-                    {contentText}
+                  <div className='h-[85vh] flex-1 overflow-y-auto rounded-lg border bg-gray-50 p-6 text-sm'>
+                    <div
+                      className='prose prose-sm max-w-none'
+                      dangerouslySetInnerHTML={{ __html: contentText }}
+                    />
+                    <style>{`
+                      .prose ul { list-style-type: disc; padding-left: 1.5rem; margin: 0.5rem 0; }
+                      .prose ol { list-style-type: decimal; padding-left: 1.5rem; margin: 0.5rem 0; }
+                      .prose h1 { font-size: 1.5rem; font-weight: bold; margin: 1rem 0 0.5rem; }
+                      .prose h2 { font-size: 1.25rem; font-weight: bold; margin: 0.75rem 0 0.5rem; }
+                      .prose blockquote { border-left: 3px solid #e5e7eb; padding-left: 1rem; margin: 0.5rem 0; color: #6b7280; font-style: italic; }
+                      .prose p { margin: 0.5rem 0; }
+                    `}</style>
                   </div>
                 ) : (
                   <div className='flex h-64 flex-col items-center justify-center rounded-lg border-2 border-dashed text-gray-400'>
