@@ -115,6 +115,13 @@ export function PredictionsTable({
           </span>
         </div>
       ),
+      filterFn: (row, _columnId, filterValue) => {
+        const q = String(filterValue ?? '').toLowerCase().trim()
+        if (!q) return true
+        const id = String(row.original.student_id ?? '').toLowerCase()
+        const name = `${row.original.first_name ?? ''} ${row.original.last_name ?? ''}`.toLowerCase()
+        return id.includes(q) || name.includes(q)
+      },
     },
     {
       accessorKey: 'risk_level',
@@ -122,11 +129,12 @@ export function PredictionsTable({
       cell: ({ row }) => {
         const risk = row.original.risk_level?.toLowerCase() || 'unknown';
         let variant = "outline";
-        let label = row.original.risk_level || "Unknown";
+        let label = "";
         
         if (risk.includes('low')) { variant = "success"; label = "On Track"; }
         else if (risk.includes('moderate')) { variant = "secondary"; label = "At Risk"; }
         else if (risk.includes('high') || risk.includes('critical')) { variant = "destructive"; label = "Critical"; }
+        else { variant = "secondary"; label = "Just Started"; }
 
         // @ts-ignore - Variant string mapping is safe here
         return <Badge variant={variant}>{label}</Badge>
@@ -236,7 +244,7 @@ export function PredictionsTable({
              <div className="flex items-center gap-2 relative">
                 <Search className="h-4 w-4 absolute left-2 text-muted-foreground" />
                 <Input 
-                   placeholder="Search student..." 
+                   placeholder="Search student name or ID..." 
                    value={(table.getColumn('student_id')?.getFilterValue() as string) ?? ''}
                    onChange={(event) => table.getColumn('student_id')?.setFilterValue(event.target.value)}
                    className="pl-8 h-8 w-[200px]"

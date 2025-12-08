@@ -32,6 +32,7 @@ interface StudentStatusProps {
 const chartConfig = {
   pass: {
     label: 'Pass',
+    color: '#007E6E',
   },
   fail: {
     label: 'At Risk',
@@ -47,7 +48,7 @@ export function StudentStatus({ summary }: StudentStatusProps) {
     {
       browser: 'status',
       pass: passCount,
-      fill: 'hsl(var(--chart-2))',
+      fill: '#007E6E',
     },
   ]
 
@@ -80,7 +81,7 @@ export function StudentStatus({ summary }: StudentStatusProps) {
               dataKey='pass'
               background
               cornerRadius={10}
-              fill='hsl(var(--chart-2))'
+              fill='#007E6E'
             />
             <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
               <Label

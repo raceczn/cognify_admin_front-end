@@ -123,9 +123,48 @@ function ModulesPageContent() {
                         </div>
                       )
                     })()}
-                    <p className='text-xs text-muted-foreground uppercase tracking-wider mb-4'>
-                      {m.bloom_level ? `Bloom: ${m.bloom_level}` : 'Unspecified Bloom'}
-                    </p>
+                    {(() => {
+                      const levels = Array.isArray(m.bloom_levels)
+                        ? m.bloom_levels
+                        : m.bloom_level
+                        ? [m.bloom_level]
+                        : []
+                      const raw = (m.bloom_level || levels[0] || '') as string
+                      const lvl = raw.toLowerCase()
+                      const normalized = levels.map((l) => String(l).toLowerCase())
+                      const unique = Array.from(new Set(normalized))
+                      const additionalCount = Math.max(
+                        0,
+                        unique.length - (unique.includes(lvl) ? 1 : 0)
+                      )
+                      const color =
+                        lvl === 'remembering'
+                          ? 'bg-gray-400'
+                          : lvl === 'understanding'
+                          ? 'bg-blue-500'
+                          : lvl === 'applying'
+                          ? 'bg-green-500'
+                          : lvl === 'analyzing'
+                          ? 'bg-amber-500'
+                          : lvl === 'evaluating'
+                          ? 'bg-violet-500'
+                          : lvl === 'creating'
+                          ? 'bg-rose-500'
+                          : 'bg-muted-foreground'
+                      return (
+                        <div className='flex items-center gap-2 mb-4'>
+                          <span className={`inline-block h-2.5 w-2.5 rounded-full ${color}`} />
+                          <span className='text-xs uppercase tracking-wider'>
+                            {raw || 'Unspecified Bloom'}
+                          </span>
+                          {additionalCount > 0 && (
+                            <span className='text-muted-foreground text-xs'>
+                              +({additionalCount})
+                            </span>
+                          )}
+                        </div>
+                      )
+                    })()}
                     <p className='text-sm text-muted-foreground line-clamp-2'>
                       {m.purpose || 'No description available.'}
                     </p>
