@@ -23,7 +23,7 @@ interface BloomLevelChartProps {
 const chartConfig = {
   score: {
     label: 'Mastery (%)',
-    color: 'hsl(var(--primary))',
+    color: '#D92C54',
   },
 } satisfies ChartConfig
 

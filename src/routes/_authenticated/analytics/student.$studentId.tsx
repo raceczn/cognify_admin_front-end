@@ -1,6 +1,7 @@
 import { createFileRoute, Link, getRouteApi } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { getStudentAnalytics } from '@/lib/analytics-hooks'
+import { getAllSubjects } from '@/lib/subjects-hooks'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
@@ -21,7 +22,6 @@ import {
   BarChart,
   Brain,
   Target,
-  Check,
   BookOpen,
   AlertTriangle,
   Lightbulb,
@@ -74,6 +74,11 @@ function StudentAnalyticsPage() {
     retry: 1
   })
 
+  const { data: subjectsData } = useQuery({
+    queryKey: ['subjects'],
+    queryFn: getAllSubjects
+  })
+
   // Helper for status colors
   const getStatusColor = (status: string) => {
     switch(status?.toLowerCase()) {
@@ -109,6 +114,9 @@ function StudentAnalyticsPage() {
 
     const { overall_performance, subject_performance, weaknesses, behavioral_traits, performance_by_bloom } = analytics
     const isPassing = overall_performance.passing_probability >= 75
+    const hasBloomData = !!performance_by_bloom && Object.keys(performance_by_bloom).length > 0
+    const hasWeaknessData = Array.isArray(weaknesses) && weaknesses.length > 0
+    const subjectItems = subjectsData?.items ?? []
 
     return (
       <div className='space-y-6'>
@@ -249,48 +257,90 @@ function StudentAnalyticsPage() {
                 </CardDescription>
                 </CardHeader>
                 <CardContent className='space-y-6'>
-                {subject_performance?.length > 0 ? (
-                    subject_performance.map((subject) => (
-                    <div key={subject.subject_id} className="space-y-3 p-4 border rounded-lg bg-card/50">
+                {(subjectItems.length) > 0 ? (
+                  subjectItems.map((s) => {
+                    const perf = subject_performance?.find((p) => p.subject_id === s.id)
+                    const avg = perf?.average_score ?? 0
+                    const assessments = perf?.assessments_taken ?? 0
+                    const modulesComp = perf?.modules_completeness ?? 0
+                    const overallComp = perf?.overall_completeness ?? 0
+                    const needsReview = perf?.status === 'Needs Review'
+                    return (
+                      <div key={s.id} className="space-y-3 p-4 border rounded-lg bg-card/50">
                         <div className="flex items-center justify-between mb-2">
-                            <div>
-                                <span className="font-semibold text-base">{subject.subject_title}</span>
-                                <div className="flex gap-2 mt-1">
-                                    <Badge variant="outline" className="text-xs font-normal">
-                                        {subject.assessments_taken} Assessments
-                                    </Badge>
-                                    {subject.status === "Needs Review" && (
-                                        <Badge variant="destructive" className="text-xs">Needs Review</Badge>
-                                    )}
-                                </div>
+                          <div>
+                            <span className="font-semibold text-base">{s.title}</span>
+                            <div className="flex gap-2 mt-1">
+                              <Badge variant="outline" className="text-xs font-normal">
+                                {assessments} Assessments
+                              </Badge>
+                              {needsReview && (
+                                <Badge variant="destructive" className="text-xs">Needs Review</Badge>
+                              )}
                             </div>
-                            <div className="text-right">
-                                <span className="text-sm text-muted-foreground">Performance</span>
-                                <div className={`text-xl font-bold ${subject.average_score < 75 ? 'text-red-500' : 'text-green-600'}`}>
-                                {subject.average_score}%
-                                </div>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-sm text-muted-foreground">Performance</span>
+                            <div className={`text-xl font-bold ${avg < 75 ? 'text-red-500' : 'text-green-600'}`}>
+                              {avg}%
                             </div>
+                          </div>
                         </div>
-                        
                         <div className="space-y-2">
-                            <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>Module Completion</span>
-                                <span>{subject.modules_completeness}%</span>
-                            </div>
-                            <Progress value={subject.modules_completeness} className="h-1.5 bg-secondary" />
-                            
-                            <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                                <span>Overall Subject Completeness</span>
-                                <span>{subject.overall_completeness}%</span>
-                            </div>
-                            <Progress value={subject.overall_completeness} className="h-1.5 bg-secondary" />
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>Module Completion</span>
+                            <span>{modulesComp}%</span>
+                          </div>
+                          <Progress value={modulesComp} className="h-1.5 bg-secondary" />
+                          <div className="flex justify-between text-xs text-muted-foreground mt-2">
+                            <span>Overall Subject Completeness</span>
+                            <span>{overallComp}%</span>
+                          </div>
+                          <Progress value={overallComp} className="h-1.5 bg-secondary" />
                         </div>
-                    </div>
-                    ))
+                      </div>
+                    )
+                  })
                 ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                        No subject data available yet.
-                    </div>
+                  subject_performance?.length > 0 ? (
+                    subject_performance.map((subject) => (
+                      <div key={subject.subject_id} className="space-y-3 p-4 border rounded-lg bg-card/50">
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <span className="font-semibold text-base">{subject.subject_title}</span>
+                            <div className="flex gap-2 mt-1">
+                              <Badge variant="outline" className="text-xs font-normal">
+                                {subject.assessments_taken} Assessments
+                              </Badge>
+                              {subject.status === 'Needs Review' && (
+                                <Badge variant="destructive" className="text-xs">Needs Review</Badge>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-sm text-muted-foreground">Performance</span>
+                            <div className={`text-xl font-bold ${subject.average_score < 75 ? 'text-red-500' : 'text-green-600'}`}>
+                              {subject.average_score}%
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>Module Completion</span>
+                            <span>{subject.modules_completeness}%</span>
+                          </div>
+                          <Progress value={subject.modules_completeness} className="h-1.5 bg-secondary" />
+                          <div className="flex justify-between text-xs text-muted-foreground mt-2">
+                            <span>Overall Subject Completeness</span>
+                            <span>{subject.overall_completeness}%</span>
+                          </div>
+                          <Progress value={subject.overall_completeness} className="h-1.5 bg-secondary" />
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">No subjects available.</div>
+                  )
                 )}
                 </CardContent>
             </Card>
@@ -298,49 +348,53 @@ function StudentAnalyticsPage() {
 
           {/* 3. COGNITIVE PROFILE TAB */}
           <TabsContent value="cognitive" className="mt-4">
-             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Bloom's Chart with Data from Backend */}
+            {(!hasBloomData && !hasWeaknessData) ? (
+              <div className="text-center py-12 text-muted-foreground">No data available.</div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="lg:col-span-1">
+                  {hasBloomData ? (
                     <StudentBloomChart data={performance_by_bloom} />
+                  ) : (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Cognitive Profile</CardTitle>
+                        <CardDescription>No data available</CardDescription>
+                      </CardHeader>
+                    </Card>
+                  )}
                 </div>
 
-                {/* Weaknesses List */}
                 <Card className="lg:col-span-1">
-                    <CardHeader>
+                  <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-base">
-                        <Lightbulb className="h-4 w-4 text-orange-500" />
-                        Focus Areas (Weakest Competencies)
+                      <Lightbulb className="h-4 w-4 text-orange-500" />
+                      Focus Areas (Weakest Competencies)
                     </CardTitle>
                     <CardDescription>Targeted areas for improvement</CardDescription>
-                    </CardHeader>
-                    <CardContent className='space-y-0'>
-                    {weaknesses?.length > 0 ? (
-                        <div className="space-y-4">
-                            {weaknesses.map((w, idx) => (
-                                <div key={idx} className="flex flex-col gap-1 border-b pb-3 last:border-0 last:pb-0">
-                                    <div className="flex justify-between items-start">
-                                        <span className="font-medium text-sm max-w-[70%] leading-tight">
-                                            {w.competency_name}
-                                        </span>
-                                        <Badge variant="outline" className={`${getStatusColor(w.status)} text-[10px]`}>
-                                            {w.status}
-                                        </Badge>
-                                    </div>
-                                    <span className="text-xs text-muted-foreground">
-                                        {w.mastery}% Mastery • {w.attempts} Attempts
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
+                  </CardHeader>
+                  <CardContent className='space-y-0'>
+                    {hasWeaknessData ? (
+                      <div className="space-y-4">
+                        {weaknesses.map((w, idx) => (
+                          <div key={idx} className="flex flex-col gap-1 border-b pb-3 last:border-0 last:pb-0">
+                            <div className="flex justify-between items-start">
+                              <span className="font-medium text-sm max-w-[70%] leading-tight">{w.competency_name}</span>
+                              <Badge variant="outline" className={`${getStatusColor(w.status)} text-[10px]`}>{w.status}</Badge>
+                            </div>
+                            <span className="text-xs text-muted-foreground">{w.mastery}% Mastery • {w.attempts} Attempts</span>
+                          </div>
+                        ))}
+                      </div>
                     ) : (
-                        <div className="flex flex-col items-center justify-center h-32 text-center space-y-2">
-                            <Check className="h-8 w-8 text-green-500" />
-                            <p className="text-xs text-muted-foreground">No critical weaknesses detected.</p>
-                        </div>
+                      <div className="flex flex-col items-center justify-center h-32 text-center space-y-2">
+                        <p className="text-xs text-muted-foreground">No data available</p>
+                      </div>
                     )}
-                    </CardContent>
+                  </CardContent>
                 </Card>
-             </div>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>
