@@ -2,7 +2,6 @@ import { z } from 'zod'
 
 // [FIX] Values matched to backend database/enums.py
 export const ASSESSMENT_PURPOSES = [
-    'pre-assessment',
     'quiz',
     'post-assessment',
     'diagnostic',
