@@ -4,7 +4,7 @@ import {
   MoreHorizontal,
   FileText,
   Pencil,
-  Trash,
+  // Trash,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -25,7 +25,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 // CHANGE: Export columns as a function that accepts the edit/delete handlers
 export const columns = (
   onEdit: (module: Module) => void,
-  onDelete: (module: Module) => void, // Enforce delete handler presence
+  // onDelete: (module: Module) => void, // Enforce delete handler presence
   getSubjectTitle?: (id: string) => string
 ): ColumnDef<Module>[] => [
   {
@@ -163,12 +163,12 @@ export const columns = (
             <DropdownMenuItem onClick={() => onEdit(module)}>
               <Pencil className='mr-2 h-4 w-4' /> Edit
             </DropdownMenuItem>
-            <DropdownMenuItem
+            {/* <DropdownMenuItem
               onClick={() => onDelete(module)} // <-- FIXED delete call
               className='text-red-600'
             >
               <Trash className='mr-2 h-4 w-4' /> Delete
-            </DropdownMenuItem>
+            </DropdownMenuItem> */}
           </DropdownMenuContent>
         </DropdownMenu>
       )

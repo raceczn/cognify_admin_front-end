@@ -6,6 +6,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
@@ -33,6 +34,13 @@ export function DataTableRowActions<TData>({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end' className='w-[160px]'>
+         <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuItem
+              onClick={() => navigator.clipboard.writeText(module.id)}
+            >
+              Copy Module ID
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() =>
             navigate({
@@ -43,8 +51,8 @@ export function DataTableRowActions<TData>({
         >
           Edit
         </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
+        {/* <DropdownMenuSeparator /> */}
+        {/* <DropdownMenuItem
           onClick={() =>
             navigate({
               to: '/subjects/$subjectId/edit',
@@ -53,7 +61,7 @@ export function DataTableRowActions<TData>({
           }
         >
           Delete
-        </DropdownMenuItem>
+        </DropdownMenuItem> */}
       </DropdownMenuContent>
     </DropdownMenu>
   )

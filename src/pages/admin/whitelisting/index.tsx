@@ -67,6 +67,8 @@ export default function WhitelistingPage() {
   const addMutation = useAddWhitelist()
   const removeMutation = useRemoveWhitelist()
   const [roleFilter, setRoleFilter] = useState<string>('')
+  // [NEW] State for live search
+  const [searchTerm, setSearchTerm] = useState<string>('')
   
   // [FIX] Ref for hidden file input
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -411,29 +413,38 @@ export default function WhitelistingPage() {
 
         <Separator className="my-6" />
 
-        {/* BOTTOM: List */}
+        {/* BOTTOM: List with Search and Filter */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <CardTitle>Whitelisted Users</CardTitle>
                 <CardDescription>Users currently allowed to register.</CardDescription>
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8">
-                    Role: {roles.find(r => r.value === roleFilter)?.label ?? 'All Roles'}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-[180px]">
-                  <DropdownMenuItem onClick={() => setRoleFilter('')}>All Roles</DropdownMenuItem>
-                  {roles.map(r => (
-                    <DropdownMenuItem key={r.value} onClick={() => setRoleFilter(r.value)}>
-                      {r.label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <div className="flex items-center gap-4">
+                {/* [NEW] Search Input Field */}
+                <Input
+                  placeholder="Search email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-[180px] sm:w-[250px]"
+                />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-8">
+                      Role: {roles.find(r => r.value === roleFilter)?.label ?? 'All Roles'}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-[180px]">
+                    <DropdownMenuItem onClick={() => setRoleFilter('')}>All Roles</DropdownMenuItem>
+                    {roles.map(r => (
+                      <DropdownMenuItem key={r.value} onClick={() => setRoleFilter(r.value)}>
+                        {r.label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -452,7 +463,12 @@ export default function WhitelistingPage() {
                 <TableBody>
                   {(whitelist
                     ?.filter((user: any) => !user.is_registered || user.status === 'pending')
-                    ?.filter((user: any) => roleFilter === '' || user.assigned_role === roleFilter) || [])
+                    ?.filter((user: any) => roleFilter === '' || user.assigned_role === roleFilter)
+                    // [UPDATED] Filter by search term
+                    ?.filter((user: any) => 
+                      searchTerm === '' || 
+                      String(user.email || '').toLowerCase().includes(searchTerm.toLowerCase())
+                    ) || [])
                     .map((user: any) => (
                     <TableRow key={user.id}>
                       <TableCell className="font-medium">{user.email}</TableCell>
@@ -486,7 +502,12 @@ export default function WhitelistingPage() {
                   ))}
                   {(whitelist
                     ?.filter((user: any) => !user.is_registered || user.status === 'pending')
-                    ?.filter((user: any) => roleFilter === '' || user.assigned_role === roleFilter) || [])
+                    ?.filter((user: any) => roleFilter === '' || user.assigned_role === roleFilter)
+                    // [UPDATED] Filter by search term count
+                    ?.filter((user: any) => 
+                      searchTerm === '' || 
+                      String(user.email || '').toLowerCase().includes(searchTerm.toLowerCase())
+                    ) || [])
                     .length === 0 && (
                     <TableRow>
                       <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">

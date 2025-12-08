@@ -1,5 +1,5 @@
 import { Row } from '@tanstack/react-table'
-import { MoreHorizontal, Pen, Trash, Copy } from 'lucide-react'
+import { MoreHorizontal, Pen, Copy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useAssessments } from './assessments-provider'
+// import { useAssessments } from './assessments-provider'
 import { Assessment } from '../data/schema'
 import { useNavigate } from '@tanstack/react-router'
 import { toast } from 'sonner'
@@ -21,7 +21,7 @@ export function DataTableRowActions<TData>({
   row,
 }: DataTableRowActionsProps<TData>) {
   const assessment = row.original as Assessment
-  const { setOpen, setCurrentRow } = useAssessments()
+  // const { setOpen, setCurrentRow } = useAssessments()
   const navigate = useNavigate()
 
   return (
@@ -55,7 +55,7 @@ export function DataTableRowActions<TData>({
           Edit
         </DropdownMenuItem>
         
-        <DropdownMenuItem
+        {/* <DropdownMenuItem
           className='text-red-600 focus:text-red-600'
           onClick={() => {
             setCurrentRow(assessment) 
@@ -64,7 +64,7 @@ export function DataTableRowActions<TData>({
         >
           <Trash className='mr-2 h-3.5 w-3.5' />
           Delete
-        </DropdownMenuItem>
+        </DropdownMenuItem> */}
       </DropdownMenuContent>
     </DropdownMenu>
   )

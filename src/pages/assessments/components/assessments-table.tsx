@@ -90,7 +90,8 @@ export function AssessmentsDataTable<TData, TValue>({
                 All Subjects
               </DropdownMenuItem>
 
-              {subjectOptions.map((sub) => (
+              {/* FIX: Add a check to ensure subjectOptions is not undefined or null before mapping */}
+              {subjectOptions && subjectOptions.map((sub) => (
                 <DropdownMenuItem
                   key={sub.id}
                   onClick={() => {
