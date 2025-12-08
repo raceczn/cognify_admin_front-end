@@ -1,7 +1,8 @@
 import { ColumnDef } from '@tanstack/react-table'
-import { Checkbox } from '@/components/ui/checkbox'
+import { IconDots, IconCheck } from '@tabler/icons-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,8 +11,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { IconDots, IconCheck } from '@tabler/icons-react'
-import { User } from '../data/schema' // Make sure this path points to your schema.ts
+import { User } from '../data/schema'
+
+// Make sure this path points to your schema.ts
 
 export const columns: ColumnDef<User>[] = [
   {
@@ -67,10 +69,14 @@ export const columns: ColumnDef<User>[] = [
 
       if (role === 'admin') colorClass = 'bg-red-500/10 text-red-500'
       if (role === 'student') colorClass = 'bg-blue-500/10 text-blue-500'
-      if (role === 'faculty_member') colorClass = 'bg-orange-500/10 text-orange-500'
+      if (role === 'faculty_member')
+        colorClass = 'bg-orange-500/10 text-orange-500'
 
       return (
-        <Badge variant='outline' className={`${colorClass} border-0 capitalize`}>
+        <Badge
+          variant='outline'
+          className={`${colorClass} border-0 capitalize`}
+        >
           {role.replace('_', ' ')}
         </Badge>
       )
@@ -84,12 +90,18 @@ export const columns: ColumnDef<User>[] = [
       return (
         <div className='flex items-center space-x-2'>
           {verified ? (
-            <Badge variant='secondary' className='bg-green-500/10 text-green-600'>
+            <Badge
+              variant='secondary'
+              className='bg-green-500/10 text-green-600'
+            >
               <IconCheck className='mr-1 size-3' /> Verified
             </Badge>
           ) : (
-            <Badge variant='secondary' className='bg-yellow-500/10 text-yellow-600'>
-               Pending
+            <Badge
+              variant='secondary'
+              className='bg-yellow-500/10 text-yellow-600'
+            >
+              Pending
             </Badge>
           )}
         </div>
@@ -103,14 +115,19 @@ export const columns: ColumnDef<User>[] = [
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant='ghost' className='flex h-8 w-8 p-0 data-[state=open]:bg-muted'>
+            <Button
+              variant='ghost'
+              className='data-[state=open]:bg-muted flex h-8 w-8 p-0'
+            >
               <IconDots className='h-4 w-4' />
               <span className='sr-only'>Open menu</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align='end' className='w-[160px]'>
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(user.id)}>
+            <DropdownMenuItem
+              onClick={() => navigator.clipboard.writeText(user.id)}
+            >
               Copy User ID
             </DropdownMenuItem>
             <DropdownMenuSeparator />

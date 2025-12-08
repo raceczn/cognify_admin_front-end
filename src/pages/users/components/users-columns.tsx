@@ -5,8 +5,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { DataTableColumnHeader } from '@/components/data-table'
 import { LongText } from '@/components/long-text'
 import { type User } from '../data/schema'
-import { RoleSelectCell } from './role-select-cell'
 import { DataTableRowActions } from './data-table-row-actions'
+import { RoleSelectCell } from './role-select-cell'
 
 export const usersColumns: ColumnDef<User>[] = [
   {
@@ -48,7 +48,9 @@ export const usersColumns: ColumnDef<User>[] = [
       <DataTableColumnHeader column={column} title='Username' />
     ),
     cell: ({ row }) => (
-      <div className='w-fit text-nowrap'>{row.getValue('user_name') || '-'}</div>
+      <div className='w-fit text-nowrap'>
+        {row.getValue('user_name') || '-'}
+      </div>
     ),
   },
   {
@@ -90,15 +92,16 @@ export const usersColumns: ColumnDef<User>[] = [
       <DataTableColumnHeader column={column} title='Role' />
     ),
     cell: ({ row }) => (
-      <RoleSelectCell 
-        userId={row.original.id} 
-        role_id={row.original.role_id} 
-        currentUser={row.original} 
+      <RoleSelectCell
+        userId={row.original.id}
+        role_id={row.original.role_id}
+        currentUser={row.original}
       />
     ),
   },
   {
     id: 'actions',
-    cell: DataTableRowActions,
+    header: 'Actions',
+    cell: ({ row }) => <DataTableRowActions row={row} />,
   },
 ]

@@ -13,52 +13,61 @@ export function UsersDialogs() {
       <UsersMutateDrawer
         key='user-add'
         open={open === 'add'}
-        onOpenChange={(value) => setOpen(value ? 'add' : null)} // ✅ proper toggle
-        onSuccess={loadUsers} // ✅ auto refresh list after create
+        onOpenChange={(isOpen) => setOpen(isOpen ? 'add' : null)}
+        onSuccess={loadUsers}
       />
 
-      {/* Invite User */}
-      <UsersInviteDialog
-        key='user-invite'
-        open={open === 'invite'}
-        onOpenChange={() => setOpen('invite')}
+        <UsersInviteDialog
+    key='user-invite'
+    open={open === 'invite'}
+    onOpenChange={(isOpen) => setOpen(isOpen ? 'invite' : null)}
+  />
+
+  {currentRow && (
+    <>
+      {/* Edit User */}
+      <UsersMutateDrawer
+        key={`user-edit-${currentRow.id}`}
+        open={open === 'edit'}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) {
+            setOpen(null)
+            // Small timeout to allow animation to finish before clearing data
+            setTimeout(() => setCurrentRow(null), 200)
+          }
+        }}
+        currentRow={currentRow}
+        onSuccess={loadUsers}
       />
-      {currentRow && (
-        <>
-          {/* Edit User */}
-          <UsersMutateDrawer
-            key={`user-edit-${currentRow?.id ?? 'unknown'}`}
-            open={open === 'edit'}
-            onOpenChange={() => {
-              setOpen('edit')
-              setTimeout(() => setCurrentRow(null), 500)
-            }}
-            currentRow={currentRow}
-            onSuccess={loadUsers}
-          />
 
-          {/* Delete User */}
-          <UsersDeleteDialog
-            key={`user-delete-${currentRow?.id ?? 'unknown'}`}
-            open={open === 'delete'}
-            onOpenChange={() => {
-              setOpen('delete')
-              setTimeout(() => setCurrentRow(null), 500)
-            }}
-            currentRow={currentRow}
-          />
+      {/* Delete User */}
+      <UsersDeleteDialog
+        key={`user-delete-${currentRow.id}`}
+        open={open === 'delete'}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) {
+            setOpen(null)
+            setTimeout(() => setCurrentRow(null), 200)
+          }
+        }}
+        currentRow={currentRow}
+      />
 
-          <UsersPurgeDialog
-            key={`user-purge-${currentRow?.id ?? 'unknown'}`}
-            open={open === 'purge'}
-            onOpenChange={() => {
-              setOpen(null) // Set to null to close
-              setTimeout(() => setCurrentRow(null), 500)
-            }}
-            currentRow={currentRow}
-          />
-        </>
-      )}
+      {/* Purge User */}
+      <UsersPurgeDialog
+        key={`user-purge-${currentRow.id}`}
+        open={open === 'purge'}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) {
+            setOpen(null)
+            setTimeout(() => setCurrentRow(null), 200)
+          }
+        }}
+        currentRow={currentRow}
+      />
     </>
+  )}
+</>
+   
   )
 }

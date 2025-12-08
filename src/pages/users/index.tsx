@@ -1,7 +1,9 @@
 import { useUsers } from './components/users-provider'
-import { usersColumns } from './components/users-columns' // Corrected import name
+import { usersColumns } from './components/users-columns'
 import { DataTable } from './components/users-table'
 import { UsersPrimaryButtons } from './components/users-primary-buttons'
+// 👇 1. Import the Dialogs manager
+import { UsersDialogs } from './components/users-dialogs' 
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { TopNav } from '@/components/layout/top-nav'
@@ -48,6 +50,9 @@ export default function UsersPage() {
             loading={isLoading} 
           />
         </div>
+
+        {/* 👇 2. Add this component here. It listens for the "delete/purge" events */}
+        <UsersDialogs />
       </Main>
     </>
   )

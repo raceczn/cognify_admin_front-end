@@ -1,5 +1,5 @@
 import { Outlet } from '@tanstack/react-router'
-import { Monitor, Palette, UserCog } from 'lucide-react'
+import {  Palette, UserCog } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
@@ -20,11 +20,11 @@ const sidebarNavItems = [
     href: '/settings/appearance',
     icon: <Palette size={18} />,
   },
-  {
-    title: 'Display',
-    href: '/settings/display',
-    icon: <Monitor size={18} />,
-  },
+  // {
+  //   title: 'Display',
+  //   href: '/settings/display',
+  //   icon: <Monitor size={18} />,
+  // },
 ]
 
 export function Settings() {

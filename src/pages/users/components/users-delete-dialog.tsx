@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
 import { deactivateUser } from '@/lib/profile-hooks'
@@ -26,6 +26,11 @@ export function UsersDeleteDialog({
   const [isLoading, setIsLoading] = useState(false)
   const { updateLocalUsers } = useUsers()
 
+  // Reset input when dialog opens/closes
+  useEffect(() => {
+    if (!open) setValue('')
+  }, [open])
+
   const handleDelete = async () => {
     if (value.trim() !== currentRow.email) {
       toast.error('The email you entered does not match.')
@@ -36,7 +41,6 @@ export function UsersDeleteDialog({
     try {
       const response = await deactivateUser(currentRow.id)
 
-      // [FIXED] Date conversion for soft delete fields
       const updatedUser: User = {
         ...currentRow,
         ...response,
@@ -48,8 +52,8 @@ export function UsersDeleteDialog({
           : new Date(),
         role: response.role || currentRow.role || 'unknown',
       }
+      
       updateLocalUsers(updatedUser, 'edit')
-
       onOpenChange(false)
       toast.success(
         `${currentRow.first_name} ${currentRow.last_name} has been soft-deleted.`
@@ -72,44 +76,49 @@ export function UsersDeleteDialog({
       handleConfirm={handleDelete}
       disabled={value.trim() !== currentRow.email || isLoading}
       title={
-        <span className='text-destructive'>
-          <AlertTriangle
-            className='stroke-destructive me-1 inline-block'
-            size={18}
-          />{' '}
-          Delete User
-        </span>
+        <div className='flex items-center gap-2 text-destructive'>
+          <AlertTriangle className='size-5' />
+          <span className='font-bold'>Delete User Account</span>
+        </div>
       }
       desc={
-        <div className='space-y-4'>
-          <p className='mb-2'>
+        <div className='flex flex-col gap-4 py-2 text-start'>
+          {/* Main Context */}
+          <p className='text-muted-foreground text-sm'>
             Are you sure you want to delete{' '}
-            <span className='font-bold'>{`${currentRow.first_name} ${currentRow.last_name}`}</span>
-            ?
-            <br />
-            This action will perform a soft-delete. The user can be restored
-            later.
+            <span className='font-semibold text-foreground'>
+              {currentRow.first_name} {currentRow.last_name}
+            </span>
+            ? This action will perform a soft-delete.
           </p>
-          <Label className='my-2'>
-            Type the user's email{' '}
-            <span className='text-destructive font-bold'>
-              {currentRow.email}
-            </span>{' '}
-            to confirm:
-            <Input
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              placeholder='Enter user email to confirm deletion.'
-            />
-          </Label>
 
-          <Alert variant='destructive'>
-            <AlertTitle>Warning!</AlertTitle>
-            <AlertDescription>
-              This will disable the user's account and remove them from active
-              lists.
+          {/* Warning Alert */}
+          <Alert variant='destructive' className='border-destructive/20 bg-destructive/5 text-destructive [&>svg]:text-destructive'>
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle className='font-semibold'>Warning</AlertTitle>
+            <AlertDescription className='text-xs opacity-90'>
+              The user will be disabled and hidden from active lists, but can be restored later.
             </AlertDescription>
           </Alert>
+
+          {/* Confirmation Input */}
+          <div className='space-y-3'>
+            <Label htmlFor='confirm-email' className='text-sm font-medium'>
+              To confirm, type{' '}
+              <span className='rounded bg-muted px-1.5 py-0.5 font-mono text-xs font-bold text-foreground'>
+                {currentRow.email}
+              </span>{' '}
+              below:
+            </Label>
+            <Input
+              id='confirm-email'
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder='Enter email address'
+              autoComplete='off'
+              className='font-mono text-sm'
+            />
+          </div>
         </div>
       }
       confirmText='Delete User'

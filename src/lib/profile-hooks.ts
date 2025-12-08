@@ -223,7 +223,8 @@ export async function deactivateUser(
   userId: string,
   reason?: string
 ): Promise<UserProfile> {
-  const res = await api.post(`/admin/users/${userId}/deactivate`, null, {
+  // 👇 FIX: Added '/' at the end
+  const res = await api.post(`/admin/users/${userId}/deactivate/`, null, {
     params: reason ? { reason } : undefined,
   })
   const data = res.data?.profile ?? res.data

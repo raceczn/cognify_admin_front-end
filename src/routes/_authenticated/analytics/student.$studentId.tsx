@@ -262,8 +262,8 @@ function StudentAnalyticsPage() {
                     const perf = subject_performance?.find((p) => p.subject_id === s.id)
                     const avg = perf?.average_score ?? 0
                     const assessments = perf?.assessments_taken ?? 0
-                    const modulesComp = perf?.modules_completeness ?? 0
-                    const overallComp = perf?.overall_completeness ?? 0
+                    // const modulesComp = perf?.modules_completeness ?? 0
+                    // const overallComp = perf?.overall_completeness ?? 0
                     const needsReview = perf?.status === 'Needs Review'
                     return (
                       <div key={s.id} className="space-y-3 p-4 border rounded-lg bg-card/50">
@@ -286,7 +286,7 @@ function StudentAnalyticsPage() {
                             </div>
                           </div>
                         </div>
-                        <div className="space-y-2">
+                        {/* <div className="space-y-2">
                           <div className="flex justify-between text-xs text-muted-foreground">
                             <span>Module Completion</span>
                             <span>{modulesComp}%</span>
@@ -297,7 +297,7 @@ function StudentAnalyticsPage() {
                             <span>{overallComp}%</span>
                           </div>
                           <Progress value={overallComp} className="h-1.5 bg-secondary" />
-                        </div>
+                        </div> */}
                       </div>
                     )
                   })
