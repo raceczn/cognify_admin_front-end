@@ -29,7 +29,7 @@ export const staticSidebarData: Omit<SidebarData, 'user'> = {
   teams: [
     {
       name: 'COGNIFY',
-      logo: ((props: any) => React.createElement('img', { src: '/images/logo.png', alt: 'COGNIFY', ...props })) as React.ElementType,
+      logo: ((props: any) => React.createElement('img', { src: '/images/cognify.png', alt: 'COGNIFY', ...props })) as React.ElementType,
       plan: 'System V2',
     },
   ],
