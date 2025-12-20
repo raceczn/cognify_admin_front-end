@@ -24,10 +24,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 
 // CHANGE: Export columns as a function that accepts the edit/delete handlers
 export const columns = (
-  onEdit: (module: Module) => void,
-  // onDelete: (module: Module) => void, // Enforce delete handler presence
-  getSubjectTitle?: (id: string) => string
-): ColumnDef<Module>[] => [
+onEdit: (module: Module) => void, handleDeleteModule: (module: Module) => void, // onDelete: (module: Module) => void, // Enforce delete handler presence
+getSubjectTitle?: (id: string) => string): ColumnDef<Module>[] => [
   {
     id: 'select',
     header: ({ table }) => (
