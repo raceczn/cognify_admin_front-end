@@ -47,10 +47,10 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
             </DropdownMenuShortcut>
           </DropdownMenuItem>
           
-          <DropdownMenuSeparator />
+          {/* <DropdownMenuSeparator /> */}
           
           {/* Keep Delete/Purge as modals for safety */}
-          <DropdownMenuItem
+          {/* <DropdownMenuItem
             onClick={() => {
               setCurrentRow(row.original)
               setOpen('delete')
@@ -74,7 +74,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
             <DropdownMenuShortcut>
               <ShieldAlert size={16} />
             </DropdownMenuShortcut>
-          </DropdownMenuItem>
+          </DropdownMenuItem> */}
           
         </DropdownMenuContent>
       </DropdownMenu>

@@ -58,7 +58,7 @@ export const columns = (
       <DataTableColumnHeader column={column} title='Module Title' />
     ),
     cell: ({ row }) => (
-      <div className='lowercase max-w-[300px] truncate'>
+      <div className=' max-w-[300px] truncate'>
         {row.getValue('title')}
       </div>
     ),
@@ -78,7 +78,7 @@ export const columns = (
             className='text-xs uppercase max-w-[220px] truncate justify-start'
             title={title}
           >
-            {title}
+            {title}    
           </Badge>
         )
     },

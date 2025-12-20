@@ -270,7 +270,7 @@ export function Dashboard() {
         {isAdmin && (
           <>
             <h2 className="text-lg font-semibold mb-3 tracking-tight text-muted-foreground">Content & Verification Queue</h2>
-            <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4'>
+            <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
               
               <Card>
                 <CardHeader>
@@ -283,7 +283,7 @@ export function Dashboard() {
 
               {getSystemStatusBadge(stats?.pendingModules || 0, IconClipboardCheck, 'Modules Pending')}
               {getSystemStatusBadge(stats?.pendingAssessments || 0, IconFileCertificate, 'Assessments Pending')}
-              {getSystemStatusBadge(stats?.pendingQuestions || 0, IconAlertCircle, 'Questions Pending')}
+              {/* {getSystemStatusBadge(stats?.pendingQuestions || 0, IconAlertCircle, 'Questions Pending')} */}
               
             </div>
           </>

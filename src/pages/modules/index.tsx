@@ -22,8 +22,8 @@ function ModulesPageContent() {
   const {
     modules,
     isLoading,
-    setCurrentRow,
-    setOpen,
+    // setCurrentRow,
+    // setOpen,
     subjects,
   } = useModules()
 
@@ -33,14 +33,14 @@ function ModulesPageContent() {
     navigate({ to: '/modules/$moduleId/edit', params: { moduleId: module.id } })
   }
 
-  const handleDeleteModule = (module: Module) => {
-    setCurrentRow(module)
-    setOpen('delete')
-  }
+  // const handleDeleteModule = (module: Module) => {
+  //   setCurrentRow(module)
+  //   setOpen('delete')
+  // }
 
   const getSubjectTitle = (id: string) => subjects.find((s) => s.id === id)?.title || id
-  const moduleColumns = columns(handleEditModule, handleDeleteModule, getSubjectTitle)
-
+  const moduleColumns = columns(handleEditModule, getSubjectTitle)
+  
   const subjectBadgeColor = (title: string) => {
     const palette = [
       'bg-blue-500/10 text-blue-600',

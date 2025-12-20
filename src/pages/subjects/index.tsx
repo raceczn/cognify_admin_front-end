@@ -12,6 +12,7 @@ import { subjectsColumns } from './components/subjects-columns'
 import { Library, Table as TableIcon, BadgeCheck } from 'lucide-react' 
 import { Card, CardContent } from '@/components/ui/card'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { usePermissions } from '@/hooks/use-permissions'
 
 export default function Subjects() {
   return (
@@ -23,6 +24,7 @@ export default function Subjects() {
 
 function SubjectsPageContent() {
   const { subjects } = useSubjects()
+  const { isAdmin } = usePermissions()
   
   const verifiedSubjects = subjects.filter(s => s.is_verified)
 
